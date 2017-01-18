@@ -11,5 +11,4 @@ Functions:
 """
 
 
-from anova import *
 from corr import *
