@@ -28,3 +28,7 @@ Python library for brain decoding
 
 Please send your pull requests to `dev` branch, not to `master`.
 
+## Contributors
+
+- Shuntaro C. Aoki (DNI, ATR)
+- Misato Tanaka (DNI, ATR)
