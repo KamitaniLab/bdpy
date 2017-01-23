@@ -66,7 +66,6 @@ class BData(object):
         colnum_has = self.dataSet.shape[1] # Num of existing columns in 'dataSet'
         colnum_add = x.shape[1] # Num of columns to be added
 
-
         ## Add 'x' to dataset
         if not self.dataSet.size:
             self.dataSet = x
@@ -75,8 +74,9 @@ class BData(object):
             self.dataSet = np.hstack((self.dataSet, x))
 
         ## Add new attribute metadata
+        attribute_description = 'Attribute: %s = 1' % attribute_key
         attribute_value = [None for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
-        self.metaData.set(attribute_key, attribute_value, '',
+        self.metaData.set(attribute_key, attribute_value, attribute_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
 
