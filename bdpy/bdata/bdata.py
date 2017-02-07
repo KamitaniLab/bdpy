@@ -163,7 +163,7 @@ class BData(object):
 
     ## Feature selection #######################################################
 
-    def select_feature(self, condition, verbose=True):
+    def select_feature(self, condition, return_index=False, verbose=True):
         """
         Extracts features from dataset based on condition
 
@@ -171,6 +171,8 @@ class BData(object):
         ----------
         condition : str
             Expression specifying feature selection
+        retrun_index : bool
+            If True, returns index of selected features
         verbose
             If True, display verbose messages
         @param condition: condition to select feature
@@ -184,7 +186,7 @@ class BData(object):
 
         Returns
         -------
-            Selected feature data
+            Selected feature data and index (if specified)
 
         Note
         ----
@@ -284,7 +286,10 @@ class BData(object):
         # slice dataset based on selected column
         #feature = data[:, np.array(selected_index)]
 
-        return self.dataSet[:, np.array(selected_index)]
+        if return_index:
+            return self.dataSet[:, np.array(selected_index)], selected_index
+        else:
+            return self.dataSet[:, np.array(selected_index)]
 
 
     def __get_order(self, v, sort_order='descend'):
