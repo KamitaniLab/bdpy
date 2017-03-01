@@ -13,8 +13,8 @@ class MetaData(list):
     """
     MetaData class
 
-    'MetaData' is a list of dictionaries. Each element is a dictionary which
-    has three keys: 'key', 'value', and 'description'.
+    'MetaData' is a list of dictionaries. Each element has three keys: 'key',
+    'value', and 'description'.
     """
 
     def __init__(self):
@@ -28,13 +28,13 @@ class MetaData(list):
         ----------
         key : str
             Meta-data key
-        value
+        value : array_like
             Meta-data value
         description : str
             Meta-data description
         updater : function
             Function applied to meta-data value when meta-data named `key` already exists.
-            It takes two args: new and old meta-data values.
+            It should take two args: new and old meta-data values.
         """
 
         if value is not None and (len(value) > self.get_value_len()):

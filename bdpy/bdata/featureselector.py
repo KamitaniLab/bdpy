@@ -19,9 +19,9 @@ class FeatureSelector(object):
     ----------
     expression : str
         Selection command
-    token : Tuple
+    token : tuple
         Tokens
-    rpn : Tuple
+    rpn : tuple
         Tokens in reversed polish notation
     """
 

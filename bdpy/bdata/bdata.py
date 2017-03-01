@@ -32,11 +32,13 @@ class BData(object):
         """
         Initialization
 
-        Args:
-
-        - file_name : Name of file which contains BData (optional; default = None)
-        - file_type : String specifying the file type (optional; default = None).
-                      "Npy", "Matlab", "HDF5" are supported.
+        Parameters
+        ----------
+        file_name : str, optional
+            Name of file which contains BData (default: None)
+        file_type : str, optional
+            String specifying the file type (default: None).
+            "Npy", "Matlab", "HDF5" are supported.
         """
 
         self.dataSet = np.ndarray((0, 0), dtype=float)
@@ -54,9 +56,9 @@ class BData(object):
 
         Parameters
         ----------
-        x
+        x : array
             Data matrix to be added in dataSet
-        attribute_key
+        attribute_key : str
             Key of attribute meta-data, which specifies the columns containing `x`
         """
 
@@ -175,14 +177,6 @@ class BData(object):
             If True, returns index of selected features
         verbose
             If True, display verbose messages
-        @param condition: condition to select feature
-            Condition operators:
-                "|": union
-                "&": intersect
-                "=": matching of number
-            example) "VOX_M1_LHand = 1 | VOX_M1_RHand = 1"
-                "|" means union. "=" is the number of selected. (In normal case, roiflag = 1)
-                Then, voxels which belong to either of two ROIs are selected.
 
         Returns
         -------
@@ -191,12 +185,7 @@ class BData(object):
         Note
         ----
 
-        Operators
-
-        - |
-        - &
-        - =
-        - @
+        Operators: | (or), & (and), = (equal), @ (conditional)
         """
 
         expr_rpn = FeatureSelector(condition).rpn

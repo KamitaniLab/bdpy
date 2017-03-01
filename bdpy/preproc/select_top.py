@@ -16,18 +16,18 @@ def select_top(data, value, num, axis=0, verbose=True):
 
     Parameters
     ----------
-    data
+    data : array
        Data matrix
-    value
+    value : array_like
        Vector of values
-    num
+    num : int
        Number of selected features
 
     Returns
     -------
-    selected_data
+    selected_data : array
         Selected data matrix
-    selected_index
+    selected_index : array
         Index of selected data
     """
 

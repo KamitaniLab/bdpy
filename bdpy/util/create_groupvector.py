@@ -14,12 +14,15 @@ def create_groupvector(group_label, group_size):
 
     Parameters
     ----------
-    group_label : List or array of group labels
-    group_size : Sample size of each group (scalar, list, or array)
+    group_label : array_like
+        List or array of group labels
+    group_size : array_like
+        Sample size of each group
 
     Returns
     -------
-    group_vector : A vector specifying groups (1 * N array)
+    group_vector : array
+        A vector specifying groups (size: 1 * N)
 
     Example:
 

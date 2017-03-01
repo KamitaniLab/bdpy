@@ -1,8 +1,5 @@
-# coding: utf-8
 """
-bdpy.ml.ensemble
-
-Functions related to ensemble learning
+Utilities for ensemble learning
 """
 
 from collections import Counter
@@ -17,29 +14,31 @@ def get_majority(data, axis=0):
     """
     Returns a list of majority elements in each row or column.
 
-    各行，または列で一番個数の多い要素のリストを返す．同数の要素があった場合，要素値の昇順で先に来る方の要素が返される．
+    If more than two elements occupies the same numbers in each row or column,
+    'get_majority' returns the first-sorted element.
 
     Parameters
     ----------
-    data : 2D array
-    axis : 0 (row) or 1 (column)
+    data : array_like
+    axis : 0 or 1, optional
+        Axis in which elements are counted (default: 0)
+
 
     Returns
     -------
-    A list of majority elements
+    majority_list : list
+        A list of majority elements
     """
 
-    # 多数決結果を格納するリスト
     majority_list = []
-    #
-    if axis == 0: # 列ごとの多数決の場合，行列を転置する
+
+    if axis == 0:
         data = np.transpose(data) 
-    #    
-    # 行ごとに多数決を行う
+
     for i in range(data.shape[0]):
         target = data[i].tolist()
         c = Counter(target)
-        majority = c.most_common(1) # 1番出現回数の多い要素を獲得 -> [(要素, 要素の個数)]
-        majority_list.append(majority[0][0]) # 要素を抽出してappend
+        majority = c.most_common(1)
+        majority_list.append(majority[0][0])
 
     return majority_list

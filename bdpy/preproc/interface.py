@@ -9,19 +9,23 @@ from preprocessor import Average,Detrender,Normalize,ShiftSample
 from util import print_start_msg, print_finish_msg
 
 
-def average_sample(x, group, verbose = True):
+def average_sample(x, group, verbose=True):
     """
     Average samples within groups
 
     Parameters
     ----------
-    x     : input data array (size: sample num * feature num)
-    group : group vector (length: sample num)
+    x : array
+        Input data array (sample num * feature num)
+    group : array_like
+        Group vector (length = sample num)
 
     Returns
     -------
-    y         : averaged data array (size: group num * feature num)
-    index_map : vector mapping row indexes from y to x (length: group num)
+    y : array
+        Averaged data array (group num * feature num)
+    index_map : array_like
+        Vector mapping row indexes from y to x (length = group num)
     """
 
     if verbose:
@@ -42,12 +46,15 @@ def detrend_sample(x, group, keep_mean=True, verbose=True):
 
     Parameters
     ----------
-    x     : input data array (size: sample num * feature num)
-    group : group vector (length: sample num)
+    x : array
+        Input data array (sample num * feature num)
+    group : array_like
+        Group vector (length = sample num)
     
     Returns
     -------
-    y : detrended data array (size: sample num * feature num)
+    y : array
+        Detrended data array (group num * feature num)
     """
 
     if verbose:
@@ -62,27 +69,28 @@ def detrend_sample(x, group, keep_mean=True, verbose=True):
     return y
 
 
-def normalize_sample(x, group,
-                     mode = 'PercentSignalChange',
-                     baseline = 'All',
-                     zero_threshold = 1,
-                     verbose = True):
+def normalize_sample(x, group, mode='PercentSignalChange', baseline='All',
+                     zero_threshold=1, verbose=True):
     """
     Apply normalization
 
     Parameters
     ----------
-    x             : input data array (size: sample num * feature num)
-    group         : group vector (length: sample num)
-    Mode          : normalization mode ('PercentSignalChange', 'Zscore',
-                    'DivideMean', or 'SubtractMean';
-                    default = 'PercentSignalChange')
-    Baseline      : baseline index vector (default: 'allsamples')
-    ZeroThreshold : zero threshold (default: 1)
+    x : array
+        Input data array (sample num * feature num)
+    group : array_like
+        Group vector (length = sample num)
+    Mode : str
+        Normalization mode ('PercentSignalChange', 'Zscore', 'DivideMean', or 'SubtractMean'; default = 'PercentSignalChange')
+    Baseline : array_like or str
+        Baseline index vector (default: 'All')
+    ZeroThreshold : float
+        Zero threshold (default: 1)
 
     Returns
     -------
-    y : normalized data array (size: sample num * feature num)
+    y : array
+        Normalized data array (sample num * feature num)
     """
 
     if verbose:
@@ -103,16 +111,22 @@ def shift_sample(x, group, shift_size = 1, verbose = True):
 
     Parameters
     ----------
-    x          : input data array (size: sample num * feature num)
-    group      : group vector (length: sample num)
-    shift_size : shift size (default: 1)  
+    x : array
+        Input data (sample num * feature num)
+    group : array_like
+        Group vector (length: sample num)
+    shift_size : int
+        Shift size (default: 1)  
 
     Returns
     -------
-    y         : averaged data array (size: group num * feature num)
-    index_map : vector mapping row indexes from y to x (length: group num)
+    y : array
+        Averaged data array (group num * feature num)
+    index_map : array_like
+        Vector mapping row indexes from y to x (length: group num)
 
-    Example:
+    Example
+    -------
 
     import numpy as np
     from bdpy.preprocessor import shift_sample

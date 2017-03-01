@@ -1,5 +1,5 @@
 """
-crossvalidation
+Utilities for cross-validation
 """
 
 
@@ -8,23 +8,27 @@ import numpy as np
 
 def make_cvindex(group):
     """
-    Make indexes of training and test samples
+    Make indexes of training and test samples for cross-validation
 
-    Args:
+    Parameters
+    ----------
+    group : array_like
+        Index that partitions samples to groups (N * 1; N is the total number of
+        samples). If 'group' is runs_groups, 'make_cvindex' returns indexes for
+        cross-validation between run (leave-run-out). If all elements in 'group'
+        are 0 or 1, 'make_cvindex' returns index for training only or test only,
+        respectively.
 
-    - group : Index partitioning samples to groups (N x 1 array; N is the total
-              number of samples). If 'group' is runs_groups -> crossvalidation
-              between run. If 'group' is block_groups -> leave-on-out
-              crossvalidation. If all elements in 'group' are 0 -> training
-              only. If all elements in 'group' are 1 -> test only.
+    Returns
+    -------
+    train_index : array_like
+        Boolean matrix specifying training samples (N * K; N is the total number
+        of samples, K is the number of folds)
+    test_index : array_like
+        Boolean matrix specifying test samples (N * K)
 
-    Returns:
-
-    - train_index : Boolean matrix specifying training samples (N x K array; N
-                    is the total number of samples, K is the number of folds)
-    - test_index : Boolean matrix specifying test samples (N x K array)
-
-    Example:
+    Example
+    -------
 
         >>> bdpy.util.make_crossvalidationindex(np.array([1, 1, 2, 2, 3, 3]))
         (array([[False,  True,  True],
@@ -73,35 +77,7 @@ def make_crossvalidationindex(group):
     """
     Make indexes of training and test samples
 
-    Args:
-
-    - group : Index partitioning samples to groups (N x 1 array; N is the total
-              number of samples). If 'group' is runs_groups -> crossvalidation
-              between run. If 'group' is block_groups -> leave-on-out
-              crossvalidation. If all elements in 'group' are 0 -> training
-              only. If all elements in 'group' are 1 -> test only.
-
-    Returns:
-
-    - train_index : Boolean matrix specifying training samples (N x K array; N
-                    is the total number of samples, K is the number of folds)
-    - test_index : Boolean matrix specifying test samples (N x K array)
-
-    Example:
-
-        >>> bdpy.util.make_crossvalidationindex(np.array([1, 1, 2, 2, 3, 3]))
-        (array([[False,  True,  True],
-                [False,  True,  True],
-                [ True, False,  True],
-                [ True, False,  True],
-                [ True,  True, False],
-                [ True,  True, False]], dtype=bool),
-         array([[ True, False, False],
-                [ True, False, False],
-                [False,  True, False],
-                [False,  True, False],
-                [False, False,  True],
-                [False, False,  True]], dtype=bool))
+    See 'make_cvindex' for the details.
     """
 
     return make_cvindex(group)

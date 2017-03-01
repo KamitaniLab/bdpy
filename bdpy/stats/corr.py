@@ -19,7 +19,7 @@ def corrcoef(x, y, var='row'):
     ----------
     x, y : array_like
         Matrix or vector
-    var : 'row' (default) or 'col', optional
+    var : str, 'row' or 'col'
         Specifying whether rows (default) or columns represent variables
 
     Returns
@@ -88,7 +88,7 @@ def corrmat(x, y, var='row'):
     ----------
     x, y : array_like
         Matrix or vector
-    var : 'row' (default) or 'col', optional
+    var : str, 'row' or 'col'
         Specifying whether rows (default) or columns represent variables
 
     Returns

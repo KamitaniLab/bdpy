@@ -1,5 +1,6 @@
-# coding: utf-8
-
+"""
+Load EPIs
+"""
 
 import itertools as itr
 import os
@@ -17,12 +18,16 @@ def load_epi(dataFiles):
 
     Parameters
     ----------
-    dataFiles: EPI image filepath list (.img)
+    dataFiles: list
+        EPI image filepath list
     
     Returns
     -------
-    data: 2D signal power matrix <sample * voxel>
-    xyz_array: mni coordinate array <xyz * voxel>
+    data: array_like
+        EPI voxel values (M * N; N is the number of samples, M is the nubmer of
+        voxels)
+    xyz_array: array_like
+        Coordiantes of voxels (3 * N)
     """
     
     # load the first volume
@@ -61,16 +66,20 @@ def load_epi(dataFiles):
 
 def _get_xyz(affine, volume_shape):
     """
-    与えられたaffine行列に対して、全座標の組み合わせを生成
+    Returns voxel xyz coordinates based on an affine matrix
 
     Parameters
     ----------
-    affine: imgファイルのaffine行列
-    volume_shape: 1ボリュームにおける各次元のボクセルサイズのリスト(xyz voxel size)
+    affine : array
+        Affine matrix
+    volume_shape : array
+        Size in x-, y-, and z-axes of each voxel
     
     Returns
     -------
-    xyz_array: 3 x n (number of voxels) matrix of XYZ locations returned (in mm) 
+    xyz_array : array
+        x-, y-, and z-coordinates of each voxel (3 * N; N is the number of
+        voxels)
     """
     xyz_list = []
     for i in [0,1,2]:
