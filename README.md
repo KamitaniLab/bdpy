@@ -1,32 +1,28 @@
-# BrainDecoderToolbox2
+# BdPy
 
-Matlab library for brain decoding
+Python library for brain decoding
 
-## Installation
+## Requirements
 
-- Put `BrainDecoderToolbox2` in your computer and run `setpath` on MATLAB.
-- BrainDecoderToolbox2 requires SPM (5, 8, or 12).
+- numpy
+- scipy
+- h5py
 
-## Files
+### Optional requirements
 
-- /bdata
-    - Set of data interface functions for BrainDecoderToolbox2 data format
-- /preprocessor
-    - Collection of functions for preprocessing
-- /util
-    - Collection of utility functions
-- /figure
-    - Collection of functions for drawing figures
-- /test
-    - Test scripts
-- setpath.m
-    - Matlab script to set paths to BrainDecoderToolbox2 functions
-- README.md
-    - This file
-- Makefile
-    - Makefile
-- .gitignore
-    - Git related file
+- 'dataform' module
+    - pandas
+- 'mri' module
+    - nipy
+
+## Modules
+
+- bdata
+- dataform
+- ml
+- mri
+- preproc
+- util
 
 ## BrainDecoderToolbox2 data format specification
 
@@ -47,6 +43,8 @@ Example of metaData:
     | Feature        | 1: the column is a feature vector      | (   1,   1,   1, ..., NaN, NaN, ..., NaN, NaN ) |
     | voxel_x        | Voxel x coordinate                     | (  24, 102,  28, ..., NaN, NaN, ..., NaN, NaN ) |
     | ...            | ...                                    | ...                                             |
+    | ROI_V1         | 1: V1 data                             | (   0,   1,   1, ..., NaN, NaN, ..., NaN, NaN ) |
+    | ...            | ...                                    | ...                                             |
     | Label          | 1: the column is a label vector        | ( NaN, NaN, NaN, ...,   1,   1, ..., NaN, NaN ) |
     | Label_A        | 1: the column represents 'Label A'     | ( NaN, NaN, NaN, ...,   1,   0, ..., NaN, NaN ) |
     | ...            | ...                                    | ...                                             |
@@ -54,27 +52,43 @@ Example of metaData:
     | Run            | 1: the column represents run numbers   | ( NaN, NaN, NaN, ..., NaN, NaN, ..., NaN,   1 ) |
     +----------------+----------------------------------------+-------------------------------------------------+
 
-### Implementation
+### Usage
 
-- dataSet is a M x N matrix (M: the number of samples, N: the number of features + labels + design information + ...)
-- metaData is a structure containing the following fields:
-    - key         : cell array (length: T, T is the number of meta data)
-    - description : cell array (length: T)
-    - value       : matrix (T x N)
+##### Import module and initialization.
 
+	from bdpy import BData
+    
+    # initialize and data load
+    bd = BData()         # create an instance
+An instance of the class 'BData' contains `dataSet` and `metaData` as instance variables. The 'dataSet' is a M x N numpy array (M: the number of samples, N: the number of all features which include brain data, labels, design information, etc).
+
+
+##### data load
+	
+    bd.load( 'dataFile.h5' )  # 
+##### Show Data
+
+	bd.show_meatadata()                  # show 'key' and 'description' of the betaData
+    voxel_x = bd.get_metaData('voxel_x') # get 'value' of the metaData specified by the 'key'.
+
+##### Data extraction
+
+    v1_data = bd.get_dataset('ROI_V1')  # get < M x "number of voxels which belong to V1" > array of voxel data.
+	labelA  = bd.get_dataset('LabelA')  # 
+
+##### Data creation
+
+	bd.add_dataset( numpy.random.rand( bd.dataSet.shape[0]), 'random_feature' ) # add new data 
+	bd.set_metadatadescription('random_feature', 'random data (just for test)') # set description of metaData
+
+	# save
+    bd.save( 'outputFile.h5' )  # File format is selected automatically by extension. .mat, .h5,and .npy are supported.
+    
 ## For developers
 
-- Functions should have names in snake-case.
-- Variables should have names in lower camel-case.
-
-## Third-party functions
-
-BrainDecoderToolbox2 contains the following third-party functions:
-
-- errorbar_h by The MathWorks, Inc.
-- hline by Brandon Kuczenski
-- suptitle by Drea Thomas, John Cristion, and Mark Histed
+Please send your pull requests to `dev` branch, not to `master`.
 
 ## Contributors
 
-- Shuntaro C. Aoki (ATR)
+- Shuntaro C. Aoki (DNI, ATR)
+- Misato Tanaka (DNI, ATR)
