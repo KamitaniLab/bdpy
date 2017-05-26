@@ -14,3 +14,6 @@ dist
 *.npy
 *.mat
 *.h5
+
+.coverage
+.pylintrc
