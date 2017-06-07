@@ -1,5 +1,7 @@
 """
 Load EPIs
+
+This file is a part of BdPy
 """
 
 import itertools as itr
@@ -12,56 +14,53 @@ import numpy as np
 import scipy.io as sio
 
 
-def load_epi(dataFiles):
+def load_epi(datafiles):
     """
     Loads EPIs
 
     Parameters
     ----------
-    dataFiles: list
-        EPI image filepath list
-    
+    datafiles: list
+        EPI image files
+
     Returns
     -------
     data: array_like
-        EPI voxel values (M * N; N is the number of samples, M is the nubmer of
-        voxels)
+        Voxel signal values (M * N; N is the number of samples, M is the
+        nubmer of voxels)
     xyz_array: array_like
         Coordiantes of voxels (3 * N)
     """
-    
-    # load the first volume
-    print "Loading %s" % (dataFiles[0])
-    data = nipy.load_image(dataFiles[0])
-    img = data.get_data()
-    base_coordmap = data.coordmap
-    
-    # flatten 3d to 1d (decompose z->y->x)
-    data_list = [np.array(img.flatten())]
 
-    # make xyz coordinate
-    xyz_array = _get_xyz(base_coordmap.affine, img.shape)
-    
-    for i in range(1, len(dataFiles)):
-        print "Loading %s" % (dataFiles[i])
-        
-        # load data
-        data = nipy.load_image(dataFiles[i])
-        img = data.get_data()
-        coordmap = data.coordmap
-        
-        # confirm that coordmap is same
-        if base_coordmap != coordmap:
-            raise NameError("invalid coordmap")
-            break;
-        
-        # append flatten img to data_list 
-        data_list.append(np.array(img.flatten(), dtype=np.float64))
-    
-    # convert list to array stacking vertically
-    data_array = np.vstack(data_list)
-        
-    return data_array, xyz_array
+    data_list = []
+    xyz = np.array([])
+
+    for df in datafiles:
+        print "Loading %s" % df
+
+        # Load an EPI image
+        img = nipy.load_image(df)
+
+        xyz = _check_xyz(xyz, img)
+        data_list.append(np.array(img.get_data().flatten(), dtype=np.float64))
+
+    data = np.vstack(data_list)
+
+    return data, xyz
+
+
+def _check_xyz(xyz, img):
+    """
+    Checks voxel xyz consistency
+    """
+    xyz_current = _get_xyz(img.coordmap.affine, img.get_data().shape)
+
+    if xyz.size == 0:
+        xyz = xyz_current
+    elif (xyz != xyz_current).any():
+        raise ValueError("Voxel XYZ coordinates are inconsistent across volumes")
+
+    return xyz
 
 
 def _get_xyz(affine, volume_shape):
@@ -72,23 +71,19 @@ def _get_xyz(affine, volume_shape):
     ----------
     affine : array
         Affine matrix
-    volume_shape : array
-        Size in x-, y-, and z-axes of each voxel
-    
+    volume_shape : list
+        Shape of the volume (i, j, k lnegth)
+
     Returns
     -------
-    xyz_array : array
-        x-, y-, and z-coordinates of each voxel (3 * N; N is the number of
+    array
+        x-, y-, and z-coordinates (3 * N; N is the number of
         voxels)
     """
-    xyz_list = []
-    for i in [0,1,2]:
-        # calculate coordinate every dim from affine matrix
-        xyz_list.append([affine[i,i] * j + affine[i,3] for j in range(volume_shape[i])])
-    # convert 3D to 2D (decompose voxels in order of z, y, and x)
-    xyz_product_list = list(itr.product(xyz_list[0], xyz_list[1], xyz_list[2]))
+    i_len, j_len, k_len = volume_shape
+    ijk = np.array(list(itr.product(xrange(i_len),
+                                    xrange(j_len),
+                                    xrange(k_len),
+                                    [1]))).T
 
-    # convert list to array and transpose
-    xyz_array = np.array(xyz_product_list).T
-    
-    return xyz_array
+    return np.dot(affine, ijk)[:-1]
