@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 BrainDecoderToolbox2 data class
 
@@ -21,24 +20,30 @@ from featureselector import FeatureSelector
 
 class BData(object):
     """
-    Class for BrainDecoderToolbox2 data (dataSet and metaData)
+    Class for BdPy/BrainDecoderToolbox2 data (dataSet and metaData)
 
     The instance of class `BData` contains `dataSet` and `metaData` as instance
     variables.
+
+    Attributes
+    ----------
+    dataSet : numpy array (dtype=float)
+        Dataset array
+    metaData : MetaData object
+        Meta-data object
     """
 
 
     def __init__(self, file_name=None, file_type=None):
         """
-        Initialization
+        Initializer of a BData instance
 
         Parameters
         ----------
         file_name : str, optional
-            Name of file which contains BData (default: None)
-        file_type : str, optional
-            String specifying the file type (default: None).
-            "Npy", "Matlab", "HDF5" are supported.
+            File which contains BData (default: None)
+        file_type : {'Npy', 'Matlab', 'HDF5'}
+            File type (default: None)
         """
 
         self.dataSet = np.ndarray((0, 0), dtype=float)
@@ -66,7 +71,7 @@ class BData(object):
             x = x[:, np.newaxis]
 
         colnum_has = self.dataSet.shape[1] # Num of existing columns in 'dataSet'
-        colnum_add = x.shape[1] # Num of columns to be added
+        colnum_add = x.shape[1]            # Num of columns to be added
 
         ## Add 'x' to dataset
         if not self.dataSet.size:
@@ -85,6 +90,17 @@ class BData(object):
     def add_metadata(self, key, value, description='', attribute=None):
         """
         Add meta-data with `key`, `description`, and `value` to metaData
+
+        Parameters
+        ----------
+        key : str
+            Meta-data key
+        value : array
+            Meta-data array
+        description : str, optional
+            Meta-data description
+        attribute : str, optional
+            Meta-data key specifying data attribution
         """
 
         # TODO: Add attribute specifying
@@ -105,6 +121,13 @@ class BData(object):
     def set_metadatadescription(self, key, description):
         """
         Set description of metadata specified by `key`
+
+        Parameters
+        ----------
+        key : str
+            Meta-data key
+        description : str
+            Meta-data description
         """
 
         self.metaData.set(key, None, description,
@@ -117,16 +140,28 @@ class BData(object):
 
         This method is obsoleted and will be removed in the future release.
         Use `set_metadatadescription` instead.
+
+        Parameters
+        ----------
+        key : str
+            Meta-data key
+        description : str
+            Meta-data description
         """
         self.set_metadatadescription(metakey, description)
 
 
-    def rename_meatadata(self, metakey_old, metakey_new):
+    def rename_meatadata(self, key_old, key_new):
         """
-        rename key name
+        Rename a meta-data key
+
+        Parameters
+        ----------
+        key_old, key_new : str
+            Old and new meta-data keys
         """
-        self.metaData[metakey_new] = self.metaData[metakey_old]
-        del self.metaData[metakey_old]
+        self.metaData[key_new] = self.metaData[key_old]
+        del self.metaData[key_old]
 
 
     ## Getter ##################################################################
@@ -173,14 +208,17 @@ class BData(object):
         ----------
         condition : str
             Expression specifying feature selection
-        retrun_index : bool
-            If True, returns index of selected features
-        verbose
-            If True, display verbose messages
+        retrun_index : bool, optional
+            If True, returns index of selected features (default: False)
+        verbose : bool, optional
+            If True, display verbose messages (default: True)
 
         Returns
         -------
+        array
             Selected feature data and index (if specified)
+        list, optional
+            Selected index
 
         Note
         ----

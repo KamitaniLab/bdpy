@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 MetaData class
 
@@ -81,7 +80,6 @@ class MetaData(list):
         """
         Returns meta-data specified by `key`
 
-
         Parameters
         ----------
         key : str
@@ -90,8 +88,10 @@ class MetaData(list):
             Field name of meta-data (either 'value' or 'description')
 
         Returns
-        ----------
-            Meta-data value or description (str)
+        -------
+        str or None
+            Meta-data value or description. If `key` was not found in
+            the metadata, `None` is returned.
         """
 
         key_list = self.keylist()

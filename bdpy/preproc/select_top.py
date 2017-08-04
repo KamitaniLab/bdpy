@@ -1,5 +1,7 @@
 """
 select_top
+
+This file is a part of BdPy.
 """
 
 
@@ -12,7 +14,7 @@ from util import print_start_msg, print_finish_msg
 
 def select_top(data, value, num, axis=0, verbose=True):
     """
-    Select top `num` features of 'value' from 'data'
+    Select top `num` features of `value` from `data`
 
     Parameters
     ----------
