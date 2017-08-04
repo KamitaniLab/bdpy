@@ -2,6 +2,24 @@
 BrainDecoderToolbox2 data class
 
 This file is a part of BdPy
+
+
+API lits
+--------
+
+- Modify data
+    - add_dataset
+    - add_metadata
+    - rename_meatadata
+    - set_metadatadescription
+- Search and extract data
+    - select_dataset
+    - get_metadata
+- Get information
+    - show_metadata
+- File I/O
+    - load
+    - save
 """
 
 
@@ -53,7 +71,7 @@ class BData(object):
             self.load(file_name, file_type)
 
 
-    ## Setter ##################################################################
+    ## Public APIs #####################################################
 
     def add_dataset(self, x, attribute_key):
         """
@@ -118,6 +136,19 @@ class BData(object):
         self.metaData.set(key, add_value, description)
 
 
+    def rename_meatadata(self, key_old, key_new):
+        """
+        Rename a meta-data key
+
+        Parameters
+        ----------
+        key_old, key_new : str
+            Old and new meta-data keys
+        """
+        self.metaData[key_new] = self.metaData[key_old]
+        del self.metaData[key_old]
+
+
     def set_metadatadescription(self, key, description):
         """
         Set description of metadata specified by `key`
@@ -133,72 +164,6 @@ class BData(object):
         self.metaData.set(key, None, description,
                           lambda x, y: y)
 
-
-    def edit_metadatadescription(self, metakey, description):
-        """
-        Add or edit description of metadata based on key
-
-        This method is obsoleted and will be removed in the future release.
-        Use `set_metadatadescription` instead.
-
-        Parameters
-        ----------
-        key : str
-            Meta-data key
-        description : str
-            Meta-data description
-        """
-        self.set_metadatadescription(metakey, description)
-
-
-    def rename_meatadata(self, key_old, key_new):
-        """
-        Rename a meta-data key
-
-        Parameters
-        ----------
-        key_old, key_new : str
-            Old and new meta-data keys
-        """
-        self.metaData[key_new] = self.metaData[key_old]
-        del self.metaData[key_old]
-
-
-    ## Getter ##################################################################
-
-    def get_dataset(self, key=None):
-        """
-        Get dataSet from BData object
-
-        When `key` is not given, `get_dataset` returns `dataSet`. When `key` is
-        given, `get_dataset` returns data specified by `key`
-        """
-
-        if key is None:
-            return self.dataSet
-        else:
-            query = '%s = 1' % key
-            return self.select_dataset(query, return_index=False, verbose=False)
-
-
-    def get_metadata(self, key):
-        """
-        Get value of meta-data specified by 'key'
-        """
-
-        return self.metaData.get(key, 'value')
-
-
-    def show_metadata(self):
-        """
-        Show all the key and description in metaData
-        """
-
-        for m in self.metaData:
-            print "%s: %s" % (m['key'], m['description'])
-
-
-    ## Feature selection #######################################################
 
     def select_dataset(self, condition, return_index=False, verbose=True):
         """
@@ -319,60 +284,40 @@ class BData(object):
             return self.dataSet[:, np.array(selected_index)]
 
 
-    def select_feature(self, condition, return_index=False, verbose=True):
+    def get_metadata(self, key):
         """
-        Extracts features from dataset based on condition
-
-        Parameters
-        ----------
-        condition : str
-            Expression specifying feature selection
-        retrun_index : bool, optional
-            If True, returns index of selected features (default: False)
-        verbose : bool, optional
-            If True, display verbose messages (default: True)
-
-        Returns
-        -------
-        array
-            Selected feature data and index (if specified)
-        list, optional
-            Selected index
-
-        Note
-        ----
-
-        Operators: | (or), & (and), = (equal), @ (conditional)
+        Get value of meta-data specified by 'key'
         """
-        return self.select_dataset(condition, return_index, verbose)
+
+        return self.metaData.get(key, 'value')
 
 
-    def __get_order(self, v, sort_order='descend'):
+    def show_metadata(self):
+        """
+        Show all the key and description in metaData
+        """
 
-        # 'np.nan' comes to the last of an acending series, and thus the top of a decending series.
-        # To avoid that, convert 'np.nan' to -Inf.
-        v[np.isnan(v)] = -np.inf
-
-        sorted_index = np.argsort(v)[::-1] # Decending order
-        order = range(len(v))
-        for i, x in enumerate(sorted_index):
-            order[x] = i
-
-        return np.array(order, dtype=float)
+        for m in self.metaData:
+            print "%s: %s" % (m['key'], m['description'])
 
 
-    def __get_top_elm_from_order(self, order, n):
-        """Get a boolean index of top 'n' elements from 'order'"""
-        sorted_index = np.argsort(order)
-        for i, x in enumerate(sorted_index):
-            order[x] = i
+    def load(self, load_filename, load_type=None):
+        """
+        Load 'dataSet' and 'metaData' from a given file
+        """
 
-        index = np.array([r < n for r in order], dtype=bool)
+        if load_type is None:
+            load_type = self.__get_filetype(load_filename)
 
-        return index
+        if load_type == "Npy":
+            self.__load_npy(load_filename)
+        elif load_type == "Matlab":
+            self.__load_mat(load_filename)
+        elif load_type == "HDF5":
+            self.__load_h5(load_filename)
+        else:
+            raise ValueError("Unknown file type: %s" % (load_type))
 
-
-    ## File I/O ################################################################
 
     def save(self, file_name, file_type=None):
         """
@@ -419,6 +364,97 @@ class BData(object):
             raise ValueError("Unknown file type: %s" % (file_type))
 
 
+    ## Public APIs (obsoleted) #########################################
+
+    def get_dataset(self, key=None):
+        """
+        Get dataSet from BData object
+
+        When `key` is not given, `get_dataset` returns `dataSet`. When `key` is
+        given, `get_dataset` returns data specified by `key`
+        """
+
+        if key is None:
+            return self.dataSet
+        else:
+            query = '%s = 1' % key
+            return self.select_dataset(query, return_index=False, verbose=False)
+
+
+    ## Feature selection #######################################################
+
+    def edit_metadatadescription(self, metakey, description):
+        """
+        Add or edit description of metadata based on key
+
+        This method is obsoleted and will be removed in the future release.
+        Use `set_metadatadescription` instead.
+
+        Parameters
+        ----------
+        key : str
+            Meta-data key
+        description : str
+            Meta-data description
+        """
+        self.set_metadatadescription(metakey, description)
+
+
+    def select_feature(self, condition, return_index=False, verbose=True):
+        """
+        Extracts features from dataset based on condition
+
+        Parameters
+        ----------
+        condition : str
+            Expression specifying feature selection
+        retrun_index : bool, optional
+            If True, returns index of selected features (default: False)
+        verbose : bool, optional
+            If True, display verbose messages (default: True)
+
+        Returns
+        -------
+        array
+            Selected feature data and index (if specified)
+        list, optional
+            Selected index
+
+        Note
+        ----
+
+        Operators: | (or), & (and), = (equal), @ (conditional)
+        """
+        return self.select_dataset(condition, return_index, verbose)
+
+
+    ## Private methods #################################################
+
+    def __get_order(self, v, sort_order='descend'):
+
+        # 'np.nan' comes to the last of an acending series, and thus the top of a decending series.
+        # To avoid that, convert 'np.nan' to -Inf.
+        v[np.isnan(v)] = -np.inf
+
+        sorted_index = np.argsort(v)[::-1] # Decending order
+        order = range(len(v))
+        for i, x in enumerate(sorted_index):
+            order[x] = i
+
+        return np.array(order, dtype=float)
+
+
+    def __get_top_elm_from_order(self, order, n):
+        """Get a boolean index of top 'n' elements from 'order'"""
+        sorted_index = np.argsort(order)
+        for i, x in enumerate(sorted_index):
+            order[x] = i
+
+        index = np.array([r < n for r in order], dtype=bool)
+
+        return index
+
+
     def __save_h5(self, file_name):
         """
         Save data in HDF5 format (*.h5)
@@ -437,24 +473,6 @@ class BData(object):
             h5file.create_dataset('/metaData/key', data=md_keys)
             h5file.create_dataset('/metaData/description', data=md_desc)
             h5file.create_dataset('/metaData/value', data=md_vals)
-
-
-    def load(self, load_filename, load_type=None):
-        """
-        Load 'dataSet' and 'metaData' from a given file
-        """
-
-        if load_type is None:
-            load_type = self.__get_filetype(load_filename)
-
-        if load_type == "Npy":
-            self.__load_npy(load_filename)
-        elif load_type == "Matlab":
-            self.__load_mat(load_filename)
-        elif load_type == "HDF5":
-            self.__load_h5(load_filename)
-        else:
-            raise ValueError("Unknown file type: %s" % (load_type))
 
 
     def __load_npy(self, load_filename):
