@@ -16,4 +16,5 @@ dist
 *.h5
 
 .coverage
+htmlcov
 .pylintrc
