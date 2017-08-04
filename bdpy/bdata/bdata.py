@@ -177,8 +177,8 @@ class BData(object):
         if key is None:
             return self.dataSet
         else:
-            mdval = self.metaData.get(key, 'value')
-            return self.dataSet[:, np.asarray(np.nan_to_num(mdval), dtype=np.bool)]
+            query = '%s = 1' % key
+            return self.select_dataset(query, return_index=False, verbose=False)
 
 
     def get_metadata(self, key):
@@ -200,7 +200,7 @@ class BData(object):
 
     ## Feature selection #######################################################
 
-    def select_feature(self, condition, return_index=False, verbose=True):
+    def select_dataset(self, condition, return_index=False, verbose=True):
         """
         Extracts features from dataset based on condition
 
@@ -317,6 +317,34 @@ class BData(object):
             return self.dataSet[:, np.array(selected_index)], selected_index
         else:
             return self.dataSet[:, np.array(selected_index)]
+
+
+    def select_feature(self, condition, return_index=False, verbose=True):
+        """
+        Extracts features from dataset based on condition
+
+        Parameters
+        ----------
+        condition : str
+            Expression specifying feature selection
+        retrun_index : bool, optional
+            If True, returns index of selected features (default: False)
+        verbose : bool, optional
+            If True, display verbose messages (default: True)
+
+        Returns
+        -------
+        array
+            Selected feature data and index (if specified)
+        list, optional
+            Selected index
+
+        Note
+        ----
+
+        Operators: | (or), & (and), = (equal), @ (conditional)
+        """
+        return self.select_dataset(condition, return_index, verbose)
 
 
     def __get_order(self, v, sort_order='descend'):
