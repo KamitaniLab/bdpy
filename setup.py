@@ -17,8 +17,6 @@ if __name__ == '__main__':
     with open(VERSION_FILE, 'r') as f:
         version_num = f.readline().strip()
 
-    print 'Version: %s' % version_num
-
     # Setup
     setup(name='bdpy',
           version=version_num,
@@ -35,4 +33,4 @@ if __name__ == '__main__':
                     'bdpy.preproc',
                     'bdpy.stats',
                     'bdpy.util'],
-          install_requires=['numpy', 'scipy', 'scikit-learn'])
+          install_requires=['numpy', 'scipy', 'scikit-learn', 'h5py'])
