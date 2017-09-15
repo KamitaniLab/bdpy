@@ -6,6 +6,7 @@ Python library for brain decoding
 
 - numpy
 - scipy
+- scikit-learn
 - h5py
 
 ### Optional requirements
@@ -14,6 +15,21 @@ Python library for brain decoding
     - pandas
 - 'mri' module
     - nipy
+
+## Installation
+
+Run the following command:
+
+``` shell
+$ pip install git+https://github.com/KamitaniLab/bdpy.git
+```
+
+or
+``` shell
+$ git clone git@github.com:KamitaniLab/bdpy.git
+$ cd bdpy/
+$ python setup.py install
+```
 
 ## Modules
 
@@ -24,7 +40,7 @@ Python library for brain decoding
 - preproc
 - util
 
-## BrainDecoderToolbox2 data format specification
+## BrainDecoderToolbox2 data format
 
 BrainDecoderToolbox2 data format (bdata) consists of two variables: dataSet and metaData. 'dataSet' stores feature data (e.g., voxel signal value for fMRI data), targets (e.g., ID of stimuli for vision experiments), and additional information specifying experimental design (e.g., run and block numbers for fMRI experiments). Each row corresponds to a single 'sample', and each column representes either feature, target, or experiment design data. 'metaData' contains data describing meta-information for each column in dataSet.
 
@@ -54,36 +70,37 @@ Example of metaData:
 
 ### Usage
 
-##### Import module and initialization.
+#### Import module and initialization.
 
 	from bdpy import BData
-    
+
     # initialize and data load
-    bd = BData()         # create an instance
+    bd = BData() # create an instance
+
 An instance of the class 'BData' contains `dataSet` and `metaData` as instance variables. The 'dataSet' is a M x N numpy array (M: the number of samples, N: the number of all features which include brain data, labels, design information, etc).
 
+#### Load data
 
-##### data load
-	
-    bd.load( 'dataFile.h5' )  # 
-##### Show Data
+    bd.load('dataFile.h5')
+
+#### Show Data
 
 	bd.show_meatadata()                  # show 'key' and 'description' of the betaData
     voxel_x = bd.get_metaData('voxel_x') # get 'value' of the metaData specified by the 'key'.
 
-##### Data extraction
+#### Data extraction
 
     v1_data = bd.get_dataset('ROI_V1')  # get < M x "number of voxels which belong to V1" > array of voxel data.
-	labelA  = bd.get_dataset('LabelA')  # 
+	labelA  = bd.get_dataset('LabelA')
 
-##### Data creation
+#### Data creation
 
-	bd.add_dataset( numpy.random.rand( bd.dataSet.shape[0]), 'random_feature' ) # add new data 
+	bd.add_dataset( numpy.random.rand( bd.dataSet.shape[0]), 'random_feature' ) # add new data
 	bd.set_metadatadescription('random_feature', 'random data (just for test)') # set description of metaData
 
 	# save
     bd.save( 'outputFile.h5' )  # File format is selected automatically by extension. .mat, .h5,and .npy are supported.
-    
+
 ## For developers
 
 Please send your pull requests to `dev` branch, not to `master`.
