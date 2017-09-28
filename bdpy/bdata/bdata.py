@@ -292,6 +292,24 @@ class BData(object):
         return self.metaData.get(key, 'value')
 
 
+    def update(self, key, dat):
+        '''Update dataset
+
+        Parameters
+        ----------
+        key : str
+           Name of columns to be updated
+        dat : array_like
+           New data array
+
+        Return
+        ------
+        None
+        '''
+        mdind = [a == 1 for a in self.get_metaData(key)]
+        self.dataSet[:, mdind] = dat
+
+
     def show_metadata(self):
         """
         Show all the key and description in metaData
