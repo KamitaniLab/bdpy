@@ -165,7 +165,7 @@ class BData(object):
                           lambda x, y: y)
 
 
-    def select_dataset(self, condition, return_index=False, verbose=True):
+    def select(self, condition, return_index=False, verbose=True):
         """
         Extracts features from dataset based on condition
 
@@ -284,6 +284,35 @@ class BData(object):
             return self.dataSet[:, np.array(selected_index)]
 
 
+    # Obsoleted
+    def select_dataset(self, condition, return_index=False, verbose=True):
+        """
+        Extracts features from dataset based on condition
+
+        Parameters
+        ----------
+        condition : str
+            Expression specifying feature selection
+        retrun_index : bool, optional
+            If True, returns index of selected features (default: False)
+        verbose : bool, optional
+            If True, display verbose messages (default: True)
+
+        Returns
+        -------
+        array
+            Selected feature data and index (if specified)
+        list, optional
+            Selected index
+
+        Note
+        ----
+
+        Operators: | (or), & (and), = (equal), @ (conditional)
+        """
+        return self.select(condition, return_index, verbose)
+
+    
     def get_metadata(self, key):
         """
         Get value of meta-data specified by 'key'
@@ -418,6 +447,7 @@ class BData(object):
         self.set_metadatadescription(metakey, description)
 
 
+    # Obsoleted
     def select_feature(self, condition, return_index=False, verbose=True):
         """
         Extracts features from dataset based on condition
