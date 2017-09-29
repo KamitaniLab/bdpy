@@ -7,14 +7,14 @@ API lits
 --------
 
 - Data modification
-    - add_dataset
+    - add
     - update
     - add_metadata
     - rename_meatadata
     - set_metadatadescription
 - Data access
     - select
-    - get_dataset
+    - get
     - get_metadata
     - show_metadata
 - File I/O
@@ -90,7 +90,7 @@ class BData(object):
 
     # Data modification ------------------------------------------------
 
-    def add_dataset(self, x, attribute_key):
+    def add(self, x, attribute_key):
         '''Add `x` to dataset with attribute meta-data key `attribute_key`
 
         Parameters
@@ -123,6 +123,24 @@ class BData(object):
         attribute_value = [None for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
         self.metadata.set(attribute_key, attribute_value, attribute_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
+
+
+    @__obsoleted_method('get')
+    def add_dataset(self, x, attribute_key):
+        '''Add `x` to dataset with attribute meta-data key `attribute_key`
+
+        Parameters
+        ----------
+        x : array
+            Data matrix to be added in dataset
+        attribute_key : str
+            Key of attribute meta-data, which specifies the columns containing `x`
+
+        Returns
+        -------
+        None
+        '''
+        return self.add(x, attribute_key)
 
 
     def update(self, key, dat):
@@ -406,7 +424,7 @@ class BData(object):
         return self.select(condition, return_index, verbose)
 
 
-    def get_dataset(self, key=None):
+    def get(self, key=None):
         '''Get dataset
 
         When `key` is not given, `get_dataset` returns `dataset`. When `key` is
@@ -418,6 +436,16 @@ class BData(object):
         else:
             query = '%s = 1' % key
             return self.select_dataset(query, return_index=False, verbose=False)
+
+
+    @__obsoleted_method('get')
+    def get_dataset(self, key=None):
+        '''Get dataset
+
+        When `key` is not given, `get_dataset` returns `dataset`. When `key` is
+        given, `get_dataset` returns data specified by `key`
+        '''
+        return self.get(key)
 
 
     def get_metadata(self, key):
