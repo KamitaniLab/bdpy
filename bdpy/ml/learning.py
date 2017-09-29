@@ -114,8 +114,10 @@ class CrossValidation(BaseLearning):
         Classifier
     index : k-folds iterator
         Index iterator for cross-validation
+    keep_classifiers : bool, optional
+        If True, keep trained classifiers in each fold (default: False)
     verbose : {'off', 'info'}, optional
-        Verbosity level
+        Verbosity level (default: 'off')
 
     Attributes
     ----------
@@ -125,7 +127,8 @@ class CrossValidation(BaseLearning):
         Prediction accuracy in each fold
     '''
 
-    def __init__(self, x, y, classifier=None, index=None, verbose='off'):
+    def __init__(self, x, y, classifier=None, index=None,
+                 keep_classifiers=False, verbose='off'):
         BaseLearning.__init__(self)
 
         # Parameters
@@ -133,6 +136,7 @@ class CrossValidation(BaseLearning):
         self.y = y
         self.classifier = classifier
         self.index = index
+        self.keep_classifiers = keep_classifiers
         self.verbose = verbose
 
         # Results
@@ -171,7 +175,9 @@ class CrossValidation(BaseLearning):
 
             cls.run()
 
-            self.classifier_trained.append(cls.classifier_trained)
+            if self.keep_classifiers:
+                self.classifier_trained.append(cls.classifier_trained)
+
             self.prediction_accuracy.append(cls.prediction_accuracy)
 
         if self.verbose is 'info':
