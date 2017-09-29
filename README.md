@@ -25,6 +25,7 @@ $ pip install git+https://github.com/KamitaniLab/bdpy.git
 ```
 
 or
+
 ``` shell
 $ git clone git@github.com:KamitaniLab/bdpy.git
 $ cd bdpy/
@@ -40,18 +41,18 @@ $ python setup.py install
 - preproc
 - util
 
-## BrainDecoderToolbox2 data format
+## BrainDecoderToolbox2/BdPy data format
 
-BrainDecoderToolbox2 data format (bdata) consists of two variables: dataSet and metaData. 'dataSet' stores feature data (e.g., voxel signal value for fMRI data), targets (e.g., ID of stimuli for vision experiments), and additional information specifying experimental design (e.g., run and block numbers for fMRI experiments). Each row corresponds to a single 'sample', and each column representes either feature, target, or experiment design data. 'metaData' contains data describing meta-information for each column in dataSet.
+BrainDecoderToolbox2/BdPy data format (bdata) consists of two variables: dataset and metadata. 'dataset' stores feature data (e.g., voxel signal value for fMRI data), targets (e.g., ID of stimuli for vision experiments), and additional information specifying experimental design (e.g., run and block numbers for fMRI experiments). Each row corresponds to a single 'sample', and each column representes either feature, target, or experiment design data. 'metadata' contains data describing meta-information for each column in dataset.
 
-- dataSet
-    - 'dataSet' is a set of features, target vectors, and additional numeric data.
-    - Each row in dataSet is a single sample
-    - Each column in dataSet is either (1) a feature vector, (2) a label (target) vector, or (3) a vector specifying data design information (e.g., run number, block number, ...)
-- metaData
-    - 'metaData' is a set of values describing information on each column in 'dataSet'. Each meta-data is specified by a 'key' and has 'description'.
+- dataset
+    - 'dataset' is a set of features, target vectors, and additional numeric data.
+    - Each row in dataset is a single sample
+    - Each column in dataset is either (1) a feature vector, (2) a label (target) vector, or (3) a vector specifying data design information (e.g., run number, block number, ...)
+- metadata
+    - 'metadata' is a set of values describing information on each column in 'dataset'. Each meta-data is specified by a 'key' and has 'description'.
 
-Example of metaData:
+Example of metadata:
 
     +----------------+----------------------------------------+-------------------------------------------------+
     | key            | description                            | value                                           |
@@ -74,32 +75,44 @@ Example of metaData:
 
 	from bdpy import BData
 
-    # initialize and data load
-    bd = BData() # create an instance
+    # Create a BData instance
+    bd = BData()
 
-An instance of the class 'BData' contains `dataSet` and `metaData` as instance variables. The 'dataSet' is a M x N numpy array (M: the number of samples, N: the number of all features which include brain data, labels, design information, etc).
+An instance of the class 'BData' contains `dataset` and `metadata` as instance variables. The 'dataset' is a M x N numpy array (M: the number of samples, N: the number of all features which include brain data, labels, design information, etc).
 
 #### Load data
 
-    bd.load('dataFile.h5')
+    # Load BData from 'data_file.h5'
+    bd.load('data_file.h5')
 
 #### Show Data
 
-	bd.show_meatadata()                  # show 'key' and 'description' of the betaData
-    voxel_x = bd.get_metaData('voxel_x') # get 'value' of the metaData specified by the 'key'.
+    # Show 'key' and 'description' of the betaData
+	bd.show_meatadata()
+    # Get 'value' of the metadata specified by the 'key'
+    voxel_x = bd.get_metadata('voxel_x')
 
 #### Data extraction
 
-    v1_data = bd.get_dataset('ROI_V1')  # get < M x "number of voxels which belong to V1" > array of voxel data.
-	labelA  = bd.get_dataset('LabelA')
+    # Get <M x "number of voxels which belong to V1"> array of voxel data
+    v1_data = bd.get('ROI_V1')
+
+    # another way to select data
+    v1_data = bd.select('ROI_V1 = 1')
+
+    # Get labels ('Label_A') in the dataset
+    label_a  = bd.get('Label_A')
 
 #### Data creation
 
-	bd.add_dataset( numpy.random.rand( bd.dataSet.shape[0]), 'random_feature' ) # add new data
-	bd.set_metadatadescription('random_feature', 'random data (just for test)') # set description of metaData
+    # Add new data
+	bd.add(numpy.random.rand(bd.dataset.shape[0]), 'random_data')
 
-	# save
-    bd.save( 'outputFile.h5' )  # File format is selected automatically by extension. .mat, .h5,and .npy are supported.
+    # Set description of metadata
+	bd.set_metadatadescription('random_data', 'Random data (just for test)')
+
+	# Save data
+    bd.save('output_file.h5')  # File format is selected automatically by extension. .mat, .h5,and .npy are supported.
 
 ## For developers
 
