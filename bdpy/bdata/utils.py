@@ -39,11 +39,11 @@ def concat_dataset(data_list, successive=[]):
             v += suc_cols[s]
             ds.update(s, v)
 
-        if dat.dataSet.shape[0] == 0:
-            dat.dataSet = ds.dataSet
-            dat.metaData = ds.metaData
+        if dat.dataset.shape[0] == 0:
+            dat.dataset = ds.dataset
+            dat.metadata = ds.metadata
         else:
-            dat.dataSet = np.vstack([dat.dataSet, ds.dataSet])
+            dat.dataset = np.vstack([dat.dataset, ds.dataset])
             # TODO: add metadat check
 
         for s in successive:

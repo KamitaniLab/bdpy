@@ -42,7 +42,7 @@ from featureselector import FeatureSelector
 class BData(object):
     '''BrainDecoderToolbox2/BdPy data class
 
-    The instance of class `BData` contains `dataSet` and `metaData` as instance
+    The instance of class `BData` contains `dataset` and `metadata` as instance
     variables.
 
     Parameters
@@ -57,16 +57,16 @@ class BData(object):
 
     Attributes
     ----------
-    dataSet : numpy array (dtype=float)
+    dataset : numpy array (dtype=float)
         Dataset array
-    metaData : metadata object
+    metadata : metadata object
         Meta-data object
     '''
 
 
     def __init__(self, file_name=None, file_type=None):
-        self.dataSet = np.ndarray((0, 0), dtype=float)
-        self.metaData = MetaData()
+        self.dataset = np.ndarray((0, 0), dtype=float)
+        self.metadata = MetaData()
 
         if file_name is not None:
             self.load(file_name, file_type)
@@ -91,12 +91,12 @@ class BData(object):
     # Data modification ------------------------------------------------
 
     def add_dataset(self, x, attribute_key):
-        '''Add `x` to dataSet with attribute meta-data key `attribute_key`
+        '''Add `x` to dataset with attribute meta-data key `attribute_key`
 
         Parameters
         ----------
         x : array
-            Data matrix to be added in dataSet
+            Data matrix to be added in dataset
         attribute_key : str
             Key of attribute meta-data, which specifies the columns containing `x`
 
@@ -108,20 +108,20 @@ class BData(object):
         if x.ndim == 1:
             x = x[:, np.newaxis]
 
-        colnum_has = self.dataSet.shape[1] # Num of existing columns in 'dataSet'
+        colnum_has = self.dataset.shape[1] # Num of existing columns in 'dataset'
         colnum_add = x.shape[1]            # Num of columns to be added
 
         # Add 'x' to dataset
-        if not self.dataSet.size:
-            self.dataSet = x
+        if not self.dataset.size:
+            self.dataset = x
         else:
-            # TODO: Add size check of 'x' and 'self.dataSet'
-            self.dataSet = np.hstack((self.dataSet, x))
+            # TODO: Add size check of 'x' and 'self.dataset'
+            self.dataset = np.hstack((self.dataset, x))
 
         # Add new attribute metadata
         attribute_description = 'Attribute: %s = 1' % attribute_key
         attribute_value = [None for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
-        self.metaData.set(attribute_key, attribute_value, attribute_description,
+        self.metadata.set(attribute_key, attribute_value, attribute_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
 
@@ -139,12 +139,12 @@ class BData(object):
         -------
         None
         '''
-        mdind = [a == 1 for a in self.get_metaData(key)]
-        self.dataSet[:, mdind] = dat
+        mdind = [a == 1 for a in self.get_metadata(key)]
+        self.dataset[:, mdind] = dat
 
 
     def add_metadata(self, key, value, description='', attribute=None):
-        '''Add meta-data with `key`, `description`, and `value` to metaData
+        '''Add meta-data with `key`, `description`, and `value` to metadata
 
         Parameters
         ----------
@@ -163,18 +163,18 @@ class BData(object):
         '''
 
         # TODO: Add attribute specifying
-        # TODO: Add size check of metaData/value
+        # TODO: Add size check of metadata/value
 
         if attribute is not None:
-            attr_ind = np.asarray(np.nan_to_num(self.metaData.get(attribute, 'value')), dtype=np.bool)
-            # nan is converted to True in np.bool and thus change nans in metaData/value to zero at first
+            attr_ind = np.asarray(np.nan_to_num(self.metadata.get(attribute, 'value')), dtype=np.bool)
+            # nan is converted to True in np.bool and thus change nans in metadata/value to zero at first
 
-            add_value = np.array([None for _ in xrange(self.metaData.get_value_len())])
+            add_value = np.array([None for _ in xrange(self.metadata.get_value_len())])
             add_value[attr_ind] = value
         else:
             add_value = value
 
-        self.metaData.set(key, add_value, description)
+        self.metadata.set(key, add_value, description)
 
 
     def rename_meatadata(self, key_old, key_new):
@@ -189,8 +189,8 @@ class BData(object):
         -------
         None
         '''
-        self.metaData[key_new] = self.metaData[key_old]
-        del self.metaData[key_old]
+        self.metadata[key_new] = self.metadata[key_old]
+        del self.metadata[key_old]
 
 
     def set_metadatadescription(self, key, description):
@@ -208,7 +208,7 @@ class BData(object):
         None
         '''
 
-        self.metaData.set(key, None, description,
+        self.metadata.set(key, None, description,
                           lambda x, y: y)
 
 
@@ -345,9 +345,9 @@ class BData(object):
         #feature = data[:, np.array(selected_index)]
 
         if return_index:
-            return self.dataSet[:, np.array(selected_index)], selected_index
+            return self.dataset[:, np.array(selected_index)], selected_index
         else:
-            return self.dataSet[:, np.array(selected_index)]
+            return self.dataset[:, np.array(selected_index)]
 
 
     @__obsoleted_method('select')
@@ -409,12 +409,12 @@ class BData(object):
     def get_dataset(self, key=None):
         '''Get dataset
 
-        When `key` is not given, `get_dataset` returns `dataSet`. When `key` is
+        When `key` is not given, `get_dataset` returns `dataset`. When `key` is
         given, `get_dataset` returns data specified by `key`
         '''
 
         if key is None:
-            return self.dataSet
+            return self.dataset
         else:
             query = '%s = 1' % key
             return self.select_dataset(query, return_index=False, verbose=False)
@@ -422,19 +422,19 @@ class BData(object):
 
     def get_metadata(self, key):
         '''Get value of meta-data specified by `key`'''
-        return self.metaData.get(key, 'value')
+        return self.metadata.get(key, 'value')
 
 
     def show_metadata(self):
-        '''Show all the key and description in metaData'''
-        for m in self.metaData:
+        '''Show all the key and description in metadata'''
+        for m in self.metadata:
             print "%s: %s" % (m['key'], m['description'])
 
 
     # File I/O---------------------------------------------------------
 
     def load(self, load_filename, load_type=None):
-        '''Load 'dataSet' and 'metaData' from a given file'''
+        '''Load 'dataset' and 'metadata' from a given file'''
 
         if load_type is None:
             load_type = self.__get_filetype(load_filename)
@@ -450,20 +450,20 @@ class BData(object):
 
 
     def save(self, file_name, file_type=None):
-        '''Save 'dataSet' and 'metaData' to a file'''
+        '''Save 'dataset' and 'metadata' to a file'''
 
         if file_type is None:
             file_type = self.__get_filetype(file_name)
 
         if file_type == "Npy":
-            np.save(file_name, {"dataSet": self.dataSet,
-                                "metaData": self.metaData})
+            np.save(file_name, {"dataset": self.dataset,
+                                "metadata": self.metadata})
         elif file_type == "Matlab":
             md_key = []
             md_desc = []
             md_value = []
 
-            for m in self.metaData:
+            for m in self.metadata:
                 md_key.append(m['key'])
                 md_desc.append(m['description'])
 
@@ -480,7 +480,8 @@ class BData(object):
                 md_value.append(v_nan)
 
             # 'key' and 'description' are saved as cell arrays
-            sio.savemat(file_name, {"dataSet" : self.dataSet,
+            # For compatibility with Matlab, save `dataset` and `metadata` as `dataSet` and `metaData`
+            sio.savemat(file_name, {"dataSet" : self.dataset,
                                     "metaData" : {"key" : np.array(md_key, dtype=np.object),
                                                   "description" : np.array(md_desc, dtype=np.object),
                                                   "value" : md_value}})
@@ -522,54 +523,77 @@ class BData(object):
     def __save_h5(self, file_name):
         '''Save data in HDF5 format (*.h5)'''
         with h5py.File(file_name, 'w') as h5file:
-            # dataSet
-            h5file.create_dataset('/dataSet', data=self.dataSet)
+            # dataset
+            h5file.create_dataset('/dataset', data=self.dataset)
 
-            # metaData
-            md_keys = [m['key'] for m in self.metaData]
-            md_desc = [m['description'] for m in self.metaData]
-            md_vals = np.array([m['value'] for m in self.metaData], dtype=np.float)
+            # metadata
+            md_keys = [m['key'] for m in self.metadata]
+            md_desc = [m['description'] for m in self.metadata]
+            md_vals = np.array([m['value'] for m in self.metadata], dtype=np.float)
 
-            h5file.create_group('/metaData')
-            h5file.create_dataset('/metaData/key', data=md_keys)
-            h5file.create_dataset('/metaData/description', data=md_desc)
-            h5file.create_dataset('/metaData/value', data=md_vals)
+            h5file.create_group('/metadata')
+            h5file.create_dataset('/metadata/key', data=md_keys)
+            h5file.create_dataset('/metadata/description', data=md_desc)
+            h5file.create_dataset('/metadata/value', data=md_vals)
 
 
     def __load_npy(self, load_filename):
-        '''Load dataSet and metaData from Npy file'''
+        '''Load dataset and metadata from Npy file'''
         dat = np.load(load_filename)
         dicdat = dat.item()
 
-        self.dataSet = dicdat["dataSet"]
-        self.metaData = dicdat["metaData"]
+        if dat.has_key('dataSet'):
+            self.dataset = dicdat["dataSet"]
+        else:
+            self.dataset = dicdat["dataset"]
+
+        if dat.has_key('metaData'):
+            self.metadata = dicdat["metaData"]
+        else:
+            self.metadata = dicdat["metadata"]
 
 
     def __load_mat(self, load_filename):
-        '''Load dataSet and metaData from Matlab file'''
+        '''Load dataset and metadata from Matlab file'''
 
         dat = sio.loadmat(load_filename)
 
-        md_keys = [str(i[0]).strip() for i in np.asarray(dat["metaData"]['key'][0, 0])[0].tolist()]
-        md_descs = [str(i[0]).strip() for i in np.asarray(dat["metaData"]['description'][0, 0])[0].tolist()]
-        md_values = np.asarray(dat["metaData"]['value'][0, 0])
+        if 'metaData' in dat:
+            md_keys = [str(i[0]).strip() for i in np.asarray(dat["metaData"]['key'][0, 0])[0].tolist()]
+            md_descs = [str(i[0]).strip() for i in np.asarray(dat["metaData"]['description'][0, 0])[0].tolist()]
+            md_values = np.asarray(dat["metaData"]['value'][0, 0])
+        else:
+            md_keys = [str(i[0]).strip() for i in np.asarray(dat["metadata"]['key'][0, 0])[0].tolist()]
+            md_descs = [str(i[0]).strip() for i in np.asarray(dat["metadata"]['description'][0, 0])[0].tolist()]
+            md_values = np.asarray(dat["metadata"]['value'][0, 0])
 
-        self.dataSet = np.asarray(dat["dataSet"])
+        if 'dataSet' in dat:
+            self.dataset = np.asarray(dat["dataSet"])
+        else:            
+            self.dataset = np.asarray(dat["dataset"])
 
         for k, v, d in zip(md_keys, md_values, md_descs):
             self.add_metadata(k, v, d)
 
 
     def __load_h5(self, load_filename):
-        '''Load dataSet and metaData from HDF5 file'''
+        '''Load dataset and metadata from HDF5 file'''
 
         dat = h5py.File(load_filename)
 
-        md_keys = dat["metaData"]['key'][:].tolist()
-        md_descs = dat["metaData"]['description'][:].tolist()
-        md_values = dat["metaData"]['value']
-
-        self.dataSet = np.asarray(dat["dataSet"])
+        if 'metaData' in dat:
+            md_keys = dat["metaData"]['key'][:].tolist()
+            md_descs = dat["metaData"]['description'][:].tolist()
+            md_values = dat["metaData"]['value']
+        else:
+            md_keys = dat["metadata"]['key'][:].tolist()
+            md_descs = dat["metadata"]['description'][:].tolist()
+            md_values = dat["metadata"]['value']
+            
+        if 'dataSet' in dat:
+            self.dataset = np.asarray(dat["dataSet"])
+        else:
+            self.dataset = np.asarray(dat["dataset"])
 
         for k, v, d in zip(md_keys, md_values, md_descs):
             self.add_metadata(k, v, d)
