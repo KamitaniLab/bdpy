@@ -1,5 +1,4 @@
-"""
-BrainDecoderToolbox2 data class
+'''BrainDecoderToolbox2/BdPy data class
 
 This file is a part of BdPy
 
@@ -7,20 +6,21 @@ This file is a part of BdPy
 API lits
 --------
 
-- Modify data
+- Data modification
     - add_dataset
+    - update
     - add_metadata
     - rename_meatadata
     - set_metadatadescription
-- Search and extract data
-    - select_dataset
+- Data access
+    - select
+    - get_dataset
     - get_metadata
-- Get information
     - show_metadata
 - File I/O
     - load
     - save
-"""
+'''
 
 
 __all__ = ['BData']
@@ -37,39 +37,40 @@ from metadata import MetaData
 from featureselector import FeatureSelector
 
 
+# BData class ##########################################################
+
 class BData(object):
-    """
-    Class for BdPy/BrainDecoderToolbox2 data (dataSet and metaData)
+    '''BrainDecoderToolbox2/BdPy data class
 
     The instance of class `BData` contains `dataSet` and `metaData` as instance
     variables.
+
+    Parameters
+    ----------
+    file_name : str, optional
+        File which contains BData (default: None)
+    file_type : {'Npy', 'Matlab', 'HDF5', 'None'}, optional
+        File type (default: None)
+
+    If `file_name` was not given, BData.__init__() creates an empty
+    dataset and metadata.
 
     Attributes
     ----------
     dataSet : numpy array (dtype=float)
         Dataset array
-    metaData : MetaData object
+    metaData : metadata object
         Meta-data object
-    """
+    '''
 
 
     def __init__(self, file_name=None, file_type=None):
-        """
-        Initializer of a BData instance
-
-        Parameters
-        ----------
-        file_name : str, optional
-            File which contains BData (default: None)
-        file_type : {'Npy', 'Matlab', 'HDF5'}
-            File type (default: None)
-        """
-
         self.dataSet = np.ndarray((0, 0), dtype=float)
         self.metaData = MetaData()
 
         if file_name is not None:
             self.load(file_name, file_type)
+
 
     # Misc -------------------------------------------------------------
 
@@ -87,11 +88,10 @@ class BData(object):
         return __obsoleted_method_in
 
 
-    ## Public APIs #####################################################
+    # Data modification ------------------------------------------------
 
     def add_dataset(self, x, attribute_key):
-        """
-        Add `x` to dataSet with attribute meta-data key `attribute_key`
+        '''Add `x` to dataSet with attribute meta-data key `attribute_key`
 
         Parameters
         ----------
@@ -99,7 +99,11 @@ class BData(object):
             Data matrix to be added in dataSet
         attribute_key : str
             Key of attribute meta-data, which specifies the columns containing `x`
-        """
+
+        Returns
+        -------
+        None
+        '''
 
         if x.ndim == 1:
             x = x[:, np.newaxis]
@@ -107,23 +111,40 @@ class BData(object):
         colnum_has = self.dataSet.shape[1] # Num of existing columns in 'dataSet'
         colnum_add = x.shape[1]            # Num of columns to be added
 
-        ## Add 'x' to dataset
+        # Add 'x' to dataset
         if not self.dataSet.size:
             self.dataSet = x
         else:
             # TODO: Add size check of 'x' and 'self.dataSet'
             self.dataSet = np.hstack((self.dataSet, x))
 
-        ## Add new attribute metadata
+        # Add new attribute metadata
         attribute_description = 'Attribute: %s = 1' % attribute_key
         attribute_value = [None for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
         self.metaData.set(attribute_key, attribute_value, attribute_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
 
+    def update(self, key, dat):
+        '''Update dataset
+
+        Parameters
+        ----------
+        key : str
+           Name of columns to be updated
+        dat : array_like
+           New data array
+
+        Returns
+        -------
+        None
+        '''
+        mdind = [a == 1 for a in self.get_metaData(key)]
+        self.dataSet[:, mdind] = dat
+
+
     def add_metadata(self, key, value, description='', attribute=None):
-        """
-        Add meta-data with `key`, `description`, and `value` to metaData
+        '''Add meta-data with `key`, `description`, and `value` to metaData
 
         Parameters
         ----------
@@ -135,7 +156,11 @@ class BData(object):
             Meta-data description
         attribute : str, optional
             Meta-data key specifying data attribution
-        """
+
+        Returns
+        -------
+        None
+        '''
 
         # TODO: Add attribute specifying
         # TODO: Add size check of metaData/value
@@ -153,21 +178,23 @@ class BData(object):
 
 
     def rename_meatadata(self, key_old, key_new):
-        """
-        Rename a meta-data key
+        '''Rename meta-data key
 
         Parameters
         ----------
         key_old, key_new : str
             Old and new meta-data keys
-        """
+
+        Returns
+        -------
+        None
+        '''
         self.metaData[key_new] = self.metaData[key_old]
         del self.metaData[key_old]
 
 
     def set_metadatadescription(self, key, description):
-        """
-        Set description of metadata specified by `key`
+        '''Set description of metadata specified by `key`
 
         Parameters
         ----------
@@ -175,15 +202,38 @@ class BData(object):
             Meta-data key
         description : str
             Meta-data description
-        """
+
+        Returns
+        -------
+        None
+        '''
 
         self.metaData.set(key, None, description,
                           lambda x, y: y)
 
 
+    @__obsoleted_method('set_metadatadescription')
+    def edit_metadatadescription(self, metakey, description):
+        '''Set description of metadata specified by `key`
+
+        Parameters
+        ----------
+        key : str
+            Meta-data key
+        description : str
+            Meta-data description
+
+        Returns
+        -------
+        None
+        '''
+        self.set_metadatadescription(metakey, description)
+
+
+    # Data access ------------------------------------------------------
+
     def select(self, condition, return_index=False, verbose=True):
-        """
-        Extracts features from dataset based on condition
+        '''Select columns from dataset
 
         Parameters
         ----------
@@ -196,8 +246,8 @@ class BData(object):
 
         Returns
         -------
-        array
-            Selected feature data and index (if specified)
+        array_like
+            Selected data data
         list, optional
             Selected index
 
@@ -205,7 +255,7 @@ class BData(object):
         ----
 
         Operators: | (or), & (and), = (equal), @ (conditional)
-        """
+        '''
 
         expr_rpn = FeatureSelector(condition).rpn
 
@@ -302,8 +352,7 @@ class BData(object):
 
     @__obsoleted_method('select')
     def select_dataset(self, condition, return_index=False, verbose=True):
-        """
-        Extracts features from dataset based on condition
+        '''Select columns from dataset
 
         Parameters
         ----------
@@ -316,8 +365,8 @@ class BData(object):
 
         Returns
         -------
-        array
-            Selected feature data and index (if specified)
+        array_like
+            Selected data data
         list, optional
             Selected index
 
@@ -325,49 +374,67 @@ class BData(object):
         ----
 
         Operators: | (or), & (and), = (equal), @ (conditional)
-        """
+        '''
         return self.select(condition, return_index, verbose)
 
-    
-    def get_metadata(self, key):
-        """
-        Get value of meta-data specified by 'key'
-        """
 
-        return self.metaData.get(key, 'value')
-
-
-    def update(self, key, dat):
-        '''Update dataset
+    @__obsoleted_method('select')
+    def select_feature(self, condition, return_index=False, verbose=True):
+        '''Select columns from dataset
 
         Parameters
         ----------
-        key : str
-           Name of columns to be updated
-        dat : array_like
-           New data array
+        condition : str
+            Expression specifying feature selection
+        retrun_index : bool, optional
+            If True, returns index of selected features (default: False)
+        verbose : bool, optional
+            If True, display verbose messages (default: True)
 
-        Return
-        ------
-        None
+        Returns
+        -------
+        array_like
+            Selected data data
+        list, optional
+            Selected index
+
+        Note
+        ----
+
+        Operators: | (or), & (and), = (equal), @ (conditional)
         '''
-        mdind = [a == 1 for a in self.get_metaData(key)]
-        self.dataSet[:, mdind] = dat
+        return self.select(condition, return_index, verbose)
+
+
+    def get_dataset(self, key=None):
+        '''Get dataset
+
+        When `key` is not given, `get_dataset` returns `dataSet`. When `key` is
+        given, `get_dataset` returns data specified by `key`
+        '''
+
+        if key is None:
+            return self.dataSet
+        else:
+            query = '%s = 1' % key
+            return self.select_dataset(query, return_index=False, verbose=False)
+
+
+    def get_metadata(self, key):
+        '''Get value of meta-data specified by `key`'''
+        return self.metaData.get(key, 'value')
 
 
     def show_metadata(self):
-        """
-        Show all the key and description in metaData
-        """
-
+        '''Show all the key and description in metaData'''
         for m in self.metaData:
             print "%s: %s" % (m['key'], m['description'])
 
 
+    # File I/O---------------------------------------------------------
+
     def load(self, load_filename, load_type=None):
-        """
-        Load 'dataSet' and 'metaData' from a given file
-        """
+        '''Load 'dataSet' and 'metaData' from a given file'''
 
         if load_type is None:
             load_type = self.__get_filetype(load_filename)
@@ -383,9 +450,7 @@ class BData(object):
 
 
     def save(self, file_name, file_type=None):
-        """
-        Save 'dataSet' and 'metaData' to a file
-        """
+        '''Save 'dataSet' and 'metaData' to a file'''
 
         if file_type is None:
             file_type = self.__get_filetype(file_name)
@@ -427,72 +492,7 @@ class BData(object):
             raise ValueError("Unknown file type: %s" % (file_type))
 
 
-    ## Public APIs (obsoleted) #########################################
-
-    def get_dataset(self, key=None):
-        """
-        Get dataSet from BData object
-
-        When `key` is not given, `get_dataset` returns `dataSet`. When `key` is
-        given, `get_dataset` returns data specified by `key`
-        """
-
-        if key is None:
-            return self.dataSet
-        else:
-            query = '%s = 1' % key
-            return self.select_dataset(query, return_index=False, verbose=False)
-
-
-    ## Feature selection #######################################################
-
-    def edit_metadatadescription(self, metakey, description):
-        """
-        Add or edit description of metadata based on key
-
-        This method is obsoleted and will be removed in the future release.
-        Use `set_metadatadescription` instead.
-
-        Parameters
-        ----------
-        key : str
-            Meta-data key
-        description : str
-            Meta-data description
-        """
-        self.set_metadatadescription(metakey, description)
-
-
-    @__obsoleted_method('select')
-    def select_feature(self, condition, return_index=False, verbose=True):
-        """
-        Extracts features from dataset based on condition
-
-        Parameters
-        ----------
-        condition : str
-            Expression specifying feature selection
-        retrun_index : bool, optional
-            If True, returns index of selected features (default: False)
-        verbose : bool, optional
-            If True, display verbose messages (default: True)
-
-        Returns
-        -------
-        array
-            Selected feature data and index (if specified)
-        list, optional
-            Selected index
-
-        Note
-        ----
-
-        Operators: | (or), & (and), = (equal), @ (conditional)
-        """
-        return self.select_dataset(condition, return_index, verbose)
-
-
-    ## Private methods #################################################
+    # Private methods --------------------------------------------------
 
     def __get_order(self, v, sort_order='descend'):
 
@@ -509,7 +509,7 @@ class BData(object):
 
 
     def __get_top_elm_from_order(self, order, n):
-        """Get a boolean index of top 'n' elements from 'order'"""
+        '''Get a boolean index of top `n` elements from `order`'''
         sorted_index = np.argsort(order)
         for i, x in enumerate(sorted_index):
             order[x] = i
@@ -520,10 +520,7 @@ class BData(object):
 
 
     def __save_h5(self, file_name):
-        """
-        Save data in HDF5 format (*.h5)
-        """
-
+        '''Save data in HDF5 format (*.h5)'''
         with h5py.File(file_name, 'w') as h5file:
             # dataSet
             h5file.create_dataset('/dataSet', data=self.dataSet)
@@ -540,10 +537,7 @@ class BData(object):
 
 
     def __load_npy(self, load_filename):
-        """
-        Load dataSet and metaData from Npy file
-        """
-
+        '''Load dataSet and metaData from Npy file'''
         dat = np.load(load_filename)
         dicdat = dat.item()
 
@@ -552,9 +546,7 @@ class BData(object):
 
 
     def __load_mat(self, load_filename):
-        """
-        Load dataSet and metaData from Matlab file
-        """
+        '''Load dataSet and metaData from Matlab file'''
 
         dat = sio.loadmat(load_filename)
 
@@ -569,9 +561,7 @@ class BData(object):
 
 
     def __load_h5(self, load_filename):
-        """
-        Load dataSet and metaData from HDF5 file
-        """
+        '''Load dataSet and metaData from HDF5 file'''
 
         dat = h5py.File(load_filename)
 
@@ -586,9 +576,8 @@ class BData(object):
 
 
     def __get_filetype(self, file_name):
-        """
-        Return the type of `file_name` based on the file extension
-        """
+        '''Return the type of `file_name` based on the file extension'''
+
         _, ext = os.path.splitext(file_name)
 
         if ext == ".npy":
