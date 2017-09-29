@@ -27,6 +27,7 @@ __all__ = ['BData']
 
 
 import os
+import warnings
 
 import h5py
 import numpy as np
@@ -69,6 +70,21 @@ class BData(object):
 
         if file_name is not None:
             self.load(file_name, file_type)
+
+    # Misc -------------------------------------------------------------
+
+    def __obsoleted_method(alternative):
+        '''Decorator for obsoleted functions'''
+        def __obsoleted_method_in(func):
+            import functools
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                funcname = func.__name__
+                warnings.warn("'%s' is obsoleted and kept for compatibility. Use '%s' instead." % (funcname, alternative),
+                              UserWarning, stacklevel=2)
+                return func(*args, **kwargs)
+            return wrapper
+        return __obsoleted_method_in
 
 
     ## Public APIs #####################################################
@@ -284,7 +300,7 @@ class BData(object):
             return self.dataSet[:, np.array(selected_index)]
 
 
-    # Obsoleted
+    @__obsoleted_method('select')
     def select_dataset(self, condition, return_index=False, verbose=True):
         """
         Extracts features from dataset based on condition
@@ -447,7 +463,7 @@ class BData(object):
         self.set_metadatadescription(metakey, description)
 
 
-    # Obsoleted
+    @__obsoleted_method('select')
     def select_feature(self, condition, return_index=False, verbose=True):
         """
         Extracts features from dataset based on condition
