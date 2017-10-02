@@ -28,6 +28,7 @@ if __name__ == '__main__':
           packages=['bdpy',
                     'bdpy.bdata',
                     'bdpy.dataform',
+                    'bdpy.distcomp',
                     'bdpy.ml',
                     'bdpy.mri',
                     'bdpy.preproc',
