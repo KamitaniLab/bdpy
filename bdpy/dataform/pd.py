@@ -1,8 +1,7 @@
-"""
-Utilities for Pandas
+'''Utilities for Pandas dataframe
 
 This file is a part of BdPy
-"""
+'''
 
 
 __all__ = ['convert_dataframe', 'append_dataframe']
@@ -12,8 +11,7 @@ import pandas as pd
 
 
 def convert_dataframe(lst):
-    """
-    Converts `lst` to pandas dataframe
+    '''Convert `lst` to Pandas dataframe
 
     Parameters
     ----------
@@ -21,8 +19,8 @@ def convert_dataframe(lst):
 
     Returns
     -------
-    df : pandas dataframe
-    """
+    Pandas dataframe
+    '''
 
     df_lst = (pd.DataFrame([item.values()], columns=item.keys()) for item in lst)
     df = pd.concat(df_lst, axis=0, ignore_index=True)
