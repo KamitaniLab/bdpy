@@ -65,13 +65,66 @@ class BData(object):
 
 
     def __init__(self, file_name=None, file_type=None):
-        self.dataset = np.ndarray((0, 0), dtype=float)
-        self.metadata = MetaData()
+        self.__dataset = np.ndarray((0, 0), dtype=float)
+        self.__metadata = MetaData()
 
         if file_name is not None:
             self.load(file_name, file_type)
 
+    # Properties -------------------------------------------------------
 
+    # dataset
+    @property
+    def dataset(self):
+        return self.__dataset
+
+    @dataset.setter
+    def dataset(self, value):
+        self.__dataset = value
+
+    @dataset.deleter
+    def dataset(self):
+        del self.__dataset
+
+    # metadata
+    @property
+    def metadata(self):
+        return self.__metadata
+
+    @metadata.setter
+    def metadata(self, value):
+        self.__metadata = value
+
+    @metadata.deleter
+    def metadata(self):
+        del self.__metadata
+
+    # dataSet
+    @property
+    def dataSet(self):
+        return self.__dataset
+
+    @dataSet.setter
+    def dataSet(self, value):
+        self.__dataset = value
+
+    @dataSet.deleter
+    def dataSet(self):
+        del self.__dataset
+
+    # metaData
+    @property
+    def metaData(self):
+        return self.__metadata
+
+    @metaData.setter
+    def metaData(self, value):
+        self.__metadata = value
+
+    @metaData.deleter
+    def metaData(self):
+        del self.__metadata
+    
     # Misc -------------------------------------------------------------
 
     def __obsoleted_method(alternative):
