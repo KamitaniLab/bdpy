@@ -69,11 +69,11 @@ Example of metadata:
     | Run            | 1: the column represents run numbers   | ( NaN, NaN, NaN, ..., NaN, NaN, ..., NaN,   1 ) |
     +----------------+----------------------------------------+-------------------------------------------------+
 
-### Usage
+### Data API usage
 
 #### Import module and initialization.
 
-	from bdpy import BData
+    from bdpy import BData
 
     # Create a BData instance
     bd = BData()
@@ -88,7 +88,7 @@ An instance of the class 'BData' contains `dataset` and `metadata` as instance v
 #### Show Data
 
     # Show 'key' and 'description' of the betaData
-	bd.show_meatadata()
+    bd.show_meatadata()
     # Get 'value' of the metadata specified by the 'key'
     voxel_x = bd.get_metadata('voxel_x')
 
@@ -106,12 +106,12 @@ An instance of the class 'BData' contains `dataset` and `metadata` as instance v
 #### Data creation
 
     # Add new data
-	bd.add(numpy.random.rand(bd.dataset.shape[0]), 'random_data')
+    bd.add(numpy.random.rand(bd.dataset.shape[0]), 'random_data')
 
     # Set description of metadata
-	bd.set_metadatadescription('random_data', 'Random data (just for test)')
+    bd.set_metadatadescription('random_data', 'Random data (just for test)')
 
-	# Save data
+    # Save data
     bd.save('output_file.h5')  # File format is selected automatically by extension. .mat, .h5,and .npy are supported.
 
 ## For developers
