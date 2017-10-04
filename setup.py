@@ -29,6 +29,7 @@ if __name__ == '__main__':
                     'bdpy.bdata',
                     'bdpy.dataform',
                     'bdpy.distcomp',
+                    'bdpy.fig',
                     'bdpy.ml',
                     'bdpy.mri',
                     'bdpy.preproc',
