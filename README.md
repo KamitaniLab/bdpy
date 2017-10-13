@@ -74,11 +74,14 @@ An instance of the class 'BData' contains `dataset` and `metadata` as instance v
 
 #### Data extraction
 
-    # Get <M x "number of voxels which belong to V1"> array of voxel data
+    # Get an array of voxel data in V1 (shape = (M, [no. of voxels in V1]))
     v1_data = dat.select('ROI_V1')
 
-    # another way to select data
+    # Another way to select data
     v1_data = dat.select('ROI_V1 = 1')
+
+    # Select data in several ROIs
+    data_v1v2 = dat.select('ROI_V1 = 1 | ROI_V2 = 1')
 
     # Get labels ('Label_A') in the dataset
     label_a  = dat.select('Label_A')
