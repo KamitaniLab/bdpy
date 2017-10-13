@@ -124,7 +124,7 @@ class BData(object):
     @metaData.deleter
     def metaData(self):
         del self.__metadata
-    
+
     # Misc -------------------------------------------------------------
 
     def __obsoleted_method(alternative):
@@ -304,28 +304,32 @@ class BData(object):
     # Data access ------------------------------------------------------
 
     def select(self, condition, return_index=False, verbose=True):
-        '''Select columns from dataset
+        '''Select data (columns) from dataset.
 
         Parameters
         ----------
         condition : str
-            Expression specifying feature selection
+            Condition specifying columns.
         retrun_index : bool, optional
-            If True, returns index of selected features (default: False)
+            If True, return index of selected columns (default: False).
         verbose : bool, optional
-            If True, display verbose messages (default: True)
+            If True, display verbose messages (default: True).
 
         Returns
         -------
-        array_like
-            Selected data data
+        array-like
+            Selected data
         list, optional
             Selected index
 
         Note
         ----
+        The following operators are acceptable in `condition`.
 
-        Operators: | (or), & (and), = (equal), @ (conditional)
+        - | (or)
+        - & (and)
+        - = (equal)
+        - @ (conditional)
         '''
 
         expr_rpn = FeatureSelector(condition).rpn
@@ -409,11 +413,8 @@ class BData(object):
             num_sel = buf_sel.pop()
             selected_index = [n < num_sel for n in selected_index]
 
-        # get whole dataset
-        #data = self.get_dataset()
-
-        # slice dataset based on selected column
-        #feature = data[:, np.array(selected_index)]
+        # Very dirty solution
+        selected_index = selected_index == True
 
         if return_index:
             return self.dataset[:, np.array(selected_index)], selected_index
@@ -423,56 +424,64 @@ class BData(object):
 
     @__obsoleted_method('select')
     def select_dataset(self, condition, return_index=False, verbose=True):
-        '''Select columns from dataset
+        '''Select data (columns) from dataset.
 
         Parameters
         ----------
         condition : str
-            Expression specifying feature selection
+            Condition specifying columns.
         retrun_index : bool, optional
-            If True, returns index of selected features (default: False)
+            If True, return index of selected columns (default: False).
         verbose : bool, optional
-            If True, display verbose messages (default: True)
+            If True, display verbose messages (default: True).
 
         Returns
         -------
-        array_like
-            Selected data data
+        array-like
+            Selected data
         list, optional
             Selected index
 
         Note
         ----
+        The following operators are acceptable in `condition`.
 
-        Operators: | (or), & (and), = (equal), @ (conditional)
+        - | (or)
+        - & (and)
+        - = (equal)
+        - @ (conditional)
         '''
         return self.select(condition, return_index, verbose)
 
 
     @__obsoleted_method('select')
     def select_feature(self, condition, return_index=False, verbose=True):
-        '''Select columns from dataset
+        '''Select data (columns) from dataset.
 
         Parameters
         ----------
         condition : str
-            Expression specifying feature selection
+            Condition specifying columns.
         retrun_index : bool, optional
-            If True, returns index of selected features (default: False)
+            If True, return index of selected columns (default: False).
         verbose : bool, optional
-            If True, display verbose messages (default: True)
+            If True, display verbose messages (default: True).
 
         Returns
         -------
-        array_like
-            Selected data data
+        array-like
+            Selected data
         list, optional
             Selected index
 
         Note
         ----
+        The following operators are acceptable in `condition`.
 
-        Operators: | (or), & (and), = (equal), @ (conditional)
+        - | (or)
+        - & (and)
+        - = (equal)
+        - @ (conditional)
         '''
         return self.select(condition, return_index, verbose)
 
@@ -671,7 +680,7 @@ class BData(object):
 
         if 'dataSet' in dat:
             self.dataset = np.asarray(dat["dataSet"])
-        else:            
+        else:
             self.dataset = np.asarray(dat["dataset"])
 
         for k, v, d in zip(md_keys, md_values, md_descs):
@@ -691,7 +700,7 @@ class BData(object):
             md_keys = dat["metadata"]['key'][:].tolist()
             md_descs = dat["metadata"]['description'][:].tolist()
             md_values = dat["metadata"]['value']
-            
+
         if 'dataSet' in dat:
             self.dataset = np.asarray(dat["dataSet"])
         else:
