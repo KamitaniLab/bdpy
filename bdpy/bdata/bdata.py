@@ -501,9 +501,30 @@ class BData(object):
         return self.get(key)
 
 
-    def get_metadata(self, key):
-        '''Get value of meta-data specified by `key`'''
-        return self.metadata.get(key, 'value')
+    def get_metadata(self, key, where=None):
+        '''Get value of meta-data specified by `key`
+
+        Parameters
+        ----------
+        key : str
+            Meta-data key.
+
+        where : str, optional
+            Columns which mask meta-data array.
+
+        Returns
+        -------
+        array-like
+        '''
+
+        md = self.metadata.get(key, 'value')
+
+        if where != None:
+            # Mask the metadata array with columns specified with `where`
+            ind = self.metadata.get(where, 'value') == True
+            md = md[ind]
+
+        return md
 
 
     def show_metadata(self):
