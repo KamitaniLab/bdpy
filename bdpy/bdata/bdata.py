@@ -178,7 +178,7 @@ class BData(object):
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
 
-    @__obsoleted_method('get')
+    @__obsoleted_method('add')
     def add_dataset(self, x, attribute_key):
         '''Add `x` to dataset with attribute meta-data key `attribute_key`
 
