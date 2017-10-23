@@ -1,5 +1,7 @@
 '''Utility functions for BData'''
 
+import copy
+
 import numpy as np
 
 from bdata import BData
@@ -35,16 +37,17 @@ def concat_dataset(data_list, successive=[]):
     dat = BData()
 
     for ds in data_list:
+        ds_copy = copy.deepcopy(ds)
         for s in successive:
-            v = ds.select(s)
+            v = ds_copy.select(s)
             v += suc_cols[s]
-            ds.update(s, v)
+            ds_copy.update(s, v)
 
         if dat.dataset.shape[0] == 0:
-            dat.dataset = ds.dataset
-            dat.metadata = ds.metadata
+            dat.dataset = ds_copy.dataset
+            dat.metadata = ds_copy.metadata
         else:
-            dat.dataset = np.vstack([dat.dataset, ds.dataset])
+            dat.dataset = np.vstack([dat.dataset, ds_copy.dataset])
             # TODO: add metadat check
 
         for s in successive:
