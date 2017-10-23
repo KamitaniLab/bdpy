@@ -211,7 +211,7 @@ class BData(object):
         None
         '''
         mdind = [a == 1 for a in self.get_metadata(key)]
-        self.dataset[:, mdind] = dat
+        self.dataset[:, np.array(mdind)] = dat
 
 
     def add_metadata(self, key, value, description='', attribute=None):
