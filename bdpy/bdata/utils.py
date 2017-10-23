@@ -36,7 +36,7 @@ def concat_dataset(data_list, successive=[]):
 
     for ds in data_list:
         for s in successive:
-            v = ds.get_dataset(s)
+            v = ds.select(s)
             v += suc_cols[s]
             ds.update(s, v)
 
@@ -48,7 +48,7 @@ def concat_dataset(data_list, successive=[]):
             # TODO: add metadat check
 
         for s in successive:
-            v = dat.get_dataset(s)
+            v = dat.select(s)
             suc_cols[s] = np.max(v)
 
     return dat
