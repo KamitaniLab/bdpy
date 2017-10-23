@@ -1,5 +1,6 @@
 '''Utility functions for BData'''
 
+import numpy as np
 
 from bdata import BData
 
@@ -31,7 +32,7 @@ def concat_dataset(data_list, successive=[]):
 
     suc_cols = {s : 0 for s in successive}
 
-    dat = bdpy.BData()
+    dat = BData()
 
     for ds in data_list:
         for s in successive:
