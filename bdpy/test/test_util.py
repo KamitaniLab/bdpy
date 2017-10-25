@@ -62,6 +62,15 @@ class TestUtil(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
 
+    def test_create_groupvector_error(self):
+        """Test for create_groupvector (ValueError)."""
+
+        x = [1, 2, 3]
+        y = [0]
+
+        self.assertRaises(ValueError, bdpy.create_groupvector, x, y)
+
+
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUtil)
     unittest.TextTestRunner(verbosity = 2).run(suite)
