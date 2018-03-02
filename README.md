@@ -36,8 +36,8 @@ $ python setup.py install
 
 - bdata: BdPy data format
 - dataform: Third-party data format (e.g., Pandas)
-- distcomp: Distributed computation package
-- fig: Mmaking figures
+- distcomp: Distributed computation
+- fig: Making figures
 - ml: Machine learning
 - mri: MRI
 - preproc: Preprocessing
