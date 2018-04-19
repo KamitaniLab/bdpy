@@ -414,7 +414,7 @@ class BData(object):
             selected_index = [n < num_sel for n in selected_index]
 
         # Very dirty solution
-        selected_index = selected_index == True
+        selected_index = np.array(selected_index) == True
 
         if return_index:
             return self.dataset[:, np.array(selected_index)], selected_index
