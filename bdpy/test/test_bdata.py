@@ -21,8 +21,8 @@ class TestBdata(unittest.TestCase):
                       [ 40, 41, 42, 43, 44, 45, 46, 47, 48, 49 ]])
         g = np.array([1, 2, 3, 4, 5])
 
-        self.data.add_dataset(x, 'VoxelData')
-        self.data.add_dataset(g, 'Group')
+        self.data.add(x, 'VoxelData')
+        self.data.add(g, 'Group')
 
         self.data.add_metadata('Mask_0:3', [ 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 ], attribute = 'VoxelData')
         self.data.add_metadata('Mask_3:3', [ 0, 0, 0, 1, 1, 1, 0, 0, 0, 0 ], attribute = 'VoxelData')
@@ -31,15 +31,15 @@ class TestBdata(unittest.TestCase):
         self.data.add_metadata('Val_A',    [ 9, 7, 5, 3, 1, 0, 2, 4, 6, 8 ], attribute = 'VoxelData')
         
         
-    def test_add_dataset_pass0001(self):
-        """Test for add_dataset (pass case 0001)"""
+    def test_add_pass0001(self):
+        """Test for add (pass case 0001)"""
 
         b = bdpy.BData()
 
         attr = 'TestAttr'
         data = np.random.rand(5, 10)
 
-        b.add_dataset(data, attr)
+        b.add(data, attr)
 
         np.testing.assert_array_equal(b.dataSet, data)
         self.assertEqual(b.metaData[0]['key'], attr)
@@ -47,18 +47,18 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(b.metaData[0]['value'], np.ones(10))
         
 
-    def test_add_dataset_pass0002(self):
-        """Test for add_dataset (pass case 0002)"""
+    def test_add_pass0002(self):
+        """Test for add (pass case 0002)"""
 
         b = bdpy.BData()
 
         attr_A = 'TestAttr_A'
         data_A = np.random.rand(10, 10)
-        b.add_dataset(data_A, attr_A)
+        b.add(data_A, attr_A)
 
         attr_B = 'TestAttr_B'
         data_B = np.random.rand(10, 2)
-        b.add_dataset(data_B, attr_B)
+        b.add(data_B, attr_B)
         
         np.testing.assert_array_equal(b.dataSet, np.hstack((data_A, data_B)))
 
@@ -71,22 +71,22 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(b.metaData[1]['value'], np.hstack(([ np.nan for _ in xrange(10) ], np.ones(2, dtype = int))))
 
 
-    def test_add_dataset_pass0003(self):
-        """Test for add_dataset (pass case 0003)"""
+    def test_add_pass0003(self):
+        """Test for add (pass case 0003)"""
 
         b = bdpy.BData()
 
         attr_A = 'TestAttr_A'
         data_A = np.random.rand(10, 10)
-        b.add_dataset(data_A, attr_A)
+        b.add(data_A, attr_A)
 
         attr_B = 'TestAttr_B'
         data_B = np.random.rand(10, 2)
-        b.add_dataset(data_B, attr_B)
+        b.add(data_B, attr_B)
 
         attr_A2 = 'TestAttr_A'
         data_A2 = np.random.rand(10, 3)
-        b.add_dataset(data_A2, attr_A2)
+        b.add(data_A2, attr_A2)
         
         np.testing.assert_array_equal(b.dataSet, np.hstack((data_A, data_B, data_A2)))
 
@@ -106,7 +106,7 @@ class TestBdata(unittest.TestCase):
         md_desc = 'Metadata for test'
         md_val  = np.zeros(10)
 
-        b.add_dataset(np.random.rand(10, 10), 'Test data')
+        b.add(np.random.rand(10, 10), 'Test data')
         b.add_metadata(md_key, md_val, md_desc)
         
         exp_metaData = [ { 'key' : 'Test data',
@@ -135,7 +135,7 @@ class TestBdata(unittest.TestCase):
         md_desc_2 = 'Metadata for test (overwriting)'
         md_val_2  = np.ones(10)
 
-        b.add_dataset(np.random.rand(10, 10), 'Test data')
+        b.add(np.random.rand(10, 10), 'Test data')
         b.add_metadata(md_key, md_val_1, md_desc_1)
         b.add_metadata(md_key, md_val_2, md_desc_2)
         
@@ -152,152 +152,152 @@ class TestBdata(unittest.TestCase):
             np.testing.assert_array_equal(m['value'], e['value'])
 
 
-    def test_get_dataset_pass0001(self):
-        """Test for get_dataset (pass case 0001)"""
+    def test_get_pass0001(self):
+        """Test for get (pass case 0001)"""
 
         b = bdpy.BData()
 
         attr_A = 'TestAttr_A'
         data_A = np.random.rand(10, 10)
-        b.add_dataset(data_A, attr_A)
+        b.add(data_A, attr_A)
 
         attr_B = 'TestAttr_B'
         data_B = np.random.rand(10, 2)
-        b.add_dataset(data_B, attr_B)
+        b.add(data_B, attr_B)
 
         exp_output = np.hstack((data_A, data_B))
-        test_output = b.get_dataset()
+        test_output = b.get()
         
         np.testing.assert_array_equal(test_output, exp_output)
 
 
-    def test_get_dataset_pass0002(self):
-        """Test for get_dataset (pass case 0002)"""
+    def test_get_pass0002(self):
+        """Test for get (pass case 0002)"""
 
         b = bdpy.BData()
 
         attr_A = 'TestAttr_A'
         data_A = np.random.rand(10, 10)
-        b.add_dataset(data_A, attr_A)
+        b.add(data_A, attr_A)
 
         attr_B = 'TestAttr_B'
         data_B = np.random.rand(10, 2)
-        b.add_dataset(data_B, attr_B)
+        b.add(data_B, attr_B)
 
         exp_output = data_A
-        test_output = b.get_dataset('TestAttr_A')
+        test_output = b.get('TestAttr_A')
         
         np.testing.assert_array_equal(test_output, exp_output)
 
 
-    ## Tests for select_feature() ##########
+    ## Tests for select() ##########
 
-    def test_select_feature_pass0001(self):
+    def test_select_pass0001(self):
         """Test for '='"""
         
         test_input = 'Mask_0:3 = 1'
         exp_output = self.data.dataSet[:, 0:3]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0002(self):
+    def test_select_pass0002(self):
         """Test for '|' (or)"""
         
         test_input = 'Mask_0:3 = 1 | Mask_3:3 = 1'
         exp_output = self.data.dataSet[:, 0:6]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0003(self):
+    def test_select_pass0003(self):
         """Test for '&' (and)"""
         
         test_input = 'Mask_0:3 = 1 & Mask_0:5 = 1'
         exp_output = self.data.dataSet[:, 0:3]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0004(self):
+    def test_select_pass0004(self):
         """Test for three condition terms"""
         
         test_input = 'Mask_0:5 = 1 & Mask_0:3 = 1 | Mask_3:3 = 1'
         exp_output = self.data.dataSet[:, 0:6]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0005(self):
+    def test_select_pass0005(self):
         """Test for parentheses"""
         
         test_input = 'Mask_0:5 = 1 & (Mask_0:3 = 1 | Mask_3:3 = 1)'
         exp_output = self.data.dataSet[:, 0:5]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0006(self):
+    def test_select_pass0006(self):
         """Test for 'top'"""
         
         test_input = 'Val_A top 5'
         exp_output = self.data.dataSet[:, np.array([0, 1, 2, 8, 9], dtype = int)]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0007(self):
+    def test_select_pass0007(self):
         """Test for 'top'"""
         
         test_input = 'Val_A top 10'
         exp_output = self.data.dataSet[:, 0:10]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0008(self):
+    def test_select_pass0008(self):
         """Test for 'top' and '@'"""
         
         test_input = 'Val_A top 3 @ Mask_0:5 = 1'
         exp_output = self.data.dataSet[:, 0:3]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0009(self):
+    def test_select_pass0009(self):
         """Test for 'top' and '@'"""
         
         test_input = 'Val_A top 3 @ (Mask_3:3 = 1 | Mask_6:3 = 1)'
         exp_output = self.data.dataSet[:, [3, 7, 8]]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
         
-    def test_select_feature_pass0010(self):
+    def test_select_pass0010(self):
         """Test for 'top' and '@'"""
         
         test_input = 'Val_A top 3 @ Mask_3:3 = 1 | Mask_6:3 = 1'
         exp_output = self.data.dataSet[:, [3, 7, 8]]
 
-        test_output = self.data.select_feature(test_input)
+        test_output = self.data.select(test_input)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
