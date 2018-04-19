@@ -497,7 +497,7 @@ class BData(object):
             return self.dataset
         else:
             query = '%s = 1' % key
-            return self.select_dataset(query, return_index=False, verbose=False)
+            return self.select(query, return_index=False, verbose=False)
 
 
     @__obsoleted_method('get')
