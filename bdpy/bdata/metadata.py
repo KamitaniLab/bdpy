@@ -21,7 +21,7 @@ class MetaData(object):
         if key is None:
             key = []
         if value is None:
-            value = np.ndarray((0, 0))
+            value = np.ndarray((0, 0), dtype=float)
         if description is None:
             description = []
             
@@ -46,6 +46,8 @@ class MetaData(object):
             Function applied to meta-data value when meta-data named `key` already exists.
             It should take two args: new and old meta-data values.
         """
+        value = np.array(value)
+
         if key in self.__key:
             # Update existing metadata
 
@@ -57,6 +59,12 @@ class MetaData(object):
             ind = ind[0]
 
             self.__description[ind] = description
+
+            if value.shape[0] > self.get_value_len():
+                cols = np.empty((self.__value.shape[0], value.shape[0] - self.get_value_len()))
+                cols[:] = np.nan
+
+                self.__value = np.hstack([self.__value, cols])
             
             if updater is None:
                 self.__value[ind, :] = value
@@ -66,8 +74,6 @@ class MetaData(object):
             # Add new metadata
             self.__key.append(key)
             self.__description.append(description)
-
-            value = np.array(value)
 
             if value.shape[0] > self.get_value_len():
                 cols = np.empty((self.__value.shape[0], value.shape[0] - self.get_value_len()))
@@ -101,7 +107,7 @@ class MetaData(object):
             return None
         
         if field == 'value':
-            return self.__value[ind, :]
+            return self.__value[ind, :].astype(np.float)
 
         if field == 'description':
             return self.__description[ind]
