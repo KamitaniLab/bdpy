@@ -2,6 +2,7 @@
 
 import unittest
 import numpy as np
+from numpy.testing import assert_array_equal
 
 import bdpy
 
@@ -31,125 +32,128 @@ class TestBdata(unittest.TestCase):
         self.data.add_metadata('Mask_0:5', [1, 1, 1, 1, 1, 0, 0, 0, 0, 0], attribute='VoxelData')
         self.data.add_metadata('Val_A',    [9, 7, 5, 3, 1, 0, 2, 4, 6, 8], attribute='VoxelData')
 
-    def test_add_pass0001(self):
-        """Test for add (pass case 0001)"""
+    def test_add(self):
+        """Test for add."""
 
-        b = bdpy.BData()
-
-        attr = 'TestAttr'
+        colname = 'TestData'
         data = np.random.rand(5, 10)
 
-        b.add(data, attr)
+        b = bdpy.BData()
+        b.add(data, colname)
 
         np.testing.assert_array_equal(b.dataSet, data)
-        self.assertEqual(b.metaData[0]['key'], attr)
-        #self.assertEqual(b.metaData[0]['description'], 'Attribute: TestAttr = 1')
-        np.testing.assert_array_equal(b.metaData[0]['value'], np.ones(10))
+        np.testing.assert_array_equal(b.metadata.get(colname, 'value'),
+                                      np.array([1] * 10))
 
-    def test_add_pass0002(self):
-        """Test for add (pass case 0002)"""
+    def test_add_2(self):
+        """Test for add."""
 
+        colnames = ['TestData1', 'TestData2']
+        datalist = [np.random.rand(5, 10),
+                    np.random.rand(5, 3)]
+        
         b = bdpy.BData()
 
-        attr_A = 'TestAttr_A'
-        data_A = np.random.rand(10, 10)
-        b.add(data_A, attr_A)
+        for c, d in zip(colnames, datalist):
+            b.add(d, c)
 
-        attr_B = 'TestAttr_B'
-        data_B = np.random.rand(10, 2)
-        b.add(data_B, attr_B)
+        # Test
+        np.testing.assert_array_equal(b.dataSet, np.hstack(datalist))
 
-        np.testing.assert_array_equal(b.dataSet, np.hstack((data_A, data_B)))
+        np.testing.assert_array_equal(b.metadata.get(colnames[0], 'value'),
+                                      np.array([1] * 10 + [np.nan] * 3))
+        np.testing.assert_array_equal(b.metadata.get(colnames[1], 'value'),
+                                      np.array([np.nan] * 10 + [1] * 3))
 
-        self.assertEqual(b.metaData[0]['key'], attr_A)
-        #self.assertEqual(b.metaData[0]['description'], 'Attribute: TestAttr_A = 1')
-        np.testing.assert_array_equal(b.metaData[0]['value'], np.hstack((np.ones(10, dtype=int), [np.nan, np.nan])))
-
-        self.assertEqual(b.metaData[1]['key'], attr_B)
-        #self.assertEqual(b.metaData[1]['description'], 'Attribute: TestAttr_B = 1')
-        np.testing.assert_array_equal(b.metaData[1]['value'], np.hstack(([np.nan for _ in xrange(10)], np.ones(2, dtype=int))))
-
-    def test_add_pass0003(self):
-        """Test for add (pass case 0003)"""
+    def test_add_3(self):
+        """Test for add."""
 
         b = bdpy.BData()
+        data_a1 = np.random.rand(10, 10)
+        data_b = np.random.rand(10, 3)
+        data_a2 = np.random.rand(10, 5)
 
-        attr_A = 'TestAttr_A'
-        data_A = np.random.rand(10, 10)
-        b.add(data_A, attr_A)
+        b.add(data_a1, 'TestDataA')
+        b.add(data_b, 'TestDataB')
+        b.add(data_a2, 'TestDataA')
 
-        attr_B = 'TestAttr_B'
-        data_B = np.random.rand(10, 2)
-        b.add(data_B, attr_B)
+        np.testing.assert_array_equal(b.dataSet, np.hstack((data_a1, data_b, data_a2)))
 
-        attr_A2 = 'TestAttr_A'
-        data_A2 = np.random.rand(10, 3)
-        b.add(data_A2, attr_A2)
+        np.testing.assert_array_equal(b.metadata.get('TestDataA', 'value'),
+                                      np.array([1] * 10 + [np.nan] * 3 + [1] * 5))
+        np.testing.assert_array_equal(b.metadata.get('TestDataB', 'value'),
+                                      np.array([np.nan] * 10 + [1] * 3 + [np.nan] * 5))
 
-        np.testing.assert_array_equal(b.dataSet, np.hstack((data_A, data_B, data_A2)))
+    def test_add_metadata_1(self):
+        """Test for add_metadata."""
 
-        self.assertEqual(b.metaData[0]['key'], attr_A)
-        #self.assertEqual(b.metaData[0]['description'], 'Attribute: TestAttr_A = 1')
-        np.testing.assert_array_equal(b.metaData[0]['value'],
-                                      np.hstack((np.ones(10, dtype=int),
-                                                 [np.nan, np.nan],
-                                                 np.ones(3, dtype=int))))
-
-    def test_add_metadata_pass0001(self):
-        """Test for add_metadata (pass case 0001)"""
-
-        b = bdpy.BData()
-
-        md_key = 'MetaData_A'
+        md_key = 'TestMetaData'
         md_desc = 'Metadata for test'
-        md_val = np.zeros(10)
+        md_val = np.random.rand(10)
 
-        b.add(np.random.rand(10, 10), 'Test data')
+        testdata = np.random.rand(10, 10)
+        
+        b = bdpy.BData()
+        b.add(testdata, 'TestData')
         b.add_metadata(md_key, md_val, md_desc)
 
-        exp_metaData = [{'key': 'Test data',
-                         'description': '',
-                         'value': np.ones(10)},
-                        {'key': md_key,
-                         'description': md_desc,
-                         'value': md_val}]
+        assert_array_equal(b.dataSet, testdata)
+        assert_array_equal(b.metadata.get('TestData', 'value'),
+                           np.array([1] * 10))
+        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
+                           md_val)
 
-        for m, e in zip(b.metaData, exp_metaData):
-            self.assertEqual(m['key'], e['key'])
-            #self.assertEqual(m['description'], e['description'])
-            np.testing.assert_array_equal(m['value'], e['value'])
+    def test_add_metadata_2(self):
+        """Test for add_metadata."""
 
-    def test_add_metadata_pass0002(self):
-        """Test for add_metadata (pass case 0001)"""
+        md_key_1 = 'TestMetaData1'
+        md_desc_1 = 'Metadata for test 1'
+        md_val_1 = np.random.rand(10)
 
+        md_key_2 = 'TestMetaData2'
+        md_desc_2 = 'Metadata for test 2'
+        md_val_2 = np.random.rand(10)
+
+        testdata = np.random.rand(10, 10)
+        
         b = bdpy.BData()
+        b.add(testdata, 'TestData')
+        b.add_metadata(md_key_1, md_val_1, md_desc_1)
+        b.add_metadata(md_key_2, md_val_2, md_desc_2)
 
-        md_key = 'MetaData_A'
+        assert_array_equal(b.dataSet, testdata)
+        assert_array_equal(b.metadata.get('TestData', 'value'),
+                           np.array([1] * 10))
+        assert_array_equal(b.metadata.get('TestMetaData1', 'value'),
+                           md_val_1)
+        assert_array_equal(b.metadata.get('TestMetaData2', 'value'),
+                           md_val_2)
 
-        md_desc_1 = 'Metadata for test'
-        md_val_1  = np.zeros(10)
+    def test_add_metadata_3(self):
+        """Test for add_metadata."""
 
-        md_desc_2 = 'Metadata for test (overwriting)'
-        md_val_2  = np.ones(10)
+        md_key = 'TestMetaData'
+        md_desc = 'Metadata for test'
+        md_val = np.random.rand(10)
 
-        b.add(np.random.rand(10, 10), 'Test data')
-        b.add_metadata(md_key, md_val_1, md_desc_1)
-        b.add_metadata(md_key, md_val_2, md_desc_2)
+        testdata_a = np.random.rand(10, 10)
+        testdata_b = np.random.rand(10, 10)
+        
+        b = bdpy.BData()
+        b.add(testdata_a, 'TestDataA')
+        b.add(testdata_b, 'TestDataB')
 
-        exp_metaData = [{'key': 'Test data',
-                         'description': '',
-                         'value': np.ones(10)},
-                        {'key': md_key,
-                         'description': md_desc_2,
-                         'value': md_val_2}]
+        b.add_metadata(md_key, md_val, attribute='TestDataA')
 
-        for m, e in zip(b.metaData, exp_metaData):
-            self.assertEqual(m['key'], e['key'])
-            #self.assertEqual(m['description'], e['description'])
-            np.testing.assert_array_equal(m['value'], e['value'])
+        assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
 
-    def test_get_pass0001(self):
-        """Test for get (pass case 0001)"""
+        assert_array_equal(b.metadata.get('TestDataA', 'value'),
+                           np.array([1] * 10 + [np.nan] * 10))
+        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
+                           np.hstack((md_val, [np.nan] * 10)))
+
+    def test_get_1(self):
+        """Test for get."""
 
         b = bdpy.BData()
 
@@ -166,8 +170,8 @@ class TestBdata(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
-    def test_get_pass0002(self):
-        """Test for get (pass case 0002)"""
+    def test_get_2(self):
+        """Test for get."""
 
         b = bdpy.BData()
 
