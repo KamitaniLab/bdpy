@@ -49,7 +49,7 @@ class BData(object):
     ----------
     file_name : str, optional
         File which contains BData (default: None)
-    file_type : {'Npy', 'Matlab', 'HDF5', 'None'}, optional
+    file_type : {'Matlab', 'HDF5', 'None'}, optional
         File type (default: None)
 
     If `file_name` was not given, BData.__init__() creates an empty
@@ -549,9 +549,7 @@ class BData(object):
         if load_type is None:
             load_type = self.__get_filetype(load_filename)
 
-        if load_type == "Npy":
-            self.__load_npy(load_filename)
-        elif load_type == "Matlab":
+        if load_type == "Matlab":
             self.__load_mat(load_filename)
         elif load_type == "HDF5":
             self.__load_h5(load_filename)
@@ -565,10 +563,7 @@ class BData(object):
         if file_type is None:
             file_type = self.__get_filetype(file_name)
 
-        if file_type == "Npy":
-            np.save(file_name, {"dataset": self.dataset,
-                                "metadata": self.metadata})
-        elif file_type == "Matlab":
+        if file_type == "Matlab":
             md_key = []
             md_desc = []
             md_value = []
@@ -647,22 +642,6 @@ class BData(object):
             h5file.create_dataset('/metadata/value', data=md_vals)
 
 
-    def __load_npy(self, load_filename):
-        '''Load dataset and metadata from Npy file'''
-        dat = np.load(load_filename)
-        dicdat = dat.item()
-
-        if dat.has_key('dataSet'):
-            self.dataset = dicdat["dataSet"]
-        else:
-            self.dataset = dicdat["dataset"]
-
-        if dat.has_key('metaData'):
-            self.metadata = dicdat["metaData"]
-        else:
-            self.metadata = dicdat["metadata"]
-
-
     def __load_mat(self, load_filename):
         '''Load dataset and metadata from Matlab file'''
 
@@ -714,9 +693,7 @@ class BData(object):
 
         _, ext = os.path.splitext(file_name)
 
-        if ext == ".npy":
-            file_type = "Npy"
-        elif ext == ".mat":
+        if ext == ".mat":
             file_type = "Matlab"
         elif ext == ".h5":
             file_type = "HDF5"
