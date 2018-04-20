@@ -29,6 +29,41 @@ class MetaData(object):
         self.__value = value
         self.__description = description
 
+    @property
+    def key(self):
+        return self.__key
+
+    @key.setter
+    def key(self, x):
+        self.__key = x
+
+    @key.deleter
+    def key(self):
+        del self.__key
+
+    @property
+    def value(self):
+        return self.__value
+
+    @value.setter
+    def value(self, x):
+        self.__value = x
+
+    @value.deleter
+    def value(self):
+        del self.__value
+
+    @property
+    def description(self):
+        return self.__description
+
+    @description.setter
+    def description(self, x):
+        self.__description = x
+
+    @description.deleter
+    def description(self):
+        del self.__description
 
     def set(self, key, value, description, updater=None):
         """
