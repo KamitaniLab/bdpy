@@ -173,7 +173,8 @@ class BData(object):
 
         # Add new attribute metadata
         attribute_description = 'Attribute: %s = 1' % attribute_key
-        attribute_value = [None for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
+        attribute_value = [np.nan for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
+
         self.metadata.set(attribute_key, attribute_value, attribute_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
@@ -237,9 +238,7 @@ class BData(object):
         # TODO: Add size check of metadata/value
 
         if attribute is not None:
-            attr_ind = np.asarray(np.nan_to_num(self.metadata.get(attribute, 'value')), dtype=np.bool)
-            # nan is converted to True in np.bool and thus change nans in metadata/value to zero at first
-
+            attr_ind = self.metadata.get(attribute, 'value') == 1
             add_value = np.array([None for _ in xrange(self.metadata.get_value_len())])
             add_value[attr_ind] = value
         else:
