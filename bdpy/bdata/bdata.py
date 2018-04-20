@@ -649,7 +649,9 @@ class BData(object):
         else:
             self.dataset = np.asarray(dat["dataset"])
 
-        self.__metadata = MetaData(md_keys, md_values, md_descs)
+        self.__metadata.key = md_keys
+        self.__metadata.value = md_values
+        self.__metadata.description = md_descs
 
 
     def __load_h5(self, load_filename):
@@ -671,7 +673,9 @@ class BData(object):
         else:
             self.dataset = np.asarray(dat["dataset"], dtype=np.float)
 
-        self.__metadata = MetaData(md_keys, md_values, md_descs)
+        self.__metadata.key = md_keys
+        self.__metadata.value = md_values
+        self.__metadata.description = md_descs
 
 
     def __get_filetype(self, file_name):
