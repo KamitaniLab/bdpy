@@ -8,7 +8,7 @@ This file is a part of BdPy
 import numpy as np
 
 
-class MetaData(list):
+class MetaData(object):
     """
     MetaData class
 
@@ -16,8 +16,19 @@ class MetaData(list):
     'value', and 'description'.
     """
 
-    def __init__(self):
-        list.__init__(self)
+
+    def __init__(self, key=None, value=None, description=None):
+        if key is None:
+            key = []
+        if value is None:
+            value = np.ndarray((0, 0))
+        if description is None:
+            description = []
+            
+        self.__key = key
+        self.__value = value
+        self.__description = description
+
 
     def set(self, key, value, description, updater=None):
         """
@@ -35,45 +46,36 @@ class MetaData(list):
             Function applied to meta-data value when meta-data named `key` already exists.
             It should take two args: new and old meta-data values.
         """
+        if key in self.__key:
+            # Update existing metadata
 
-        if value is not None and (len(value) > self.get_value_len()):
-            self.extend_value(len(value) - self.get_value_len())
+            ind = [i for i, k in enumerate(self.__key) if k == key]
+            
+            if len(ind) > 1:
+                raise ValueError('Multiple meta-data with the same key is not supported')
 
-        key_list = self.keylist()
-        key_hit_count = key_list.count(key)
+            ind = ind[0]
 
-        if key_hit_count == 0:
-            # Add new meta-data
-            self.append({'key' : key,
-                         'description' : description,
-                         'value' : np.array(value, dtype=np.float)})
-        elif key_hit_count == 1:
-            # Update existing meta-data with 'value'
-            ind = key_list.index(key)
-
-            self[ind]['description'] = description
-
+            self.__description[ind] = description
+            
             if updater is None:
-                self[ind]['value'] = np.array(value, dtype=np.float)
+                self.__value[ind, :] = value
             else:
-                self[ind]['value'] = np.array(updater(value, self[ind]['value']), dtype=np.float)
+                self.__value[ind, :] = np.array(updater(value, self.__value[ind, :]), dtype=np.float)
         else:
-            raise ValueError('Multiple meta-data with the same key is not supported')
+            # Add new metadata
+            self.__key.append(key)
+            self.__description.append(description)
 
+            value = np.array(value)
 
-    def extend_value(self, num_add):
-        """
-        Add columns to meta-data value matrix
+            if value.shape[0] > self.get_value_len():
+                cols = np.empty((self.__value.shape[0], value.shape[0] - self.get_value_len()))
+                cols[:] = np.nan
 
-        Parameters
-        ----------
-        num_add
-            Num of columns added to meta-data
-        """
-
-        for i in xrange(len(self)):
-            self[i]['value'] = np.hstack((self[i]['value'],
-                                          [np.nan for _ in xrange(num_add)]))
+                self.__value = np.hstack([self.__value, cols])
+                
+            self.__value = np.vstack([self.__value, value])
 
 
     def get(self, key, field):
@@ -89,33 +91,27 @@ class MetaData(list):
 
         Returns
         -------
-        str or None
+        array, str or None
             Meta-data value or description. If `key` was not found in
             the metadata, `None` is returned.
         """
-
-        key_list = self.keylist()
-        key_hit_count = key_list.count(key)
-
-        if key_hit_count == 0:
-            return None
-        elif key_hit_count == 1:
-            ind = key_list.index(key)
-            return self[ind][field]
+        if key in self.__key:
+            ind = self.__key.index(key)
         else:
-            raise ValueError('Multiple meta-data with the same key is not supported')
+            return None
+        
+        if field == 'value':
+            return self.__value[ind, :]
+
+        if field == 'description':
+            return self.__description[ind]
 
 
     def get_value_len(self):
         """Returns length of meta-data value"""
-
-        if self:
-            return len(self[0]['value'])
-        else:
-            return 0
+        return self.__value.shape[1]
 
 
     def keylist(self):
         """Returns a list of keys"""
-
-        return [m['key'] for m in self]
+        return self.__key
