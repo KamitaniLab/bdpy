@@ -568,28 +568,16 @@ class BData(object):
             md_desc = []
             md_value = []
 
-            for m in self.metadata:
-                md_key.append(m['key'])
-                md_desc.append(m['description'])
-
-                v_org = m['value']
-                v_nan = []
-
-                # Convert 'None' to 'np.nan'
-                for v in v_org:
-                    if v is None:
-                        v_nan.append(np.nan)
-                    else:
-                        v_nan.append(v)
-
-                md_value.append(v_nan)
+            md_keys = self.metadata.key
+            md_desc = self.metadata.description
+            md_vals = self.metadata.value
 
             # 'key' and 'description' are saved as cell arrays
             # For compatibility with Matlab, save `dataset` and `metadata` as `dataSet` and `metaData`
             sio.savemat(file_name, {"dataSet" : self.dataset,
-                                    "metaData" : {"key" : np.array(md_key, dtype=np.object),
-                                                  "description" : np.array(md_desc, dtype=np.object),
-                                                  "value" : md_value}})
+                                    "metaData" : {"key" : md_keys,
+                                                  "description" : md_desc,
+                                                  "value" : md_vals}})
 
         elif file_type == "HDF5":
             self.__save_h5(file_name)
@@ -632,9 +620,9 @@ class BData(object):
             h5file.create_dataset('/dataset', data=self.dataset)
 
             # metadata
-            md_keys = [m['key'] for m in self.metadata]
-            md_desc = [m['description'] for m in self.metadata]
-            md_vals = np.array([m['value'] for m in self.metadata], dtype=np.float)
+            md_keys = self.metadata.key
+            md_desc = self.metadata.description
+            md_vals = self.metadata.value
 
             h5file.create_group('/metadata')
             h5file.create_dataset('/metadata/key', data=md_keys)
@@ -661,8 +649,7 @@ class BData(object):
         else:
             self.dataset = np.asarray(dat["dataset"])
 
-        for k, v, d in zip(md_keys, md_values, md_descs):
-            self.add_metadata(k, v, d)
+        self.__metadata = MetaData(md_keys, md_values, md_descs)
 
 
     def __load_h5(self, load_filename):
@@ -673,19 +660,18 @@ class BData(object):
         if 'metaData' in dat:
             md_keys = dat["metaData"]['key'][:].tolist()
             md_descs = dat["metaData"]['description'][:].tolist()
-            md_values = dat["metaData"]['value']
+            md_values = np.asarray(dat["metaData"]['value'], dtype=np.float)
         else:
             md_keys = dat["metadata"]['key'][:].tolist()
             md_descs = dat["metadata"]['description'][:].tolist()
-            md_values = dat["metadata"]['value']
+            md_values = np.asarray(dat["metadata"]['value'], dtype=np.float)
 
         if 'dataSet' in dat:
-            self.dataset = np.asarray(dat["dataSet"])
+            self.dataset = np.asarray(dat["dataSet"], dtype=np.float)
         else:
-            self.dataset = np.asarray(dat["dataset"])
+            self.dataset = np.asarray(dat["dataset"], dtype=np.float)
 
-        for k, v, d in zip(md_keys, md_values, md_descs):
-            self.add_metadata(k, v, d)
+        self.__metadata = MetaData(md_keys, md_values, md_descs)
 
 
     def __get_filetype(self, file_name):
