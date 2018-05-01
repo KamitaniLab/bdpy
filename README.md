@@ -4,6 +4,8 @@ Python library for brain decoding
 
 ## Requirements
 
+- Python 2 (mainly developed with Python 2.7.12)
+    - Python 3 support is upcoming.
 - numpy
 - scipy
 - scikit-learn
