@@ -24,7 +24,7 @@ class MetaData(object):
             value = np.ndarray((0, 0), dtype=float)
         if description is None:
             description = []
-            
+
         self.__key = key
         self.__value = value
         self.__description = description
@@ -81,13 +81,17 @@ class MetaData(object):
             Function applied to meta-data value when meta-data named `key` already exists.
             It should take two args: new and old meta-data values.
         """
+
+        # If `value` is None, `set` does not update the value.
+        is_novalue = True if value is None else False
+
         value = np.array(value)
 
         if key in self.__key:
             # Update existing metadata
 
             ind = [i for i, k in enumerate(self.__key) if k == key]
-            
+
             if len(ind) > 1:
                 raise ValueError('Multiple meta-data with the same key is not supported')
 
@@ -95,12 +99,16 @@ class MetaData(object):
 
             self.__description[ind] = description
 
+            # If `value` is None, `set` does not update the value.
+            if is_novalue:
+                return None
+
             if value.shape[0] > self.get_value_len():
                 cols = np.empty((self.__value.shape[0], value.shape[0] - self.get_value_len()))
                 cols[:] = np.nan
 
                 self.__value = np.hstack([self.__value, cols])
-            
+
             if updater is None:
                 self.__value[ind, :] = value
             else:
@@ -115,7 +123,7 @@ class MetaData(object):
                 cols[:] = np.nan
 
                 self.__value = np.hstack([self.__value, cols])
-                
+
             self.__value = np.vstack([self.__value, value])
 
 
@@ -140,7 +148,7 @@ class MetaData(object):
             ind = self.__key.index(key)
         else:
             return None
-        
+
         if field == 'value':
             return self.__value[ind, :].astype(np.float)
 

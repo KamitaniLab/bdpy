@@ -1,6 +1,8 @@
 """Tests for bdpy.bdata"""
 
 import unittest
+import copy
+
 import numpy as np
 from numpy.testing import assert_array_equal
 
@@ -151,6 +153,17 @@ class TestBdata(unittest.TestCase):
                            np.array([1] * 10 + [np.nan] * 10))
         assert_array_equal(b.metadata.get('TestMetaData', 'value'),
                            np.hstack((md_val, [np.nan] * 10)))
+
+    def test_set_metadatadescription_1(self):
+        '''Test for set_metadatadescription.'''
+
+        expected = 'Test for set_metadatadescription'
+
+        data = copy.deepcopy(self.data)
+        data.set_metadatadescription('Val_A', expected)
+        actual = data.metadata.description[-1]
+
+        self.assertEqual(actual, expected)
 
     def test_get_1(self):
         """Test for get."""
