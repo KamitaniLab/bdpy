@@ -239,7 +239,7 @@ class BData(object):
 
         if attribute is not None:
             attr_ind = self.metadata.get(attribute, 'value') == 1
-            add_value = np.array([None for _ in xrange(self.metadata.get_value_len())])
+            add_value = np.array([np.nan for _ in xrange(self.metadata.get_value_len())])
             add_value[attr_ind] = value
         else:
             add_value = value
