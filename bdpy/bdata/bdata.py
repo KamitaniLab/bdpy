@@ -215,7 +215,7 @@ class BData(object):
         self.dataset[:, np.array(mdind)] = dat
 
 
-    def add_metadata(self, key, value, description='', attribute=None):
+    def add_metadata(self, key, value, description='', where=None, attribute=None):
         '''Add meta-data with `key`, `description`, and `value` to metadata
 
         Parameters
@@ -226,8 +226,8 @@ class BData(object):
             Meta-data array
         description : str, optional
             Meta-data description
-        attribute : str, optional
-            Meta-data key specifying data attribution
+        where : str, optional
+            Meta-data key masking the columns in the dataset
 
         Returns
         -------
@@ -236,9 +236,18 @@ class BData(object):
 
         # TODO: Add attribute specifying
         # TODO: Add size check of metadata/value
-
+        
         if attribute is not None:
-            attr_ind = self.metadata.get(attribute, 'value') == 1
+            warnings.warn("Keyword argument 'attribute' is obsoleted and kept for compatibility. Use 'where' instead.",
+                          UserWarning, stacklevel=2)
+            if where is not None:
+                warnings.warn("Value of 'attribute' is overridden by 'where'.",
+                              UserWarning, stacklevel=2)
+            else:
+                where = attribute
+        
+        if where is not None:
+            attr_ind = self.metadata.get(where, 'value') == 1
             add_value = np.array([np.nan for _ in xrange(self.metadata.get_value_len())])
             add_value[attr_ind] = value
         else:

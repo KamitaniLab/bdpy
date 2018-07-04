@@ -28,11 +28,11 @@ class TestBdata(unittest.TestCase):
         self.data.add(x, 'VoxelData')
         self.data.add(g, 'Group')
 
-        self.data.add_metadata('Mask_0:3', [1, 1, 1, 0, 0, 0, 0, 0, 0, 0], attribute='VoxelData')
-        self.data.add_metadata('Mask_3:3', [0, 0, 0, 1, 1, 1, 0, 0, 0, 0], attribute='VoxelData')
-        self.data.add_metadata('Mask_6:3', [0, 0, 0, 0, 0, 0, 1, 1, 1, 0], attribute='VoxelData')
-        self.data.add_metadata('Mask_0:5', [1, 1, 1, 1, 1, 0, 0, 0, 0, 0], attribute='VoxelData')
-        self.data.add_metadata('Val_A',    [9, 7, 5, 3, 1, 0, 2, 4, 6, 8], attribute='VoxelData')
+        self.data.add_metadata('Mask_0:3', [1, 1, 1, 0, 0, 0, 0, 0, 0, 0], where='VoxelData')
+        self.data.add_metadata('Mask_3:3', [0, 0, 0, 1, 1, 1, 0, 0, 0, 0], where='VoxelData')
+        self.data.add_metadata('Mask_6:3', [0, 0, 0, 0, 0, 0, 1, 1, 1, 0], where='VoxelData')
+        self.data.add_metadata('Mask_0:5', [1, 1, 1, 1, 1, 0, 0, 0, 0, 0], where='VoxelData')
+        self.data.add_metadata('Val_A',    [9, 7, 5, 3, 1, 0, 2, 4, 6, 8], where='VoxelData')
 
     def test_add(self):
         """Test for add."""
@@ -146,6 +146,52 @@ class TestBdata(unittest.TestCase):
         b.add(testdata_b, 'TestDataB')
 
         b.add_metadata(md_key, md_val, attribute='TestDataA')
+
+        assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
+
+        assert_array_equal(b.metadata.get('TestDataA', 'value'),
+                           np.array([1] * 10 + [np.nan] * 10))
+        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
+                           np.hstack((md_val, [np.nan] * 10)))
+
+    def test_add_metadata_4(self):
+        """Test for add_metadata."""
+
+        md_key = 'TestMetaData'
+        md_desc = 'Metadata for test'
+        md_val = np.random.rand(10)
+
+        testdata_a = np.random.rand(10, 10)
+        testdata_b = np.random.rand(10, 10)
+        
+        b = bdpy.BData()
+        b.add(testdata_a, 'TestDataA')
+        b.add(testdata_b, 'TestDataB')
+
+        b.add_metadata(md_key, md_val, where='TestDataA')
+
+        assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
+
+        assert_array_equal(b.metadata.get('TestDataA', 'value'),
+                           np.array([1] * 10 + [np.nan] * 10))
+        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
+                           np.hstack((md_val, [np.nan] * 10)))
+
+    def test_add_metadata_5(self):
+        """Test for add_metadata."""
+
+        md_key = 'TestMetaData'
+        md_desc = 'Metadata for test'
+        md_val = np.random.rand(10)
+
+        testdata_a = np.random.rand(10, 10)
+        testdata_b = np.random.rand(10, 10)
+        
+        b = bdpy.BData()
+        b.add(testdata_a, 'TestDataA')
+        b.add(testdata_b, 'TestDataB')
+
+        b.add_metadata(md_key, md_val, where='TestDataA', attribute='TestDataB')
 
         assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
 
