@@ -67,6 +67,24 @@ class TestUtil(unittest.TestCase):
 
         self.assertRaises(ValueError, bdpy.create_groupvector, x, y)
 
+    def test_divide_chunks(self):
+        '''Test for divide_chunks.'''
+
+        a = [1, 2, 3, 4, 5, 6, 7]
+
+        # Test 1
+        expected = [[1, 2, 3, 4],
+                    [5, 6, 7]]
+        actual = bdpy.divide_chunks(a, chunk_size=4)
+        self.assertEqual(actual, expected)
+
+        # Test 2
+        expected = [[1, 2, 3],
+                    [4, 5, 6],
+                    [7]]
+        actual = bdpy.divide_chunks(a, chunk_size=3)
+        self.assertEqual(actual, expected)
+
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUtil)
