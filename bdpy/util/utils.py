@@ -5,7 +5,13 @@ This file is a part of BdPy.
 """
 
 
-__all__ = ['create_groupvector', 'get_refdata', 'makedir_ifnot']
+from __future__ import division
+
+
+__all__ = ['create_groupvector',
+           'divide_chunks',
+           'get_refdata',
+           'makedir_ifnot']
 
 
 import os
@@ -57,6 +63,36 @@ def create_groupvector(group_label, group_size):
     group_vector = np.hstack(group_list)
 
     return group_vector
+
+
+def divide_chunks(input_list, chunk_size=100):
+    '''Divide elements in the input list into groups.
+
+    Parameters
+    ----------
+    input_list : array_like
+        List or array to be divided.
+    chunk_size : int
+        The number of elements in each chunk.
+
+    Returns
+    -------
+    list
+        List of chunks.
+
+    Example
+    -------
+
+        >>> a = [0, 1, 2, 3, 4, 5, 6]
+        >>> divide_chunks(a, chunk_size=2)
+        [[0, 1], [2, 3], [4, 5], [6]]
+        >>> divide_chunks(a, chunk_size=3)
+        [[0, 1, 2], [3, 4, 5], [6]]
+    '''
+    n_chunk = np.int(np.ceil(len(input_list) / chunk_size))
+    chunks = [input_list[i * chunk_size:(i + 1) * chunk_size]
+              for i in range(n_chunk)]
+    return chunks
 
 
 def get_refdata(data, ref_key, foreign_key):
