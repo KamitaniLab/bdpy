@@ -546,8 +546,18 @@ class BData(object):
 
     def show_metadata(self):
         '''Show all the key and description in metadata'''
-        for m in self.metadata:
-            print "%s: %s" % (m['key'], m['description'])
+
+        # Get max length
+        max_key = max([len(k) for k in self.metadata.key])
+        max_desc = max([len(k) for k in self.metadata.description])
+
+        # Disp header
+        print('| ' + 'Key' + ' ' * (max_key - 3) + ' | ' + 'Description' + ' ' * (max_desc - 11) + ' |')
+        print('|-' + '-' * max_key + '-|-' + '-' * max_desc + '-|')
+
+        # Disp key and description
+        for k, d in zip(self.metadata.key, self.metadata. description):
+            print('| ' + k + ' ' * (max_key - len(k)) + ' | ' + d + ' ' * (max_desc - len(d)) + ' |')
 
 
     # File I/O---------------------------------------------------------
