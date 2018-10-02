@@ -1,8 +1,8 @@
-"""
-Load EPIs
+'''Loading EPIs module.
 
-This file is a part of BdPy
-"""
+This file is a part of BdPy.
+'''
+
 
 import itertools as itr
 import os
@@ -15,22 +15,23 @@ import scipy.io as sio
 
 
 def load_epi(datafiles):
-    """
-    Loads EPIs
+    '''Load EPI files.
+
+    The returned data and xyz are flattened by C-like order.
 
     Parameters
     ----------
     datafiles: list
-        EPI image files
+        EPI image files.
 
     Returns
     -------
-    data: array_like
-        Voxel signal values (M * N; N is the number of samples, M is the
-        nubmer of voxels)
-    xyz_array: array_like
-        Coordiantes of voxels (3 * N)
-    """
+    data: array_like, shape = (M, N)
+        Voxel signal values (M: the number of samples, N: the nubmer of
+        voxels).
+    xyz_array: array_like, shape = (3, N)
+        XYZ Coordiantes of voxels.
+    '''
 
     data_list = []
     xyz = np.array([])
@@ -50,9 +51,8 @@ def load_epi(datafiles):
 
 
 def _check_xyz(xyz, img):
-    """
-    Checks voxel xyz consistency
-    """
+    '''Check voxel xyz consistency.'''
+
     xyz_current = _get_xyz(img.coordmap.affine, img.get_data().shape)
 
     if xyz.size == 0:
@@ -64,22 +64,21 @@ def _check_xyz(xyz, img):
 
 
 def _get_xyz(affine, volume_shape):
-    """
-    Returns voxel xyz coordinates based on an affine matrix
+    '''Return voxel XYZ coordinates based on an affine matrix.
 
     Parameters
     ----------
     affine : array
-        Affine matrix
+        Affine matrix.
     volume_shape : list
-        Shape of the volume (i, j, k lnegth)
+        Shape of the volume (i, j, k lnegth).
 
     Returns
     -------
-    array
-        x-, y-, and z-coordinates (3 * N; N is the number of
-        voxels)
-    """
+    array, shape = (3, N)
+        x-, y-, and z-coordinates (N: the number of voxels).
+    '''
+
     i_len, j_len, k_len = volume_shape
     ijk = np.array(list(itr.product(xrange(i_len),
                                     xrange(j_len),
