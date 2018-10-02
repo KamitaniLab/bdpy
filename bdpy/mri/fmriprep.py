@@ -164,7 +164,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard'):
 
     print('BIDS data path: %s' % dpath)
 
-    fmriprep = FmriprepData(testdatapath)
+    fmriprep = FmriprepData(dpath)
 
     for sbj, sbjdata in fmriprep.data.items():
         print('----------------------------------------')
