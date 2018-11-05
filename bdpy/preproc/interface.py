@@ -5,7 +5,7 @@ This file is a part of BdPy
 """
 
 
-from preprocessor import Average,Detrender,Normalize,ShiftSample
+from preprocessor import Average,Detrender,Normalize,Regressout,ShiftSample
 from util import print_start_msg, print_finish_msg
 
 
@@ -33,7 +33,7 @@ def average_sample(x, group, verbose=True):
 
     p = Average()
     y, ind_map = p.run(x, group)
-    
+
     if verbose:
         print_finish_msg()
 
@@ -50,7 +50,7 @@ def detrend_sample(x, group, keep_mean=True, verbose=True):
         Input data array (sample num * feature num)
     group : array_like
         Group vector (length = sample num)
-    
+
     Returns
     -------
     y : array
@@ -62,7 +62,7 @@ def detrend_sample(x, group, keep_mean=True, verbose=True):
 
     p = Detrender()
     y, _ = p.run(x, group, keep_mean=keep_mean)
-        
+
     if verbose:
         print_finish_msg()
 
@@ -105,6 +105,40 @@ def normalize_sample(x, group, mode='PercentSignalChange', baseline='All',
     return y
 
 
+def regressout(x, group, regressor=[], remove_dc=True, linear_detrend=True, verbose=True):
+    '''Remove nuisance regressors.
+
+    Parameters
+    ----------
+    x : array, shape = (n_sample, n_feature)
+        Input data array
+    group : array_like, lenght = n_sample
+        Group vector.
+    regressor : array_like, shape = (n_sample, n_regressor)
+        Nuisance regressors.
+    remove_dc : bool
+        Remove DC component (signal mean) or not (default: True).
+    linear_detrend : bool
+        Remove linear trend or not (default: True).
+
+    Returns
+    -------
+    y : array, shape = (n_sample, n_feature)
+        Signal without nuisance regressors.
+    '''
+
+    if verbose:
+        print_start_msg()
+
+    p = Regressout()
+    y, _ = p.run(x, group, regressor=regressor, remove_dc=remove_dc, linear_detrend=linear_detrend)
+
+    if verbose:
+        print_finish_msg()
+
+    return y
+
+
 def shift_sample(x, group, shift_size = 1, verbose = True):
     """
     Shift sample within groups
@@ -116,7 +150,7 @@ def shift_sample(x, group, shift_size = 1, verbose = True):
     group : array_like
         Group vector (length: sample num)
     shift_size : int
-        Shift size (default: 1)  
+        Shift size (default: 1)
 
     Returns
     -------
@@ -138,7 +172,7 @@ def shift_sample(x, group, shift_size = 1, verbose = True):
                   [ 41, 42, 43 ],
                   [ 51, 52, 53 ]])
     grp = np.array([ 1, 1, 1, 2, 2, 2 ])
-        
+
     shift_size = 1
 
     y, index = shift_sample(x, grp, shift_size)

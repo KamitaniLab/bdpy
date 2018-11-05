@@ -19,7 +19,7 @@ class Preprocessor(object):
     """
 
     __metaclass__ = ABCMeta
-    
+
     @abstractmethod
     def proc(self, x, ind, opt):
         """
@@ -37,14 +37,14 @@ class Preprocessor(object):
         # If `group` is empty, apply preprocessing to the whole data
         if len(group) == 0:
             group = np.ones(x.shape[0])
-        
+
         group = np.array(group) # Input `group` can be either np.array or list
 
         group_set = sorted(list(set(group)))
 
         prec_data = []
         ind_maps = []
-        
+
         for g in group_set:
             group_index = np.where(group == g)[0]
             group_data = x[group_index]
@@ -56,7 +56,7 @@ class Preprocessor(object):
 
         y = np.vstack(prec_data)
         index_map = np.hstack(ind_maps) # `index_map` should be a vector
-        
+
         return y, index_map
 
 
@@ -69,7 +69,7 @@ class Average(Preprocessor):
         x_ave = np.average(x, axis = 0)
 
         ind_map = ind[0]
-        
+
         return x_ave, ind_map
 
 
@@ -80,7 +80,7 @@ class Detrender(Preprocessor):
         from scipy.signal import detrend
 
         keep_mean = opt['keep_mean']
-        
+
         x_mean = np.mean(x, axis = 0)
         x_detl = detrend(x, axis = 0, type = 'linear')
 
@@ -88,7 +88,7 @@ class Detrender(Preprocessor):
             x_detl += x_mean
 
         ind_map = ind
-        
+
         return x_detl, ind_map
 
 
@@ -97,7 +97,7 @@ class Normalize(Preprocessor):
     def proc(self, x, ind, opt):
 
         mode = opt['mode']
-        
+
         x_mean = np.mean(x, axis = 0)
         x_std = np.std(x, axis = 0)
 
@@ -116,8 +116,45 @@ class Normalize(Preprocessor):
             NameError("Unknown normalization mode: %s', norm_mode" % (mode))
 
         ind_map = ind
-            
+
         return x, ind_map
+
+
+class Regressout(Preprocessor):
+
+    def proc(self, x, ind, opt):
+
+        regressor = opt['regressor']            # Numpy array
+        remove_dc = opt['remove_dc']            # Bool
+        linear_detrend = opt['linear_detrend']  # Bool
+
+        regressor = regressor[ind, :]
+        
+        n_smp = x.shape[0]
+
+        dc_cmp = np.ones((n_smp, 1))  # DC component (mean)
+
+        if linear_detrend:
+            ln_cmp = np.c_[(np.arange(n_smp) + 1) / np.float(n_smp)]
+            print(dc_cmp.shape)
+            print(ln_cmp.shape)
+            print(regressor.shape)
+            regmat = np.hstack([dc_cmp, ln_cmp, regressor])
+        else:
+            regmat = np.hstack([dc_cmp, regressor])
+
+        w = np.linalg.solve(np.dot(regmat.T, regmat),  np.dot(regmat.T, x))
+
+        y = x - np.dot(regmat, w)
+
+        if not remove_dc:
+            dc = np.mean(x, axis=0)
+            y = y + dc
+
+        # No index mapping
+        ind_map = ind
+
+        return y, ind_map
 
 
 class ShiftSample(Preprocessor):
@@ -125,7 +162,7 @@ class ShiftSample(Preprocessor):
     def proc(self, x, ind, opt):
 
         s = opt['shift_size']
-        
+
         y = x[s:]
         ind_map = ind[:-s]
 
