@@ -131,9 +131,7 @@ class FmriprepData(object):
         for sbj, sbjdata in self.__data.items():
             for ses, sesdata in sbjdata.items():
                 raw_func_dir = os.path.join(self.__datapath, sbj, ses, 'func')
-                #print(raw_func_dir)
                 for run in sesdata:
-                    #print(run)
                     # Get run label
                     m = re.search('.*_(run-.*)_bold_.*', run['confounds'])
                     if m:
@@ -151,7 +149,7 @@ class FmriprepData(object):
         return None
 
 
-def create_bdata_fmriprep(dpath, data_mode='volume_standard'):
+def create_bdata_fmriprep(dpath, data_mode='volume_standard', label_mapper={}):
     '''Create BData from FMRIPREP outputs.
 
     Parameters
@@ -170,12 +168,12 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard'):
         print('----------------------------------------')
         print('Subject: %s\n' % sbj)
 
-        bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath)
+        bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper)
 
     return bdata
 
 
-def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./'):
+def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
     braindata_list = []
     xyz = np.array([])
 
@@ -238,7 +236,12 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./'):
                 #print(blocks)
 
                 # Label
-                label_vals = [row[p] for p in cols]
+                label_vals = []
+                for p in cols:
+                    if p in label_mapper:
+                        label_vals.append(label_mapper[p][row[p]])
+                    else:
+                        label_vals.append(row[p])
                 label_vals = np.array([np.nan if x == 'n/a' else np.float(x)
                                        for x in label_vals])
                 label_mat = np.tile(label_vals, (nsmp, 1))
@@ -340,8 +343,12 @@ if __name__ == '__main__':
     fmriprep = FmriprepData(testdatapath)
     print(fmriprep.data)
 
-    bdata_native = create_bdata_fmriprep(testdatapath, 'volume_native')
-    bdata_standard = create_bdata_fmriprep(testdatapath, 'volume_standard')
+    label_mapper = {'stimulus_name' : {'n/a' : np.nan,
+                                       'hoge' : 1,
+                                       'fuga' : 2}}
+
+    bdata_native = create_bdata_fmriprep(testdatapath, 'volume_native', label_mapper=label_mapper)
+    bdata_standard = create_bdata_fmriprep(testdatapath, 'volume_standard', label_mapper=label_mapper)
 
     print(bdata_native.dataset.shape)
     print(bdata_standard.dataset.shape)
