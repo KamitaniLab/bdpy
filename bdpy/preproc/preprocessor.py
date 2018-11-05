@@ -136,9 +136,6 @@ class Regressout(Preprocessor):
 
         if linear_detrend:
             ln_cmp = np.c_[(np.arange(n_smp) + 1) / np.float(n_smp)]
-            print(dc_cmp.shape)
-            print(ln_cmp.shape)
-            print(regressor.shape)
             regmat = np.hstack([dc_cmp, ln_cmp, regressor])
         else:
             regmat = np.hstack([dc_cmp, regressor])
