@@ -5,7 +5,7 @@ This file is a part of BdPy
 """
 
 
-from preprocessor import Average,Detrender,Normalize,Regressout,ShiftSample
+from preprocessor import Average,Detrender,Normalize,Regressout,ReduceOutlier,ShiftSample
 from util import print_start_msg, print_finish_msg
 
 
@@ -105,7 +105,25 @@ def normalize_sample(x, group, mode='PercentSignalChange', baseline='All',
     return y
 
 
-def regressout(x, group, regressor=[], remove_dc=True, linear_detrend=True, verbose=True):
+def reduce_outlier(x, group=[], std=True, maxmin=True, remove=False, dimension=1, n_iter=10, std_threshold=3, max_value=None, min_value=None, verbose=True):
+    '''Outlier reduction.'''
+
+    if verbose:
+        print_start_msg()
+
+    if remove:
+        raise NotImplementedError('"remove" option is not implemented yet.')
+        
+    p = ReduceOutlier()
+    y, _ = p.run(x, group, std=std, maxmin=maxmin, dimension=dimension, n_iter=n_iter, std_threshold=std_threshold, max_value=max_value, min_value=min_value)
+
+    if verbose:
+        print_finish_msg()
+
+    return y
+    
+
+def regressout(x, group=[], regressor=[], remove_dc=True, linear_detrend=True, verbose=True):
     '''Remove nuisance regressors.
 
     Parameters

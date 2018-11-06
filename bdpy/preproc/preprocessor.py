@@ -5,10 +5,12 @@ This file is a part of BdPy.
 """
 
 
+import copy
 import sys
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
+from numpy.matlib import repmat
 
 
 ## Abstract preprocessor #######################################################
@@ -120,6 +122,63 @@ class Normalize(Preprocessor):
         return x, ind_map
 
 
+class ReduceOutlier(Preprocessor):
+
+    def proc(self, x, ind, opt):
+        std = opt['std']                      # Bool
+        maxmin = opt['maxmin']                # Bool
+        dim = opt['dimension']                # int
+        n_iter = opt['n_iter']                # int
+        std_threshold = opt['std_threshold']  # float
+        max_value = opt['max_value']          # float
+        min_value = opt['min_value']          # float
+
+        # TODO: add remove operation
+
+        dim = dim - 1
+
+        y = copy.deepcopy(x)
+
+        if std:
+            # Reduce outliers by SD
+            for i in range(n_iter):
+                mu = np.mean(y, axis=dim)
+                sd = np.std(y, axis=dim)
+
+                thres_up = mu + sd * std_threshold
+                thres_lw = mu - sd * std_threshold
+
+                if dim == 0:
+                    thres_up = repmat(thres_up, y.shape[0], 1)
+                    thres_lw = repmat(thres_lw, y.shape[0], 1)
+                elif dim == 1:
+                    thres_up = repmat(np.c_[thres_up], 1, y.shape[1])
+                    thres_lw = repmat(np.c_[thres_lw], 1, y.shape[1])
+
+                out_ind_up = thres_up < y
+                out_ind_lw = thres_lw > y
+
+                # Clip outliers
+                y[out_ind_up] = thres_up[out_ind_up]
+                y[out_ind_lw] = thres_lw[out_ind_lw]
+
+            num_out = np.sum(out_ind_up) + np.sum(out_ind_lw)
+            print('Num outliers (SD): %d' % num_out)
+
+        if maxmin:
+            # Reduce outliers by max-min values
+            if max_value is not None:
+                out_ind_max = y > max_value
+                y[out_ind_max] = max_value
+            if min_value is not None:
+                out_ind_min = y < min_value
+                y[out_ind_min] = min_value
+
+        ind_map = ind
+
+        return y, ind_map
+
+
 class Regressout(Preprocessor):
 
     def proc(self, x, ind, opt):
@@ -129,7 +188,7 @@ class Regressout(Preprocessor):
         linear_detrend = opt['linear_detrend']  # Bool
 
         regressor = regressor[ind, :]
-        
+
         n_smp = x.shape[0]
 
         dc_cmp = np.ones((n_smp, 1))  # DC component (mean)
