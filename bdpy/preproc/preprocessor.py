@@ -199,7 +199,11 @@ class Regressout(Preprocessor):
         else:
             regmat = np.hstack([dc_cmp, regressor])
 
-        w = np.linalg.solve(np.dot(regmat.T, regmat),  np.dot(regmat.T, x))
+        try:
+            w = np.linalg.solve(np.dot(regmat.T, regmat),  np.dot(regmat.T, x))
+        except:
+            print('Error with np.linalg.solve. Trying np.linalg.lstsq')
+            w = np.linalg.lstsq(np.dot(regmat.T, regmat),  np.dot(regmat.T, x))[0]
 
         y = x - np.dot(regmat, w)
 
