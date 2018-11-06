@@ -6,7 +6,7 @@ import os
 
 import numpy as np
 
-from bdpy.mri import load_epi
+from bdpy.mri import load_mri
 
 
 def add_roimask(bdata, roi_mask, roi_prefix='',
@@ -17,28 +17,48 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
     Parameters
     ----------
     bdata : BData
-    roi_mask : str
-        ROI mask file.
+    roi_mask : str or list
+        ROI mask file(s).
 
     Returns
     -------
     bdata : BData
     '''
 
+    if isinstance(roi_mask, str):
+        roi_mask = [roi_mask]
+    
     # Get voxel xyz coordinates in `bdata`
     voxel_xyz = np.vstack([bdata.get_metadata(xyz[0], where=brain_data),
                            bdata.get_metadata(xyz[1], where=brain_data),
                            bdata.get_metadata(xyz[2], where=brain_data)])
 
-    # Load the ROI mask file
-    mask_v, mask_xyz = load_epi([roi_mask])
+    # Load the ROI mask files
+    mask_xyz_all = []
+    mask_v_all = []
+
+    voxel_consistency = True
+    
+    for m in roi_mask:
+        mask_v, mask_xyz, mask_ijk = load_mri(m)
+        mask_v_all.append(mask_v)
+        mask_xyz_all.append(mask_xyz[:, (mask_v == 1).flatten()])
+
+        if not (voxel_xyz == mask_xyz).all():
+            voxel_consistency = False
 
     # Get ROI flags
-    roi_flag = get_roiflag([mask_xyz[:, (mask_v == 1).flatten()]], voxel_xyz)
+    if voxel_consistency:
+        roi_flag = np.vstack(mask_v_all)
+    else:
+        roi_flag = get_roiflag(mask_xyz_all, voxel_xyz)
 
     # Add the ROI flag as metadata in `bdata`
-    roi_name = roi_prefix + '_' + os.path.basename(roi_mask).split('.')[0]
-    bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=brain_data)
+    for i, roi in enumerate(roi_mask):
+        roi_name = roi_prefix + '_' + os.path.basename(roi).split('.')[0]
+
+        print('Adding %s' % roi_name)
+        bdata.add_metadata(roi_name, roi_flag[i, :], description='1 = ROI %s' % roi_name, where=brain_data)
 
     return bdata
 
