@@ -143,15 +143,15 @@ class BData(object):
 
     # Data modification ------------------------------------------------
 
-    def add(self, x, column_key):
-        '''Add `x` to dataset with attribute meta-data key `attribute_key`
+    def add(self, x, name):
+        '''Add `x` to dataset as `name`.`
 
         Parameters
         ----------
         x : array
             Data matrix to be added in dataset
-        column_key : str
-            Meta-data key specifying the columns containing `x`
+        name : str
+            Name of the data `x`
 
         Returns
         -------
@@ -171,11 +171,11 @@ class BData(object):
             # TODO: Add size check of 'x' and 'self.dataset'
             self.dataset = np.hstack((self.dataset, x))
 
-        # Add new attribute metadata
-        column_description = '1 = %s' % column_key
+        # Add new metadata
+        column_description = '1 = %s' % name
         column_value = [np.nan for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
 
-        self.metadata.set(column_key, column_value, column_description,
+        self.metadata.set(name, column_value, column_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
 
