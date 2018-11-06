@@ -220,6 +220,9 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     block_label_list = []
     labels_list = []
 
+    last_run = 0
+    last_block = 0
+
     for i, (ses, sesdata) in enumerate(subject_data.items()):
         print('Session: %d (%s)' % (i + 1, ses))
         print('Data: %s\n' % data_mode)
@@ -299,9 +302,13 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                 #import pdb; pdb.set_trace()
 
             ses_label_list.append(np.ones((num_vol, 1)) * (i + 1))
-            run_label_list.append(np.ones((num_vol, 1)) * (j + 1))
-            block_label_list.append(np.vstack(blocks))
+            run_label_list.append(np.ones((num_vol, 1)) * (j + 1) + last_run)
+            block_label_list.append(np.vstack(blocks) + last_block)
             labels_list.append(np.vstack(labels))
+
+            last_block = block_label_list[-1][-1]
+
+        last_run = run_label_list[-1][-1]
 
         print('')
 
