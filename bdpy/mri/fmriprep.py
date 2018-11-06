@@ -45,7 +45,7 @@ class FmriprepData(object):
 
         # Get sessions
         for sbj in subjects:
-            self.__data.update({sbj: {}})
+            self.__data.update({sbj: OrderedDict()})
             sessions = self.__get_sessions(prepdir, sbj)
 
             # Get runs in the sesssion
@@ -80,7 +80,7 @@ class FmriprepData(object):
                 continue
 
             sessions.append(d)
-        return sessions
+        return sorted(sessions)
 
     def __parse_session(self, dpath, subject, session):
         sespath = os.path.join(dpath, subject, session)
