@@ -11,6 +11,7 @@ from bdpy.mri import load_mri
 
 def add_roimask(bdata, roi_mask, roi_prefix='',
                 brain_data='VoxelData', xyz=['voxel_x', 'voxel_y', 'voxel_z'],
+                return_roi_flag=False,
                 verbose=True):
     '''Add an ROI mask to `bdata`.
 
@@ -60,7 +61,10 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
         print('Adding %s' % roi_name)
         bdata.add_metadata(roi_name, roi_flag[i, :], description='1 = ROI %s' % roi_name, where=brain_data)
 
-    return bdata
+    if return_roi_flag:
+        return bdata, roi_flag
+    else:
+        return bdata
 
 
 def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
