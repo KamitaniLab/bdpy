@@ -308,6 +308,48 @@ class BData(object):
         '''
         self.set_metadatadescription(metakey, description)
 
+    def applyfunc(self, func, where=None, **kargs):
+        '''Apply `func` to the dataset.'''
+
+        if where is None:
+            # FIXME
+            fout = func(self.dataset, **kargs)
+
+            if isinstance(fout, tuple):
+                self.dataset = fout[0]
+            else:
+                self.dataset = fout
+        else:
+            # FIXME
+            if not isinstance(where, list):
+                where = [where]
+
+            data_selector = '|'.join([w + ' = 1' for w in where])
+
+            x, x_ind = self.select(data_selector, return_index=True)
+
+            fout = func(x, **kargs)
+
+            if isinstance(fout, tuple):
+                # Index mapping
+                ind_map = fout[1]
+
+                ds = np.zeros((len(ind_map), self.dataset.shape[1]))
+
+                index = np.zeros(self.dataset.shape[1], dtype=bool)
+                index[x_ind] = True
+
+                #import pdb; pdb.set_trace()
+                
+                ds[:, index] = fout[0]
+                ds[:, ~index] = self.dataset[np.ix_(ind_map, ~index)]
+
+                self.dataset = ds
+            else:
+                # No index mapping
+                self.dataset[:, x_ind] = fout
+
+        return self
 
     # Data access ------------------------------------------------------
 
