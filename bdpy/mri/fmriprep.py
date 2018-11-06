@@ -1,6 +1,7 @@
 '''Utilities for fmriprep.'''
 
 
+import csv
 import glob
 import itertools
 import os
@@ -149,7 +150,7 @@ class FmriprepData(object):
         return None
 
 
-def create_bdata_fmriprep(dpath, data_mode='volume_standard', label_mapper={}):
+def create_bdata_fmriprep(dpath, data_mode='volume_standard', label_mapper=None):
     '''Create BData from FMRIPREP outputs.
 
     Parameters
@@ -162,13 +163,47 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard', label_mapper={}):
 
     print('BIDS data path: %s' % dpath)
 
+    # Label mapper
+    if label_mapper is None:
+        label_mapper_dict = {}
+    else:
+        if not isinstance(label_mapper, dict):
+            raise TypeError('Unsupported label mapper (type: %s)' % type(label_mapper))
+
+        label_mapper_dict = {}
+        for lbmp in label_mapper:
+            if not isinstance(label_mapper[lbmp], str):
+                raise TypeError('Unsupported label mapper (type: %s)' % type(label_mapper[lbmp]))
+
+            lbmp_file = label_mapper[lbmp]
+
+            ext = os.path.splitext(lbmp_file)[1]
+            lbmp_dict = {}
+
+            if ext == '.csv':
+                with open(lbmp_file, 'r') as f:
+                    reader = csv.reader(f, delimiter=',')
+                    for row in reader:
+                        lbmp_dict.update({row[0]: int(row[1])})
+            elif ext == '.tsv':
+                with open(lbmp_file, 'r') as f:
+                    reader = csv.reader(f, delimiter='\t')
+                    for row in reader:
+                        lbmp_dict.update({row[0]: int(row[1])})
+            else:
+                raise ValueError('Unsuppored label mapper file: %s' % lbmp_file)
+
+            lbmp_dict.update({'n/a': np.nan})
+            label_mapper_dict.update({lbmp: lbmp_dict})
+
+    # Create BData from fmriprep outputs
     fmriprep = FmriprepData(dpath)
 
     for sbj, sbjdata in fmriprep.data.items():
         print('----------------------------------------')
         print('Subject: %s\n' % sbj)
 
-        bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper)
+        bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
 
     return bdata
 
