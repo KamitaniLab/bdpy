@@ -123,7 +123,7 @@ class FmriprepData(object):
 
         runs = [{'volume_native' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', nat),
                  'volume_standard' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', std),
-                 'confounds' : os.path.join('derivatives', subject, session, 'func', conf)}
+                 'confounds' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', conf)}
                 for nat, std, conf in zip(prep_vol_native, prep_vol_standard, confounds)]
 
         return runs
@@ -211,6 +211,9 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard', label_mapper=None)
 def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
     braindata_list = []
     xyz = np.array([])
+    ijk = np.array([])
+
+    motionparam_list = []
 
     ses_label_list = []
     run_label_list = []
@@ -225,7 +228,12 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             print('Run %d' % (j + 1))
             epi = run[data_mode]
             event_file = run['task_event_file']
-            print('EPI: %s\nTask event file: %s\n' % (epi, event_file))
+            confounds_file = run['confounds']
+            print('EPI:             %s' % epi)
+            print('Task event file: %s' % event_file)
+            print('Confounds file:  %s' % confounds_file)
+
+            mp_label = ['X', 'Y', 'Z', 'RotX', 'RotY', 'RotX']
 
             # Load volume
             data, xyz_run, ijk_run = __load_mri(os.path.join(data_path, epi))
@@ -235,6 +243,12 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             ijk = ijk_run
 
             num_vol = data.shape[0]
+
+            # Load motion parameters (and the other confounds)
+            conf_pd = pd.read_csv(os.path.join(data_path, confounds_file), delimiter='\t')
+
+            mp = np.hstack([np.c_[conf_pd[a]] for a in mp_label])
+            motionparam_list.append(mp)
 
             # Load task event file
             event_file = os.path.join(data_path, run['task_event_file'])
@@ -289,7 +303,10 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             block_label_list.append(np.vstack(blocks))
             labels_list.append(np.vstack(labels))
 
+        print('')
+
     braindata = np.vstack(braindata_list)
+    motionparam = np.vstack(motionparam_list)
     ses_label = np.vstack(ses_label_list)
     run_label = np.vstack(run_label_list)
     block_label = np.vstack(block_label_list)
@@ -305,6 +322,13 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     bdata.add(run_label, 'Run')
     bdata.add(block_label, 'Block')
     bdata.add(labels_label, 'Label')
+    bdata.add(motionparam, 'MotionParameters')
+    bdata.add_metadata('MotionParameters_x', [1, 0, 0, 0, 0, 0], 'Motion parameters: x translation', where='MotionParameters')
+    bdata.add_metadata('MotionParameters_y', [0, 1, 0, 0, 0, 0], 'Motion parameters: y translation', where='MotionParameters')
+    bdata.add_metadata('MotionParameters_z', [0, 0, 1, 0, 0, 0], 'Motion parameters: z translation', where='MotionParameters')
+    bdata.add_metadata('MotionParameters_rot_x', [0, 0, 0, 1, 0, 0], 'Motion parameters: x rotation', where='MotionParameters')
+    bdata.add_metadata('MotionParameters_rot_y', [0, 0, 0, 0, 1, 0], 'Motion parameters: y rotation', where='MotionParameters')
+    bdata.add_metadata('MotionParameters_rot_z', [0, 0, 0, 0, 0, 1], 'Motion parameters: z rotation', where='MotionParameters')
 
     for i, col in enumerate(cols):
         metadata_vec = np.empty((len(cols),))
