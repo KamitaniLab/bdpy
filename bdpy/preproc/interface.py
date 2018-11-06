@@ -9,7 +9,7 @@ from preprocessor import Average,Detrender,Normalize,Regressout,ReduceOutlier,Sh
 from util import print_start_msg, print_finish_msg
 
 
-def average_sample(x, group, verbose=True):
+def average_sample(x, group=[], verbose=True):
     """
     Average samples within groups
 
@@ -40,7 +40,7 @@ def average_sample(x, group, verbose=True):
     return y, ind_map
 
 
-def detrend_sample(x, group, keep_mean=True, verbose=True):
+def detrend_sample(x, group=[], keep_mean=True, verbose=True):
     """
     Apply linear detrend
 
@@ -69,7 +69,7 @@ def detrend_sample(x, group, keep_mean=True, verbose=True):
     return y
 
 
-def normalize_sample(x, group, mode='PercentSignalChange', baseline='All',
+def normalize_sample(x, group=[], mode='PercentSignalChange', baseline='All',
                      zero_threshold=1, verbose=True):
     """
     Apply normalization
@@ -157,7 +157,7 @@ def regressout(x, group=[], regressor=[], remove_dc=True, linear_detrend=True, v
     return y
 
 
-def shift_sample(x, group, shift_size = 1, verbose = True):
+def shift_sample(x, group=[], shift_size = 1, verbose = True):
     """
     Shift sample within groups
 

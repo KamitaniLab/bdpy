@@ -31,7 +31,7 @@ class Preprocessor(object):
         """
         pass
 
-    def run(self, x, group, **kargs):
+    def run(self, x, group=[], **kargs):
         """
         Template method of preprocessing
         """
