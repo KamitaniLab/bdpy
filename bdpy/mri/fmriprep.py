@@ -236,7 +236,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             print('Task event file: %s' % event_file)
             print('Confounds file:  %s' % confounds_file)
 
-            mp_label = ['X', 'Y', 'Z', 'RotX', 'RotY', 'RotX']
+            mp_label = ['X', 'Y', 'Z', 'RotX', 'RotY', 'RotZ']
 
             # Load volume
             data, xyz_run, ijk_run = __load_mri(os.path.join(data_path, epi))
