@@ -56,7 +56,7 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
 
     # Add the ROI flag as metadata in `bdata`
     for i, roi in enumerate(roi_mask):
-        roi_name = roi_prefix + '_' + os.path.basename(roi).split('.')[0]
+        roi_name = roi_prefix + '_' + os.path.basename(roi).replace('.nii.gz', '').replace('.nii', '')
 
         print('Adding %s' % roi_name)
         bdata.add_metadata(roi_name, roi_flag[i, :], description='1 = ROI %s' % roi_name, where=brain_data)
