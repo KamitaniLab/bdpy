@@ -163,7 +163,7 @@ class ReduceOutlier(Preprocessor):
                 y[out_ind_lw] = thres_lw[out_ind_lw]
 
             num_out = np.sum(out_ind_up) + np.sum(out_ind_lw)
-            print('Num outliers (SD): %d' % num_out)
+            print('Num outliers (SD): %d (%f %%)' % (num_out, 100.0 * num_out / y.size))
 
         if maxmin:
             # Reduce outliers by max-min values
