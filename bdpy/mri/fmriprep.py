@@ -224,6 +224,68 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard', fmriprep_version='
     return bdata
 
 
+class BrainData(object):
+    def __init__(self, dpath, dtype='volume'):
+        self.__dpath = dpath
+        self.__dtype = dtype
+        self.__data = np.array([])
+        self.__xyz = np.array([])
+        self.__index = np.array([])
+
+        if self.__dtype == 'volume':
+            self.__load_volume()
+        elif self.__dtype == 'surface':
+            self.__load_surface()
+        else:
+            raise ValueError('Unknown dtype: %s' % self.__dtype)
+
+    @property
+    def data(self):
+        return self.__data
+
+    @property
+    def xyz(self):
+        return self.__xyz
+
+    @property
+    def index(self):
+        return self.__index
+
+    def __load_volume(self):
+        '''Load a MRI image.
+
+        - Returns data as 2D array (sample x voxel)
+        - Returns voxle xyz coordinates (3 x voxel)
+        - Returns voxel ijk indexes (3 x voxel)
+        - Data, xyz, and ijk are flattened by Fortran-like index order
+        '''
+        img = nipy.load_image(self.__dpath)
+
+        data = img.get_data()
+        if data.ndim == 4:
+            data = data.reshape(-1, data.shape[-1], order='F').T
+            i_len, j_len, k_len, t = img.shape
+            affine = np.delete(np.delete(img.coordmap.affine, 3, axis=0), 3, axis=1)
+        elif data.ndim == 3:
+            data = data.flatten(order='F')
+            i_len, j_len, k_len = img.shape
+            affine = img.coordmap.affine
+        else:
+            raise ValueError('Invalid shape.')
+
+        ijk = np.array(np.unravel_index(np.arange(i_len * j_len * k_len),
+                                        (i_len, j_len, k_len), order='F'))
+        ijk_b = np.vstack([ijk, np.ones((1, i_len * j_len * k_len))])
+        xyz_b = np.dot(affine, ijk_b)
+        xyz = xyz_b[:-1]
+
+        self.__data = data
+        self.__xyz = xyz
+        self.__index = ijk
+
+        return None
+
+
 def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
     braindata_list = []
     xyz = np.array([])
@@ -255,14 +317,14 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             mp_label_col = ['X', 'Y', 'Z', 'RotX', 'RotY', 'RotZ',
                             'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z']
 
-            # Load volume
-            data, xyz_run, ijk_run = __load_mri(os.path.join(data_path, epi))
+            # Load brain data (volume or surface)
+            brain = BrainData(os.path.join(data_path, epi), dtype='volume')
 
-            braindata_list.append(data)
-            xyz = xyz_run
-            ijk = ijk_run
+            braindata_list.append(brain.data)
+            xyz = brain.xyz
+            ijk = brain.index
 
-            num_vol = data.shape[0]
+            num_vol = brain.data.shape[0]
 
             # Load motion parameters (and the other confounds)
             conf_pd = pd.read_csv(os.path.join(data_path, confounds_file), delimiter='\t')
@@ -280,7 +342,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
             # Check time length
             tlen_event = events.tail(1)['onset'].values[0] + events.tail(1)['duration'].values[0]
-            n_sample = data.shape[0]
+            n_sample = brain.data.shape[0]
 
             img = nipy.load_image(os.path.join(data_path, epi))
             tr = img.coordmap.affine[3, 3]
