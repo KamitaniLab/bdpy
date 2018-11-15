@@ -18,9 +18,10 @@ import bdpy
 class FmriprepData(object):
     '''FMRIPREP data class.'''
 
-    def __init__(self, datapath=None):
+    def __init__(self, datapath=None, fmriprep_version='1.2'):
         self.__datapath = datapath
         self.__data = OrderedDict()
+        self.__fmriprep_version = fmriprep_version
 
         if self.__datapath is not None:
             self.__parse_data()
@@ -50,6 +51,9 @@ class FmriprepData(object):
 
             # Get runs in the sesssion
             for ses in sessions:
+                if self.__fmriprep_version == '1.2':
+                    if ses == 'ses-anat':
+                        continue
                 runs = self.__parse_session(prepdir, sbj, ses)
                 self.__data[sbj].update({ses: runs})
 
@@ -86,6 +90,19 @@ class FmriprepData(object):
         sespath = os.path.join(dpath, subject, session)
         funcpath = os.path.join(sespath, 'func')
 
+        # File name patterns
+        # FIXME
+        if self.__fmriprep_version == '1.2':
+            file_pattern = {'volume_native'   : '.*_space-T1w_desc-preproc_bold\.nii\.gz$',
+                            'volume_standard' : '.*_space-MNI152NLin2009cAsym_desc-preproc_bold\.nii\.gz$',
+                            'confounds'       : '.*_desc-confounds_regressors\.tsv$'}
+        elif self.__fmriprep_version in ['1.0', '1.1']:
+            file_pattern = {'volume_native'   : '.*_bold_space-T1w_preproc\.nii\.gz$',
+                            'volume_standard' : '.*_bold_space-MNI152NLin2009cAsym_preproc\.nii\.gz$',
+                            'confounds'       : '.*_bold_confounds\.tsv'}
+        else:
+            raise ValueError('Unsuppored fmriprep version %s' % self.__fmriprep_version)
+
         prep_vol_native = []    # List of preprocessed EPI files in native space (T1w)
         prep_vol_standard = []  # List of preprocessed EPI files in MNI space
         confounds = []          # List of confound files
@@ -94,24 +111,18 @@ class FmriprepData(object):
             if os.path.isdir(os.path.join(funcpath, f)):
                 continue
 
-            [fname, fext] = os.path.splitext(f)
-
-            if fext == '.gii':
-                # Surface data not supported yet.
-                continue
-
-            # Get Motion-corrected EPI files in native T1w (*_bold_space-T1w_preproc.nii.gz)
-            m = re.search('.*_bold_space-T1w_preproc\.nii\.gz$', f)
+            # Get Motion-corrected EPI files in native T1w
+            m = re.search(file_pattern['volume_native'], f)
             if m:
                 prep_vol_native.append(f)
 
-            # Get Motion-corrected EPI files in MNI space (*_bold_space-MNI152NLin2009cAsym_preproc\.nii\.gz)
-            m = re.search('.*_bold_space-MNI152NLin2009cAsym_preproc\.nii\.gz$', f)
+            # Get Motion-corrected EPI files in MNI space
+            m = re.search(file_pattern['volume_standard'], f)
             if m:
                 prep_vol_standard.append(f)
 
-            # Get confound file (*_bold_confounds.tsv)
-            m = re.search('.*_bold_confounds\.tsv$', f)
+            # Get confound file (*_)
+            m = re.search(file_pattern['confounds'], f)
             if m:
                 confounds.append(f)
 
@@ -134,7 +145,12 @@ class FmriprepData(object):
                 raw_func_dir = os.path.join(self.__datapath, sbj, ses, 'func')
                 for run in sesdata:
                     # Get run label
-                    m = re.search('.*_(run-.*)_bold_.*', run['confounds'])
+                    if self.__fmriprep_version == '1.2':
+                        m = re.search('.*_(run-.*)_desc-confounds_.*', run['confounds'])
+                    elif self.__fmriprep_version in ['1.0', '1.1']:
+                        m = re.search('.*_(run-.*)_bold_.*', run['confounds'])
+                    else:
+                        raise ValueError('Unsuppored fmriprep version %s' % self.__fmriprep_version)
                     if m:
                         run_label = m.group(1)
                     else:
@@ -144,13 +160,13 @@ class FmriprepData(object):
                     event_file_list = glob.glob(os.path.join(raw_func_dir, event_file_name_glob))
                     if len(event_file_list) != 1:
                         raise RuntimeError('Something is wrong on task event files.')
-                    event_file = event_file_list[0].replace(self.__datapath + '/', '')
+                    event_file = event_file_list[0].replace(os.path.normpath(self.__datapath) + '/', '')
                     # Add the task event file in data
                     run.update({'task_event_file': event_file})
         return None
 
 
-def create_bdata_fmriprep(dpath, data_mode='volume_standard', label_mapper=None):
+def create_bdata_fmriprep(dpath, data_mode='volume_standard', fmriprep_version='1.2', label_mapper=None):
     '''Create BData from FMRIPREP outputs.
 
     Parameters
@@ -197,7 +213,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard', label_mapper=None)
             label_mapper_dict.update({lbmp: lbmp_dict})
 
     # Create BData from fmriprep outputs
-    fmriprep = FmriprepData(dpath)
+    fmriprep = FmriprepData(dpath, fmriprep_version=fmriprep_version)
 
     for sbj, sbjdata in fmriprep.data.items():
         print('----------------------------------------')
@@ -236,7 +252,8 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             print('Task event file: %s' % event_file)
             print('Confounds file:  %s' % confounds_file)
 
-            mp_label = ['X', 'Y', 'Z', 'RotX', 'RotY', 'RotZ']
+            mp_label_col = ['X', 'Y', 'Z', 'RotX', 'RotY', 'RotZ',
+                            'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z']
 
             # Load volume
             data, xyz_run, ijk_run = __load_mri(os.path.join(data_path, epi))
@@ -249,6 +266,10 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
             # Load motion parameters (and the other confounds)
             conf_pd = pd.read_csv(os.path.join(data_path, confounds_file), delimiter='\t')
+
+            mp_label = [c for c in conf_pd.columns if c in mp_label_col]
+            if len(mp_label) != 6:
+                raise RuntimeError('Invalid confounds file: %s' % os.path.join(data_path, confounds_file))
 
             mp = np.hstack([np.c_[conf_pd[a]] for a in mp_label])
             motionparam_list.append(mp)
