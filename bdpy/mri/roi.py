@@ -28,7 +28,7 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
 
     if isinstance(roi_mask, str):
         roi_mask = [roi_mask]
-    
+
     # Get voxel xyz coordinates in `bdata`
     voxel_xyz = np.vstack([bdata.get_metadata(xyz[0], where=brain_data),
                            bdata.get_metadata(xyz[1], where=brain_data),
@@ -39,7 +39,7 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
     mask_v_all = []
 
     voxel_consistency = True
-    
+
     for m in roi_mask:
         mask_v, mask_xyz, mask_ijk = load_mri(m)
         mask_v_all.append(mask_v)
@@ -126,3 +126,56 @@ def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
                 roi_flag_array[i][index] = 1
 
     return roi_flag_array
+
+
+def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=False):
+    '''Add ROI label(s) to `bdata`.
+
+    Parameters
+    ----------
+    bdata : BData
+    roi_mask : str or list
+        ROI label file(s).
+
+    Returns
+    -------
+    bdata : BData
+    '''
+
+    def add_roilabel_file(bdata, label, vertex_data=['VertexData'], prefix='', verbose=False):
+        if verbose:
+            print('Adding %s' % label)
+
+        # Read the label file
+        with open(label, 'r') as f:
+            lines = f.readlines()
+            header = lines.pop(0)
+            n_vertex = int(lines.pop(0).strip())
+
+            roi_vertex = np.array([int(ln.split(' ')[0]) for ln in lines])
+
+        if n_vertex != len(roi_vertex):
+            raise RuntimeError('Invalid num of vertex: %s' % label)
+
+        # Make meta-data vector for ROI flag
+        vindex = bdata.get_metadata('vertex_index', where=vertex_data)
+
+        roi_flag = np.zeros(vindex.shape)
+
+        for v in roi_vertex:
+            roi_flag[vindex == v] = 1
+
+        roi_name = prefix + '_' + os.path.basename(label).replace('.label', '')
+
+
+        bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=vertex_data)
+
+        return bdata
+
+    if isinstance(label, str):
+        label = [label]
+
+    for lb in label:
+        bdata = add_roilabel_file(bdata, lb, vertex_data=vertex_data, prefix=prefix, verbose=verbose)
+
+    return bdata
