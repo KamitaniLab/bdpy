@@ -160,7 +160,6 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
 
         roi_name = prefix + '_' + os.path.basename(label).replace('.label', '')
 
-
         bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=vertex_data)
 
         return bdata
@@ -169,6 +168,35 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
         label = [label]
 
     for lb in label:
-        bdata = add_roilabel_file(bdata, lb, vertex_data=vertex_data, prefix=prefix, verbose=verbose)
+        if os.path.splitext(lb)[1] == '.label':
+            # FreeSurfer label file
+            bdata = add_roilabel_file(bdata, lb, vertex_data=vertex_data, prefix=prefix, verbose=verbose)
+        elif os.path.splitext(lb)[1] == '.annot':
+            # FreeSurfer annotation file
+            annot = nibabel.freesurfer.read_annot(lb)
+            labels = annot[0]  # Annotation ID at each vertex (shape = (n_vertices,))
+            ctab = annot[1]    # Label color table (RGBT + label ID)
+            names = annot[2]   # Label name list
+
+            for i, name in enumerate(names):
+                label_id = i  # Label ID is zero-based
+                roi_flag = (labels == label_id).astype(int)
+
+                if sum(roi_flag) == 0:
+                    print('Label %s not found in the surface.' % name)
+                    continue
+
+                # FIXME: better way to decide left/right?
+                if 'Left' in vertex_data:
+                    hemi = 'lh'
+                elif 'Right' in vertex_data:
+                    hemi = 'rh'
+                else:
+                    raise ValueError('Invalid vertex_data: %s' % vertex_data)
+
+                roi_name = prefix + '_' + hemi + '.' + name
+                bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=vertex_data)
+        else:
+            raise TypeError('Unknown file type: %s' % os.path.splitext(lb)[0])
 
     return bdata
