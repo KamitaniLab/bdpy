@@ -144,9 +144,6 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
     '''
 
     def add_roilabel_file(bdata, label, vertex_data=['VertexData'], prefix='', verbose=False):
-        if verbose:
-            print('Adding %s' % label)
-
         # Read the label file
         roi_vertex = nibabel.freesurfer.read_label(label)
 
@@ -160,6 +157,8 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
 
         roi_name = prefix + '_' + os.path.basename(label).replace('.label', '')
 
+        if verbose:
+            print('Adding %s (%d vertices)' % (roi_name, np.sum(roi_flag)))
         bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=vertex_data)
 
         return bdata
@@ -183,7 +182,8 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
                 roi_flag = (labels == label_id).astype(int)
 
                 if sum(roi_flag) == 0:
-                    print('Label %s not found in the surface.' % name)
+                    if verbose:
+                        print('Label %s not found in the surface.' % name)
                     continue
 
                 # FIXME: better way to decide left/right?
@@ -195,6 +195,10 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
                     raise ValueError('Invalid vertex_data: %s' % vertex_data)
 
                 roi_name = prefix + '_' + hemi + '.' + name
+
+                if verbose:
+                    print('Adding %s (%d vertices)' % (roi_name, np.sum(roi_flag)))
+
                 bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=vertex_data)
         else:
             raise TypeError('Unknown file type: %s' % os.path.splitext(lb)[0])
