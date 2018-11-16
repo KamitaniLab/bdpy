@@ -273,13 +273,19 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard', fmriprep_version='
     # Create BData from fmriprep outputs
     fmriprep = FmriprepData(dpath, fmriprep_version=fmriprep_version)
 
+    bdata_list = []
+
     for sbj, sbjdata in fmriprep.data.items():
         print('----------------------------------------')
         print('Subject: %s\n' % sbj)
 
         bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
+        bdata_list.append(bdata)
 
-    return bdata
+    if len(bdata_list) == 1:
+        return bdata_list[0]
+    else:
+        return bdata_list
 
 
 class BrainData(object):
