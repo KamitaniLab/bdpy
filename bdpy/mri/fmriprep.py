@@ -381,8 +381,8 @@ class BrainData(object):
         # TOOD: check size
 
         self.__data = np.hstack([vertex_left, vertex_right])
-        self.__index = np.array([np.hstack([np.arange(vertex_left.shape[1]) + 1,
-                                            np.arange(vertex_right.shape[1]) + 1])])
+        self.__index = np.array([np.hstack([np.arange(vertex_left.shape[1]),
+                                            np.arange(vertex_right.shape[1])])])
         self.__n_vertex = (n_vertex_left, n_vertex_right)
 
         # TODO: add vertex xyz
