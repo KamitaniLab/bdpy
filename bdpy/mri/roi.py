@@ -5,6 +5,7 @@ Utilities for ROIs
 import os
 
 import numpy as np
+import nibabel.freesurfer
 
 from bdpy.mri import load_mri
 
@@ -147,15 +148,7 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
             print('Adding %s' % label)
 
         # Read the label file
-        with open(label, 'r') as f:
-            lines = f.readlines()
-            header = lines.pop(0)
-            n_vertex = int(lines.pop(0).strip())
-
-            roi_vertex = np.array([int(ln.split(' ')[0]) for ln in lines])
-
-        if n_vertex != len(roi_vertex):
-            raise RuntimeError('Invalid num of vertex: %s' % label)
+        roi_vertex = nibabel.freesurfer.read_label(label)
 
         # Make meta-data vector for ROI flag
         vindex = bdata.get_metadata('vertex_index', where=vertex_data)
