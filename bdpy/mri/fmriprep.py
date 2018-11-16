@@ -231,8 +231,18 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard', fmriprep_version='
     ----------
     dpath : str
         Path to a BIDS data directory.
-    data_mode: {'volume_standard', 'volume_native'}
+    data_mode : {'volume_standard', 'volume_native', 'surface_standard', 'surface_native'}
         Data to be loaded.
+    fmriprep_version : {'1.2, '1.1', '1.0'}
+        The version of fmriprep (default: '1.2')
+    label_mapper : dict
+        A dictionary of tables that define mapping between non-numerical value
+        (e.g., string) in task event files and float value in BData.dataset.
+
+    Returns
+    -------
+    BData or list of BData
+        One subject, one BData.
     '''
 
     print('BIDS data path: %s' % dpath)
