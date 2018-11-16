@@ -38,8 +38,6 @@ class FmriprepData(object):
     # Private methods --------------------------------------------------------
 
     def __parse_data(self):
-        #print('Data path: %s' % self.__datapath)
-
         # FMRIPREP results directory
         prepdir = os.path.join(self.__datapath, 'derivatives', 'fmriprep', 'fmriprep')
 
@@ -377,9 +375,6 @@ class BrainData(object):
         print('Loading %s ...' % self.__dpath[1])
         vertex_right = self.__load_surf_func_file(self.__dpath[1])
 
-        # print(vertex_left.shape)
-        # print(vertex_right.shape)
-
         n_vertex_left = vertex_left.shape[1]
         n_vertex_right = vertex_right.shape[1]
 
@@ -498,7 +493,6 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
                 # Block
                 blocks.append(np.ones((nsmp, 1)) * (k + 1))
-                #print(blocks)
 
                 # Label
                 label_vals = []
@@ -511,8 +505,6 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                                        for x in label_vals])
                 label_mat = np.tile(label_vals, (nsmp, 1))
                 labels.append(label_mat)
-
-                #import pdb; pdb.set_trace()
 
             ses_label_list.append(np.ones((num_vol, 1)) * (i + 1))
             run_label_list.append(np.ones((num_vol, 1)) * (j + 1) + last_run)
@@ -532,16 +524,12 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     block_label = np.vstack(block_label_list)
     labels_label = np.vstack(labels_list)
 
-    #import pdb; pdb.set_trace()
-
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
 
     if is_surf:
         bdata.add(braindata, 'VertexData')
         n_vertex = brain.n_vertex
-        print(braindata.shape)
-        print(n_vertex)
         bdata.add_metadata('VertexLeft', np.array([1] * n_vertex[0] + [0] * n_vertex[1]),
                            where='VertexData')
         bdata.add_metadata('VertexRight', np.array([0] * n_vertex[0] + [1] * n_vertex[1]),
