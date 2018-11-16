@@ -6,10 +6,12 @@ import glob
 import itertools
 import os
 import re
+import json
 from collections import OrderedDict
 
 import numpy as np
 import nipy
+import nibabel
 import pandas as pd
 
 import bdpy
@@ -95,18 +97,33 @@ class FmriprepData(object):
         if self.__fmriprep_version == '1.2':
             file_pattern = {'volume_native'   : '.*_space-T1w_desc-preproc_bold\.nii\.gz$',
                             'volume_standard' : '.*_space-MNI152NLin2009cAsym_desc-preproc_bold\.nii\.gz$',
+                            'surf_native_left'  : '.*_space-fsnative_hemi-L\.func\.gii$',
+                            'surf_native_right' : '.*_space-fsnative_hemi-R\.func\.gii$',
+                            'surf_standard_left'  : '.*_space-fsaverage_hemi-L\.func\.gii$',
+                            'surf_standard_right' : '.*_space-fsaverage_hemi-R\.func\.gii$',
                             'confounds'       : '.*_desc-confounds_regressors\.tsv$'}
         elif self.__fmriprep_version in ['1.0', '1.1']:
             file_pattern = {'volume_native'   : '.*_bold_space-T1w_preproc\.nii\.gz$',
                             'volume_standard' : '.*_bold_space-MNI152NLin2009cAsym_preproc\.nii\.gz$',
+                            'surf_native_left'  : '.*_space-fsnative\.L\.func\.gii$',
+                            'surf_native_right' : '.*_space-fsnative\.R\.func\.gii$',
+                            'surf_standard_left'  : '.*_space-fsaverage\.L\.func\.gii$',
+                            'surf_standard_right' : '.*_space-fsaverage\.R\.func\.gii$',
                             'confounds'       : '.*_bold_confounds\.tsv'}
         else:
             raise ValueError('Unsuppored fmriprep version %s' % self.__fmriprep_version)
 
         prep_vol_native = []    # List of preprocessed EPI files in native space (T1w)
         prep_vol_standard = []  # List of preprocessed EPI files in MNI space
+
+        prep_surf_native_left = []     # List of preprocessed EPI files (surf) on native surface left
+        prep_surf_native_right = []    # List of preprocessed EPI files (surf) on native surface right
+        prep_surf_standard_left = []   # List of preprocessed EPI files (surf) on fsaverage left
+        prep_surf_standard_right = []  # List of preprocessed EPI files (surf) on fsaverage right
+
         confounds = []          # List of confound files
 
+        # FIXME: TOO DIRTY
         for f in os.listdir(funcpath):
             if os.path.isdir(os.path.join(funcpath, f)):
                 continue
@@ -115,27 +132,60 @@ class FmriprepData(object):
             m = re.search(file_pattern['volume_native'], f)
             if m:
                 prep_vol_native.append(f)
+                continue
 
             # Get Motion-corrected EPI files in MNI space
             m = re.search(file_pattern['volume_standard'], f)
             if m:
                 prep_vol_standard.append(f)
+                continue
+
+            # Surface native
+            m = re.search(file_pattern['surf_native_left'], f)
+            if m:
+                prep_surf_native_left.append(f)
+                continue
+
+            m = re.search(file_pattern['surf_native_right'], f)
+            if m:
+                prep_surf_native_right.append(f)
+                continue
+
+            # Surface standard
+            m = re.search(file_pattern['surf_standard_left'], f)
+            if m:
+                prep_surf_standard_left.append(f)
+                continue
+
+            m = re.search(file_pattern['surf_standard_right'], f)
+            if m:
+                prep_surf_standard_right.append(f)
+                continue
 
             # Get confound file (*_)
             m = re.search(file_pattern['confounds'], f)
             if m:
                 confounds.append(f)
+                continue
 
         prep_vol_native.sort()
         prep_vol_standard.sort()
+        prep_surf_native_left.sort()
+        prep_surf_native_right.sort()
+        prep_surf_standard_left.sort()
+        prep_surf_standard_right.sort()
         confounds.sort()
 
         # TODO: add run num check
 
         runs = [{'volume_native' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', nat),
                  'volume_standard' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', std),
+                 'surface_native' : (os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_nat_l),
+                                     os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_nat_r)),
+                 'surface_standard' : (os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_std_l),
+                                       os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_std_r)),
                  'confounds' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', conf)}
-                for nat, std, conf in zip(prep_vol_native, prep_vol_standard, confounds)]
+                for nat, std, surf_nat_l, surf_nat_r, surf_std_l, surf_std_r, conf in zip(prep_vol_native, prep_vol_standard, prep_surf_native_left, prep_surf_native_right, prep_surf_standard_left, prep_surf_standard_right, confounds)]
 
         return runs
 
@@ -163,6 +213,14 @@ class FmriprepData(object):
                     event_file = event_file_list[0].replace(os.path.normpath(self.__datapath) + '/', '')
                     # Add the task event file in data
                     run.update({'task_event_file': event_file})
+
+                    # Get bold json file
+                    bold_json_file_name_glob = '%s_%s_task-*_%s_bold.json' % (sbj, ses, run_label)
+                    bold_json_file_list = glob.glob(os.path.join(raw_func_dir, bold_json_file_name_glob))
+                    if len(bold_json_file_list) != 1:
+                        raise RuntimeError('Something is wrong on bold parameter json files.')
+                    bold_json_file = bold_json_file_list[0].replace(os.path.normpath(self.__datapath) + '/', '')
+                    run.update({'bold_json': bold_json_file})
         return None
 
 
@@ -225,12 +283,16 @@ def create_bdata_fmriprep(dpath, data_mode='volume_standard', fmriprep_version='
 
 
 class BrainData(object):
+    '''fMRI data class (volume or surface).'''
+
     def __init__(self, dpath, dtype='volume'):
         self.__dpath = dpath
         self.__dtype = dtype
         self.__data = np.array([])
         self.__xyz = np.array([])
         self.__index = np.array([])
+
+        self.__n_vertex = (-1, -1)
 
         if self.__dtype == 'volume':
             self.__load_volume()
@@ -245,11 +307,19 @@ class BrainData(object):
 
     @property
     def xyz(self):
+        if self.__dtype is 'surface':
+            raise NotImplementedError('Vertex xyz coordinates are not implemented yet.')
         return self.__xyz
 
     @property
     def index(self):
         return self.__index
+
+    @property
+    def n_vertex(self):
+        if self.__dtype is not 'surface':
+            raise TypeError('Not surface data.')
+        return self.__n_vertex
 
     def __load_volume(self):
         '''Load a MRI image.
@@ -285,8 +355,45 @@ class BrainData(object):
 
         return None
 
+    def __load_surface(self):
+        print('Loading %s ...' % self.__dpath[0])
+        vertex_left = self.__load_surf_func_file(self.__dpath[0])
+        print('Loading %s ...' % self.__dpath[1])
+        vertex_right = self.__load_surf_func_file(self.__dpath[1])
+
+        # print(vertex_left.shape)
+        # print(vertex_right.shape)
+
+        n_vertex_left = vertex_left.shape[1]
+        n_vertex_right = vertex_right.shape[1]
+
+        # TOOD: check size
+
+        self.__data = np.hstack([vertex_left, vertex_right])
+        self.__index = np.array([np.hstack([np.arange(vertex_left.shape[1]) + 1,
+                                            np.arange(vertex_right.shape[1]) + 1])])
+        self.__n_vertex = (n_vertex_left, n_vertex_right)
+
+        # TODO: add vertex xyz
+
+        return None
+
+    def __load_surf_func_file(self, fpath):
+        surf = nibabel.load(fpath)
+        data_arrays = surf.darrays
+        data_matrix_list = []
+        for d in data_arrays:
+            # TODO: checks vertex num
+            data_matrix_list.append(d.data)
+        data_matrix = np.vstack(data_matrix_list)
+        return data_matrix
 
 def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
+    if data_mode in ['surface_standard', 'surface_native']:
+        is_surf = True
+    else:
+        is_surf = False
+
     braindata_list = []
     xyz = np.array([])
     ijk = np.array([])
@@ -310,7 +417,10 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             epi = run[data_mode]
             event_file = run['task_event_file']
             confounds_file = run['confounds']
-            print('EPI:             %s' % epi)
+            if is_surf:
+                print('EPI:             %s, %s' % epi)
+            else:
+                print('EPI:             %s' % epi)
             print('Task event file: %s' % event_file)
             print('Confounds file:  %s' % confounds_file)
 
@@ -318,7 +428,10 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                             'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z']
 
             # Load brain data (volume or surface)
-            brain = BrainData(os.path.join(data_path, epi), dtype='volume')
+            if is_surf:
+                brain = BrainData((os.path.join(data_path, epi[0]), os.path.join(data_path, epi[1])), dtype='surface')
+            else:
+                brain = BrainData(os.path.join(data_path, epi), dtype='volume')
 
             braindata_list.append(brain.data)
             xyz = brain.xyz
@@ -344,8 +457,9 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             tlen_event = events.tail(1)['onset'].values[0] + events.tail(1)['duration'].values[0]
             n_sample = brain.data.shape[0]
 
-            img = nipy.load_image(os.path.join(data_path, epi))
-            tr = img.coordmap.affine[3, 3]
+            with open(os.path.join(data_path, run['bold_json']), 'r') as f:
+                bold_metainfo = json.load(f)
+            tr = bold_metainfo['RepetitionTime']
 
             if tlen_event != n_sample * tr:
                 raise ValueError('The number of volumes in the EPI file (%s) '
@@ -407,7 +521,18 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
 
-    bdata.add(braindata, 'VoxelData')
+    if is_surf:
+        bdata.add(braindata, 'VertexData')
+        n_vertex = brain.n_vertex
+        print(braindata.shape)
+        print(n_vertex)
+        bdata.add_metadata('VertexLeft', np.array([1] * n_vertex[0] + [0] * n_vertex[1]),
+                           where='VertexData')
+        bdata.add_metadata('VertexRight', np.array([0] * n_vertex[0] + [1] * n_vertex[1]),
+                           where='VertexData')
+    else:
+        bdata.add(braindata, 'VoxelData')
+
     bdata.add(ses_label, 'Session')
     bdata.add(run_label, 'Run')
     bdata.add(block_label, 'Block')
@@ -426,15 +551,18 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
         metadata_vec[i] = 1
         bdata.add_metadata(col, metadata_vec, 'Label %s' % col, where='Label')
 
-    bdata.add_metadata('voxel_x', xyz[0, :], 'Voxel x coordinate', where='VoxelData')
-    bdata.add_metadata('voxel_y', xyz[1, :], 'Voxel y coordinate', where='VoxelData')
-    bdata.add_metadata('voxel_z', xyz[2, :], 'Voxel z coordinate', where='VoxelData')
-
-    bdata.add_metadata('voxel_i', ijk[0, :], 'Voxel i index', where='VoxelData')
-    bdata.add_metadata('voxel_j', ijk[1, :], 'Voxel j index', where='VoxelData')
-    bdata.add_metadata('voxel_k', ijk[2, :], 'Voxel k index', where='VoxelData')
-
-    # TODO: add voxel ijk
+    if is_surf:
+        # bdata.add_metadata('vertex_x', xyz[0, :], 'Vertex x coordinate', where='VertexData')
+        # bdata.add_metadata('vertex_y', xyz[1, :], 'Vertex y coordinate', where='VertexData')
+        # bdata.add_metadata('vertex_z', xyz[2, :], 'Vertex z coordinate', where='VertexData')
+        bdata.add_metadata('vertex_index', ijk[0, :], 'Vertex index', where='VertexData')
+    else:
+        bdata.add_metadata('voxel_x', xyz[0, :], 'Voxel x coordinate', where='VoxelData')
+        bdata.add_metadata('voxel_y', xyz[1, :], 'Voxel y coordinate', where='VoxelData')
+        bdata.add_metadata('voxel_z', xyz[2, :], 'Voxel z coordinate', where='VoxelData')
+        bdata.add_metadata('voxel_i', ijk[0, :], 'Voxel i index', where='VoxelData')
+        bdata.add_metadata('voxel_j', ijk[1, :], 'Voxel j index', where='VoxelData')
+        bdata.add_metadata('voxel_k', ijk[2, :], 'Voxel k index', where='VoxelData')
 
     return bdata
 
