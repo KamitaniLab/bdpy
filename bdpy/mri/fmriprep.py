@@ -448,9 +448,9 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                 brain = BrainData((os.path.join(data_path, epi[0]), os.path.join(data_path, epi[1])), dtype='surface')
             else:
                 brain = BrainData(os.path.join(data_path, epi), dtype='volume')
+                xyz = brain.xyz
 
             braindata_list.append(brain.data)
-            xyz = brain.xyz
             ijk = brain.index
 
             num_vol = brain.data.shape[0]
