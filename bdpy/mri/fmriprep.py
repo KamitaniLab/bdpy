@@ -222,7 +222,7 @@ class FmriprepData(object):
         return None
 
 
-def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.2', label_mapper=None, exclude=None):
+def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.2', label_mapper=None, exclude={}):
     '''Create BData from FMRIPREP outputs.
 
     Parameters
