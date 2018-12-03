@@ -399,6 +399,7 @@ class BrainData(object):
         data_matrix = np.vstack(data_matrix_list)
         return data_matrix
 
+
 def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
     if data_mode in ['surface_standard', 'surface_native']:
         is_surf = True
@@ -619,20 +620,4 @@ def __load_mri(fpath):
 
 
 if __name__ == '__main__':
-    testdatapath = './testdata/fmriprep/bids'
-
-    fmriprep = FmriprepData(testdatapath)
-    print(fmriprep.data)
-
-    label_mapper = {'stimulus_name' : {'n/a' : np.nan,
-                                       'hoge' : 1,
-                                       'fuga' : 2}}
-
-    bdata_native = create_bdata_fmriprep(testdatapath, 'volume_native', label_mapper=label_mapper)
-    bdata_standard = create_bdata_fmriprep(testdatapath, 'volume_standard', label_mapper=label_mapper)
-
-    print(bdata_native.dataset.shape)
-    print(bdata_standard.dataset.shape)
-
-    bdata_native.save('test_fmriprep_native.h5')
-    bdata_standard.save('test_fmriprep_standard.h5')
+    pass
