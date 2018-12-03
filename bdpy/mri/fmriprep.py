@@ -222,7 +222,7 @@ class FmriprepData(object):
         return None
 
 
-def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.2', label_mapper=None):
+def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.2', label_mapper=None, exclude=None):
     '''Create BData from FMRIPREP outputs.
 
     Parameters
@@ -278,9 +278,37 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.
             lbmp_dict.update({'n/a': np.nan})
             label_mapper_dict.update({lbmp: lbmp_dict})
 
-    # Create BData from fmriprep outputs
+    # Load fmriprep outputs
     fmriprep = FmriprepData(dpath, fmriprep_version=fmriprep_version)
 
+    # Exclude subject, session, or run
+    # TODO: add subject/session, subject/session/run specification
+    for sub in fmriprep.data:
+        # Exclude subject
+        if 'subject' in exclude and sub in exclude['subject']:
+            del(fmriprep.data[sub])
+            continue
+
+        for i, ses in enumerate(fmriprep.data[sub]):
+            # Exclude session
+            if 'session' in exclude and i + 1 in exclude['session']:
+                del(fmriprep.data[sub][ses])
+                continue
+
+            # Exclude run
+            run_survive = [run for j, run in enumerate(fmriprep.data[sub][ses])
+                           if not ('run' in exclude and j + 1 in exclude['run'])]
+            fmriprep.data[sub][ses] = run_survive
+
+            # Exclude session/run
+            if 'session/run' in exclude:
+                ex_runs = exclude['session/run'][i]
+                if ex_runs is not None and len(ex_runs) != 0:
+                    run_survive = [run for j, run in enumerate(fmriprep.data[sub][ses])
+                                   if not j + 1 in ex_runs]
+                    fmriprep.data[sub][ses] = run_survive
+
+    # Create BData from fmriprep outputs
     bdata_list = []
 
     for sbj, sbjdata in fmriprep.data.items():
