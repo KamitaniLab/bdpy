@@ -46,7 +46,7 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
         mask_v_all.append(mask_v)
         mask_xyz_all.append(mask_xyz[:, (mask_v == 1).flatten()])
 
-        if not (voxel_xyz == mask_xyz).all():
+        if voxel_xyz.shape != mask_xyz.shape or not (voxel_xyz == mask_xyz).all():
             voxel_consistency = False
 
     # Get ROI flags
@@ -74,57 +74,45 @@ def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
 
     Parameters
     ----------
-    roi_xyz_list : list
+    roi_xyz_list : list, len = n_rois
         List of arrays that contain XYZ coordinates of ROIs. Each element is an
-        array (3 * num of voxels in the ROI).
-    epi_xyz_array : array
-        Voxel XYZ coordinates (3 * num of voxels)
+        array of shape = (3, n_voxels_in_roi).
+    epi_xyz_array : array, shape = (3, n_voxels)
+        Voxel XYZ coordinates
     verbose : boolean
         If True, 'get_roiflag' outputs verbose message
 
     Returns
     -------
-    roi_flag : array
-        ROI flags (Num of ROIs * num of voxels)
+    roi_flag : array, shape = (n_rois, n_voxels)
+        ROI flag array
     """
 
     epi_voxel_size = epi_xyz_array.shape[1]
-    print "EPI voxel size %d" % (epi_voxel_size)
+
+    if verbose:
+        print("EPI num voxels: %d" % epi_voxel_size)
 
     roi_flag_array = np.zeros((len(roi_xyz_list), epi_voxel_size))
 
-    epi_xyz_array_t = np.transpose(epi_xyz_array)
+    epi_xyz_dist = np.sum(epi_xyz_array ** 2, axis=0)
 
-    for i in range(len(roi_xyz_list)):
-        print "getROIflag: ROI%d (Voxel Size %d)" % (i+1, len(roi_xyz_list[i][0]))
+    for i, roi_xyz in enumerate(roi_xyz_list):
+        if verbose:
+            print("ROI %d num voxels: %d)" % (i + 1, len(roi_xyz[0])))
 
-        # get roi's voxel size
-        roi_xyz_num = len(roi_xyz_list[i][0])
-        # transpose roi xyz list
-        roi_xyz_array_t = np.transpose(roi_xyz_list[i])
+        roi_xyz_dist = np.sum(roi_xyz ** 2, axis=0)
 
-        # limit epi's matching range
-        range_list = []
-        for j in range(3):
-            # get min and max value every axis (x,y,z)
-            # get true/false array if epi xyz between the min and max value
-            min_val = min(roi_xyz_list[i][j,:])
-            max_val = max(roi_xyz_list[i][j,:])
-            min_range = epi_xyz_array[j,:] >= min_val
-            max_range = epi_xyz_array[j,:] <= max_val
-            range_list.append(np.asarray(min_range, dtype=int))
-            range_list.append(np.asarray(max_range, dtype=int))
-        # all range conditions is clear
-        used_index_array = np.sum(np.asarray(range_list), axis = 0) == 6
-        # get epi's index_list in the limited range
-        used_epi_index_list = np.where(used_index_array == True)[0]
+        roi_flag_temp = np.zeros(epi_xyz_dist.shape)
 
-        # judge epi coordinates in a roi coordinates
-        for j in range(len(used_epi_index_list)):
-            index = used_epi_index_list[j]
-            epi_xyz = epi_xyz_array_t[index]
-            if np.any([np.array_equal(epi_xyz, roi_xyz_array_t[k]) for k in range(roi_xyz_num)]):
-                roi_flag_array[i][index] = 1
+        for j, mv_dist in enumerate(roi_xyz_dist):
+            candidate_index = epi_xyz_dist == mv_dist
+            roi_flag_in_candidate = [np.array_equal(v_xyz, roi_xyz[:, j].flatten())
+                                     for v_xyz in epi_xyz_array[:, candidate_index].T]
+            roi_flag_temp[candidate_index] = roi_flag_temp[candidate_index] + roi_flag_in_candidate
+
+        roi_flag_temp[roi_flag_temp > 1] = 1
+        roi_flag_array[i, :] = roi_flag_temp
 
     return roi_flag_array
 
