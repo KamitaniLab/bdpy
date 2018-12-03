@@ -99,6 +99,10 @@ class FmriprepData(object):
                             'surf_native_right' : '.*_space-fsnative_hemi-R\.func\.gii$',
                             'surf_standard_left'  : '.*_space-fsaverage_hemi-L\.func\.gii$',
                             'surf_standard_right' : '.*_space-fsaverage_hemi-R\.func\.gii$',
+                            'surf_standard_40k_left'  : '.*_space-fsaverage6_hemi-L\.func\.gii$',
+                            'surf_standard_40k_right' : '.*_space-fsaverage6_hemi-R\.func\.gii$',
+                            'surf_standard_10k_left'  : '.*_space-fsaverage5_hemi-L\.func\.gii$',
+                            'surf_standard_10k_right' : '.*_space-fsaverage5_hemi-R\.func\.gii$',
                             'confounds'       : '.*_desc-confounds_regressors\.tsv$'}
         elif self.__fmriprep_version in ['1.0', '1.1']:
             file_pattern = {'volume_native'   : '.*_bold_space-T1w_preproc\.nii\.gz$',
@@ -107,83 +111,53 @@ class FmriprepData(object):
                             'surf_native_right' : '.*_space-fsnative\.R\.func\.gii$',
                             'surf_standard_left'  : '.*_space-fsaverage\.L\.func\.gii$',
                             'surf_standard_right' : '.*_space-fsaverage\.R\.func\.gii$',
+                            'surf_standard_40k_left'  : '.*_space-fsaverage6\.L\.func\.gii$',
+                            'surf_standard_40k_right' : '.*_space-fsaverage6\.R\.func\.gii$',
+                            'surf_standard_10k_left'  : '.*_space-fsaverage5\.L\.func\.gii$',
+                            'surf_standard_10k_right' : '.*_space-fsaverage5\.R\.func\.gii$',
                             'confounds'       : '.*_bold_confounds\.tsv'}
         else:
             raise ValueError('Unsuppored fmriprep version %s' % self.__fmriprep_version)
 
-        prep_vol_native = []    # List of preprocessed EPI files in native space (T1w)
-        prep_vol_standard = []  # List of preprocessed EPI files in MNI space
-
-        prep_surf_native_left = []     # List of preprocessed EPI files (surf) on native surface left
-        prep_surf_native_right = []    # List of preprocessed EPI files (surf) on native surface right
-        prep_surf_standard_left = []   # List of preprocessed EPI files (surf) on fsaverage left
-        prep_surf_standard_right = []  # List of preprocessed EPI files (surf) on fsaverage right
-
-        confounds = []          # List of confound files
-
-        # FIXME: TOO DIRTY
+        run_dict = {}
         for f in os.listdir(funcpath):
             if os.path.isdir(os.path.join(funcpath, f)):
                 continue
 
-            # Get Motion-corrected EPI files in native T1w
-            m = re.search(file_pattern['volume_native'], f)
-            if m:
-                prep_vol_native.append(f)
+            m = re.match('.*_run-([0-9])+_.*', f)
+            if not m:
                 continue
 
-            # Get Motion-corrected EPI files in MNI space
-            m = re.search(file_pattern['volume_standard'], f)
-            if m:
-                prep_vol_standard.append(f)
-                continue
+            run_num = m.group(1)
 
-            # Surface native
-            m = re.search(file_pattern['surf_native_left'], f)
-            if m:
-                prep_surf_native_left.append(f)
-                continue
+            for key in file_pattern:
+                m = re.search(file_pattern[key], f)
+                if m:
+                    if run_num in run_dict:
+                        run_dict[run_num].update({key: f})
+                    else:
+                        run_dict.update({run_num: {key: f}})
+                    break
 
-            m = re.search(file_pattern['surf_native_right'], f)
-            if m:
-                prep_surf_native_right.append(f)
-                continue
+        run_index = sorted([int(k) for k in run_dict.keys()])
 
-            # Surface standard
-            m = re.search(file_pattern['surf_standard_left'], f)
-            if m:
-                prep_surf_standard_left.append(f)
-                continue
+        runs = []
+        for r in run_index:
+            rf = run_dict[str(r)]
+            basedir = os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func')
+            run_files = {'volume_native' : os.path.join(basedir, rf['volume_native']) if 'volume_native' in rf else None,
+                         'volume_standard' : os.path.join(basedir, rf['volume_standard']) if 'volume_standard' in rf else None,
+                         'surface_native' : (os.path.join(basedir, rf['surf_native_left']) if 'surf_native_left' in rf else None,
+                                             os.path.join(basedir, rf['surf_native_right']) if 'surf_native_right' in rf else None),
+                         'surface_standard' : (os.path.join(basedir, rf['surf_standard_left']) if 'surf_standard_left' in rf else None,
+                                               os.path.join(basedir, rf['surf_standard_right']) if 'surf_standard_right' in rf else None),
+                         'surface_standard_40k' : (os.path.join(basedir, rf['surf_standard_40k_left']) if 'surf_standard_40k_left' in rf else None,
+                                                   os.path.join(basedir, rf['surf_standard_40k_right']) if 'surf_standard_40k_right' in rf else None),
+                         'surface_standard_10k' : (os.path.join(basedir, rf['surf_standard_10k_left']) if 'surf_standard_10k_left' in rf else None,
+                                                   os.path.join(basedir, rf['surf_standard_10k_right']) if 'surf_standard_10k_right' in rf else None),
+                         'confounds' : os.path.join(basedir, rf['confounds']) if 'confounds' in rf else None}
 
-            m = re.search(file_pattern['surf_standard_right'], f)
-            if m:
-                prep_surf_standard_right.append(f)
-                continue
-
-            # Get confound file (*_)
-            m = re.search(file_pattern['confounds'], f)
-            if m:
-                confounds.append(f)
-                continue
-
-        prep_vol_native.sort()
-        prep_vol_standard.sort()
-        prep_surf_native_left.sort()
-        prep_surf_native_right.sort()
-        prep_surf_standard_left.sort()
-        prep_surf_standard_right.sort()
-        confounds.sort()
-
-        # TODO: add run num check
-
-        runs = [{'volume_native' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', nat),
-                 'volume_standard' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', std),
-                 'surface_native' : (os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_nat_l),
-                                     os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_nat_r)),
-                 'surface_standard' : (os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_std_l),
-                                       os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', surf_std_r)),
-                 'confounds' : os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func', conf)}
-                for nat, std, surf_nat_l, surf_nat_r, surf_std_l, surf_std_r, conf in zip(prep_vol_native, prep_vol_standard, prep_surf_native_left, prep_surf_native_right, prep_surf_standard_left, prep_surf_standard_right, confounds)]
+            runs.append(run_files)
 
         return runs
 
