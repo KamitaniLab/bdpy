@@ -99,10 +99,6 @@ class FmriprepData(object):
                             'surf_native_right' : '.*_space-fsnative_hemi-R\.func\.gii$',
                             'surf_standard_left'  : '.*_space-fsaverage_hemi-L\.func\.gii$',
                             'surf_standard_right' : '.*_space-fsaverage_hemi-R\.func\.gii$',
-                            'surf_standard_40k_left'  : '.*_space-fsaverage6_hemi-L\.func\.gii$',
-                            'surf_standard_40k_right' : '.*_space-fsaverage6_hemi-R\.func\.gii$',
-                            'surf_standard_10k_left'  : '.*_space-fsaverage5_hemi-L\.func\.gii$',
-                            'surf_standard_10k_right' : '.*_space-fsaverage5_hemi-R\.func\.gii$',
                             'confounds'       : '.*_desc-confounds_regressors\.tsv$'}
         elif self.__fmriprep_version in ['1.0', '1.1']:
             file_pattern = {'volume_native'   : '.*_bold_space-T1w_preproc\.nii\.gz$',
@@ -111,10 +107,6 @@ class FmriprepData(object):
                             'surf_native_right' : '.*_space-fsnative\.R\.func\.gii$',
                             'surf_standard_left'  : '.*_space-fsaverage\.L\.func\.gii$',
                             'surf_standard_right' : '.*_space-fsaverage\.R\.func\.gii$',
-                            'surf_standard_40k_left'  : '.*_space-fsaverage6\.L\.func\.gii$',
-                            'surf_standard_40k_right' : '.*_space-fsaverage6\.R\.func\.gii$',
-                            'surf_standard_10k_left'  : '.*_space-fsaverage5\.L\.func\.gii$',
-                            'surf_standard_10k_right' : '.*_space-fsaverage5\.R\.func\.gii$',
                             'confounds'       : '.*_bold_confounds\.tsv'}
         else:
             raise ValueError('Unsuppored fmriprep version %s' % self.__fmriprep_version)
@@ -151,10 +143,6 @@ class FmriprepData(object):
                                              os.path.join(basedir, rf['surf_native_right']) if 'surf_native_right' in rf else None),
                          'surface_standard' : (os.path.join(basedir, rf['surf_standard_left']) if 'surf_standard_left' in rf else None,
                                                os.path.join(basedir, rf['surf_standard_right']) if 'surf_standard_right' in rf else None),
-                         'surface_standard_40k' : (os.path.join(basedir, rf['surf_standard_40k_left']) if 'surf_standard_40k_left' in rf else None,
-                                                   os.path.join(basedir, rf['surf_standard_40k_right']) if 'surf_standard_40k_right' in rf else None),
-                         'surface_standard_10k' : (os.path.join(basedir, rf['surf_standard_10k_left']) if 'surf_standard_10k_left' in rf else None,
-                                                   os.path.join(basedir, rf['surf_standard_10k_right']) if 'surf_standard_10k_right' in rf else None),
                          'confounds' : os.path.join(basedir, rf['confounds']) if 'confounds' in rf else None}
 
             runs.append(run_files)
