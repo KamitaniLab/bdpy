@@ -5,4 +5,4 @@ This package is a part of BdPy
 
 
 from .bdata import BData
-from .utils import concat_dataset
+from .utils import concat_dataset, vstack
