@@ -99,6 +99,10 @@ class FmriprepData(object):
                             'surf_native_right' : '.*_space-fsnative_hemi-R\.func\.gii$',
                             'surf_standard_left'  : '.*_space-fsaverage_hemi-L\.func\.gii$',
                             'surf_standard_right' : '.*_space-fsaverage_hemi-R\.func\.gii$',
+                            'surf_standard_41k_left'  : '.*_space-fsaverage6_hemi-L\.func\.gii$',
+                            'surf_standard_41k_right' : '.*_space-fsaverage6_hemi-R\.func\.gii$',
+                            'surf_standard_10k_left'  : '.*_space-fsaverage5_hemi-L\.func\.gii$',
+                            'surf_standard_10k_right' : '.*_space-fsaverage5_hemi-R\.func\.gii$',
                             'confounds'       : '.*_desc-confounds_regressors\.tsv$'}
         elif self.__fmriprep_version in ['1.0', '1.1']:
             file_pattern = {'volume_native'   : '.*_bold_space-T1w_preproc\.nii\.gz$',
@@ -143,6 +147,10 @@ class FmriprepData(object):
                                              os.path.join(basedir, rf['surf_native_right']) if 'surf_native_right' in rf else None),
                          'surface_standard' : (os.path.join(basedir, rf['surf_standard_left']) if 'surf_standard_left' in rf else None,
                                                os.path.join(basedir, rf['surf_standard_right']) if 'surf_standard_right' in rf else None),
+                         'surface_standard_41k' : (os.path.join(basedir, rf['surf_standard_41k_left']) if 'surf_standard_41k_left' in rf else None,
+                                                   os.path.join(basedir, rf['surf_standard_41k_right']) if 'surf_standard_41k_right' in rf else None),
+                         'surface_standard_10k' : (os.path.join(basedir, rf['surf_standard_10k_left']) if 'surf_standard_10k_left' in rf else None,
+                                                   os.path.join(basedir, rf['surf_standard_10k_right']) if 'surf_standard_10k_right' in rf else None),
                          'confounds' : os.path.join(basedir, rf['confounds']) if 'confounds' in rf else None}
 
             runs.append(run_files)
@@ -191,7 +199,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.
     ----------
     dpath : str
         Path to a BIDS data directory.
-    data_mode : {'volume_standard', 'volume_native', 'surface_standard', 'surface_native'}
+    data_mode : {'volume_standard', 'volume_native', 'surface_standard', 'surface_standard_41k', 'surface_standard_10k', 'surface_native'}
         Data to be loaded.
     fmriprep_version : {'1.2, '1.1', '1.0'}
         The version of fmriprep (default: '1.2')
@@ -391,7 +399,7 @@ class BrainData(object):
 
 
 def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
-    if data_mode in ['surface_standard', 'surface_native']:
+    if data_mode in ['surface_standard', 'surface_standard_41k', 'surface_standard_10k', 'surface_native']:
         is_surf = True
     else:
         is_surf = False
