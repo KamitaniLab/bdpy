@@ -461,7 +461,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
             # Load task event file
             event_file = os.path.join(data_path, run['task_event_file'])
-            events = pd.read_csv(event_file, delimiter='\t')
+            events = pd.read_csv(event_file, delimiter='\t', keep_default_na=False)
 
             # Check time length
             tlen_event = events.tail(1)['onset'].values[0] + events.tail(1)['duration'].values[0]
