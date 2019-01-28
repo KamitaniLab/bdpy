@@ -120,7 +120,7 @@ class FmriprepData(object):
             if os.path.isdir(os.path.join(funcpath, f)):
                 continue
 
-            m = re.match('.*_run-([0-9])+_.*', f)
+            m = re.match('.*_run-([0-9]+)_.*', f)
             if not m:
                 continue
 
@@ -139,7 +139,7 @@ class FmriprepData(object):
 
         runs = []
         for r in run_index:
-            rf = run_dict[str(r)]
+            rf = run_dict['%02d' % r]
             basedir = os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func')
             run_files = {'volume_native' : os.path.join(basedir, rf['volume_native']) if 'volume_native' in rf else None,
                          'volume_standard' : os.path.join(basedir, rf['volume_standard']) if 'volume_standard' in rf else None,
