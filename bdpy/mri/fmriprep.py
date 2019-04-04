@@ -20,10 +20,11 @@ import bdpy
 class FmriprepData(object):
     '''FMRIPREP data class.'''
 
-    def __init__(self, datapath=None, fmriprep_version='1.2'):
+    def __init__(self, datapath=None, fmriprep_version='1.2', fmriprep_dir='derivatives/fmriprep'):
         self.__datapath = datapath
         self.__data = OrderedDict()
         self.__fmriprep_version = fmriprep_version
+        self.__fmriprep_dir = fmriprep_dir
 
         if self.__datapath is not None:
             self.__parse_data()
@@ -39,7 +40,7 @@ class FmriprepData(object):
 
     def __parse_data(self):
         # FMRIPREP results directory
-        prepdir = os.path.join(self.__datapath, 'derivatives', 'fmriprep', 'fmriprep')
+        prepdir = os.path.join(self.__datapath, self.__fmriprep_dir, 'fmriprep')
 
         # Get subjects
         subjects = self.__get_subjects(prepdir)
@@ -140,7 +141,7 @@ class FmriprepData(object):
         runs = []
         for r in run_index:
             rf = run_dict['%02d' % r]
-            basedir = os.path.join('derivatives', 'fmriprep', 'fmriprep', subject, session, 'func')
+            basedir = os.path.join(self.__fmriprep_dir, 'fmriprep', subject, session, 'func')
             run_files = {'volume_native' : os.path.join(basedir, rf['volume_native']) if 'volume_native' in rf else None,
                          'volume_standard' : os.path.join(basedir, rf['volume_standard']) if 'volume_standard' in rf else None,
                          'surface_native' : (os.path.join(basedir, rf['surf_native_left']) if 'surf_native_left' in rf else None,
@@ -192,7 +193,7 @@ class FmriprepData(object):
         return None
 
 
-def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.2', label_mapper=None, exclude={}):
+def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.2', fmriprep_dir='derivatives/fmriprep', label_mapper=None, exclude={}):
     '''Create BData from FMRIPREP outputs.
 
     Parameters
@@ -249,7 +250,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native', fmriprep_version='1.
             label_mapper_dict.update({lbmp: lbmp_dict})
 
     # Load fmriprep outputs
-    fmriprep = FmriprepData(dpath, fmriprep_version=fmriprep_version)
+    fmriprep = FmriprepData(dpath, fmriprep_version=fmriprep_version, fmriprep_dir=fmriprep_dir)
 
     # Exclude subject, session, or run
     # TODO: add subject/session, subject/session/run specification
