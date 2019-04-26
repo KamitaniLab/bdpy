@@ -3,6 +3,7 @@ Utilities for ROIs
 """
 
 import os
+import hashlib
 
 import numpy as np
 import nibabel.freesurfer
@@ -59,8 +60,14 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
     for i, roi in enumerate(roi_mask):
         roi_name = roi_prefix + '_' + os.path.basename(roi).replace('.nii.gz', '').replace('.nii', '')
 
+        with open(roi, 'rb') as f:
+            roi_md5 = hashlib.md5(f.read()).hexdigest()
+
+        roi_desc = '1 = ROI %s (source file: %s; md5: %s)' % (roi_name, roi, roi_md5)
+
         print('Adding %s' % roi_name)
-        bdata.add_metadata(roi_name, roi_flag[i, :], description='1 = ROI %s' % roi_name, where=brain_data)
+        print('  %s' % roi_desc)
+        bdata.add_metadata(roi_name, roi_flag[i, :], description=roi_desc, where=brain_data)
 
     if return_roi_flag:
         return bdata, roi_flag
@@ -145,9 +152,14 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
 
         roi_name = prefix + '_' + os.path.basename(label).replace('.label', '')
 
+        with open(label, 'rb') as f:
+            roi_md5 = hashlib.md5(f.read()).hexdigest()
+
+        roi_desc = '1 = ROI %s (source file: %s; md5: %s)' % (roi_name, label, roi_md5)
         if verbose:
             print('Adding %s (%d vertices)' % (roi_name, np.sum(roi_flag)))
-        bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=vertex_data)
+            print('  %s' % roi_desc)
+        bdata.add_metadata(roi_name, roi_flag, description=roi_desc, where=vertex_data)
 
         return bdata
 
@@ -164,6 +176,9 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
             labels = annot[0]  # Annotation ID at each vertex (shape = (n_vertices,))
             ctab = annot[1]    # Label color table (RGBT + label ID)
             names = annot[2]   # Label name list
+
+            with open(lb, 'rb') as f:
+                roi_md5 = hashlib.md5(f.read()).hexdigest()
 
             for i, name in enumerate(names):
                 label_id = i  # Label ID is zero-based
@@ -183,11 +198,13 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
                     raise ValueError('Invalid vertex_data: %s' % vertex_data)
 
                 roi_name = prefix + '_' + hemi + '.' + name
+                roi_desc = '1 = ROI %s (source file: %s; md5: %s)' % (roi_name, lb, roi_md5)
 
                 if verbose:
                     print('Adding %s (%d vertices)' % (roi_name, np.sum(roi_flag)))
+                    print('  %s' % roi_desc)
 
-                bdata.add_metadata(roi_name, roi_flag, description='1 = ROI %s' % roi_name, where=vertex_data)
+                bdata.add_metadata(roi_name, roi_flag, description=roi_desc, where=vertex_data)
         else:
             raise TypeError('Unknown file type: %s' % os.path.splitext(lb)[0])
 
