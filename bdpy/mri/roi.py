@@ -106,7 +106,7 @@ def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
 
     for i, roi_xyz in enumerate(roi_xyz_list):
         if verbose:
-            print("ROI %d num voxels: %d)" % (i + 1, len(roi_xyz[0])))
+            print("ROI %d num voxels: %d" % (i + 1, len(roi_xyz[0])))
 
         roi_xyz_dist = np.sum(roi_xyz ** 2, axis=0)
 
