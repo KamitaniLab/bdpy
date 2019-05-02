@@ -67,6 +67,7 @@ class BData(object):
     def __init__(self, file_name=None, file_type=None):
         self.__dataset = np.ndarray((0, 0), dtype=float)
         self.__metadata = MetaData()
+        self.__header = {}
 
         if file_name is not None:
             self.load(file_name, file_type)
@@ -98,6 +99,11 @@ class BData(object):
     @metadata.deleter
     def metadata(self):
         del self.__metadata
+
+    # header
+    @property
+    def header(self):
+        return self.__header
 
     # dataSet
     @property
@@ -236,7 +242,7 @@ class BData(object):
 
         # TODO: Add attribute specifying
         # TODO: Add size check of metadata/value
-        
+
         if attribute is not None:
             warnings.warn("Keyword argument 'attribute' is obsoleted and kept for compatibility. Use 'where' instead.",
                           UserWarning, stacklevel=2)
@@ -245,7 +251,7 @@ class BData(object):
                               UserWarning, stacklevel=2)
             else:
                 where = attribute
-        
+
         if where is not None:
             attr_ind = self.metadata.get(where, 'value') == 1
             add_value = np.array([np.nan for _ in xrange(self.metadata.get_value_len())])
@@ -340,7 +346,7 @@ class BData(object):
                 index[x_ind] = True
 
                 #import pdb; pdb.set_trace()
-                
+
                 ds[:, index] = fout[0]
                 ds[:, ~index] = self.dataset[np.ix_(ind_map, ~index)]
 
