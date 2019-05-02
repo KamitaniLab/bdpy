@@ -28,6 +28,8 @@ __all__ = ['BData']
 
 import os
 import warnings
+import time
+import datetime
 
 import h5py
 import numpy as np
@@ -627,6 +629,13 @@ class BData(object):
     def save(self, file_name, file_type=None):
         '''Save 'dataset' and 'metadata' to a file'''
 
+        # Store data creation information
+        t_now = time.time()
+        t_now_str = datetime.datetime.fromtimestamp(t_now).strftime('%Y-%m-%d %H:%M:%S')
+
+        header = {'ctime': t_now_str,
+                  'ctime_epoch': t_now}
+
         if file_type is None:
             file_type = self.__get_filetype(file_name)
 
@@ -644,10 +653,11 @@ class BData(object):
             sio.savemat(file_name, {"dataSet" : self.dataset,
                                     "metaData" : {"key" : md_keys,
                                                   "description" : md_desc,
-                                                  "value" : md_vals}})
+                                                  "value" : md_vals},
+                                    'header' : header})
 
         elif file_type == "HDF5":
-            self.__save_h5(file_name)
+            self.__save_h5(file_name, header=header)
 
         else:
             raise ValueError("Unknown file type: %s" % (file_type))
@@ -680,7 +690,7 @@ class BData(object):
         return index
 
 
-    def __save_h5(self, file_name):
+    def __save_h5(self, file_name, header=None):
         '''Save data in HDF5 format (*.h5)'''
         with h5py.File(file_name, 'w') as h5file:
             # dataset
@@ -696,6 +706,11 @@ class BData(object):
             h5file.create_dataset('/metadata/description', data=md_desc)
             h5file.create_dataset('/metadata/value', data=md_vals)
 
+            # header
+            if header is not None:
+                h5file.create_group('/header')
+                for k, v in header.items():
+                    h5file.create_dataset('/header/' + k, data=v)
 
     def __load_mat(self, load_filename):
         '''Load dataset and metadata from Matlab file'''
