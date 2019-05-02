@@ -30,6 +30,7 @@ import os
 import warnings
 import time
 import datetime
+import inspect
 
 import h5py
 import numpy as np
@@ -633,8 +634,23 @@ class BData(object):
         t_now = time.time()
         t_now_str = datetime.datetime.fromtimestamp(t_now).strftime('%Y-%m-%d %H:%M:%S')
 
+        callstack = []
+        callstack_code = []
+        f = inspect.currentframe()
+        while True:
+            f = f.f_back
+            if f is None: break
+            fname = os.path.abspath(f.f_code.co_filename)
+            fline = f.f_lineno
+            callstack.append('%s:%d' % (fname, fline))
+            with open(fname, 'r') as fl:
+                fcode = fl.read()
+            callstack_code.append(fcode)
+
         header = {'ctime': t_now_str,
-                  'ctime_epoch': t_now}
+                  'ctime_epoch': t_now,
+                  'callstack': callstack,
+                  'callstack_code': callstack_code}
 
         if file_type is None:
             file_type = self.__get_filetype(file_name)
