@@ -265,6 +265,22 @@ class BData(object):
         self.metadata.set(key, add_value, description)
 
 
+    def merge_metadata(self, key, sources, description='', where=None, method='logical_or'):
+        '''Merage metadata rows.'''
+
+        if not method == 'logical_or':
+            raise NotImplementedError('Only `logical_or` is implemented')
+
+        if where is None:
+            raise ValueError('You need to specify `where`.')
+
+        mdv_lst = [self.get_metadata(s, where=where) for s in sources]
+        mdv_new = np.sum(np.vstack(mdv_lst), axis=0)
+        mdv_new[mdv_new > 1] = 1
+
+        self.add_metadata(key, mdv_new, description, where=where)
+
+
     def rename_meatadata(self, key_old, key_new):
         '''Rename meta-data key
 
@@ -643,8 +659,11 @@ class BData(object):
             fname = os.path.abspath(f.f_code.co_filename)
             fline = f.f_lineno
             callstack.append('%s:%d' % (fname, fline))
-            with open(fname, 'r') as fl:
-                fcode = fl.read()
+            if os.path.exists(fname):
+                with open(fname, 'r') as fl:
+                    fcode = fl.read()
+            else:
+                fcode = ''
             callstack_code.append(fcode)
 
         header = {'ctime': t_now_str,
