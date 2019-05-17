@@ -196,7 +196,10 @@ class FmriprepData(object):
 def create_bdata_fmriprep(dpath, data_mode='volume_native',
                           fmriprep_version='1.2',
                           fmriprep_dir='derivatives/fmriprep',
-                          label_mapper=None, exclude={}):
+                          label_mapper=None, exclude={},
+                          split_task_label=False,
+                          return_data_labels=False,
+                          return_list=False):
     '''Create BData from FMRIPREP outputs.
 
     Parameters
@@ -287,20 +290,72 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
                                    if not j + 1 in ex_runs]
                     fmriprep.data[sub][ses] = run_survive
 
+    # Split data
+    # TODO: needs refactoring, obviously
+    if split_task_label:
+        fmriprep_data = OrderedDict()
+        for sub in fmriprep.data:
+
+            if sub in fmriprep_data:
+                # Do nothing
+                pass
+            else:
+                fmriprep_data.update({sub: OrderedDict()})
+
+            for i, ses in enumerate(fmriprep.data[sub]):
+                for j, run in enumerate(fmriprep.data[sub][ses]):
+                    m = re.search('.*_(task-[^_]*)_.*', os.path.basename(run['task_event_file']))
+                    if m:
+                        task_label = m.group(1)
+                    else:
+                        raise RuntimeError('Failed to detect task label.')
+                    if task_label in fmriprep_data[sub]:
+                        if ses in fmriprep_data[sub][task_label]:
+                            fmriprep_data[sub][task_label][ses].append(run)
+                        else:
+                            fmriprep_data[sub][task_label].update({ses: [run]})
+                    else:
+                        ses_data = OrderedDict()
+                        ses_data.update({ses: [run]})
+                        fmriprep_data[sub].update({task_label: ses_data})
+    else:
+        # Do not split the data
+        fmriprep_data = fmriprep.data
+
     # Create BData from fmriprep outputs
     bdata_list = []
+    data_labels = []
 
-    for sbj, sbjdata in fmriprep.data.items():
-        print('----------------------------------------')
-        print('Subject: %s\n' % sbj)
-
-        bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
-        bdata_list.append(bdata)
-
-    if len(bdata_list) == 1:
-        return bdata_list[0]
+    if split_task_label:
+        # One subject/task, one BData
+        for sbj, sbjdata in fmriprep_data.items():
+            for tsk, tskdata in sbjdata.items():
+                print('----------------------------------------')
+                print('Subject: %s\n' % sbj)
+                print('Task:    %s'   % tsk)
+                bdata = __create_bdata_fmriprep_subject(tskdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
+                bdata_list.append(bdata)
+                data_labels.append('%s_%s' % (sbj, tsk))
     else:
-        return bdata_list
+        # One subject, one BData (default)
+        for sbj, sbjdata in fmriprep.data.items():
+            print('----------------------------------------')
+            print('Subject: %s\n' % sbj)
+
+            bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
+            bdata_list.append(bdata)
+            data_labels.append(sbj)
+
+    if return_data_labels:
+        if not return_list and len(bdata_list) == 1:
+            return bdata_list[0], data_labels[0]
+        else:
+            return bdata_list, data_labels
+    else:
+        if not return_list and len(bdata_list) == 1:
+            return bdata_list[0]
+        else:
+            return bdata_list
 
 
 class BrainData(object):
