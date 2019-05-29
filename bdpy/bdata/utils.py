@@ -4,7 +4,7 @@ import copy
 
 import numpy as np
 
-from bdata import BData
+from .bdata import BData
 
 
 def vstack(bdata_list, successive=[]):

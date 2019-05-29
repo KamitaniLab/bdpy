@@ -5,8 +5,8 @@ This file is a part of BdPy
 """
 
 
-from preprocessor import Average,Detrender,Normalize,Regressout,ReduceOutlier,ShiftSample
-from util import print_start_msg, print_finish_msg
+from .preprocessor import Average,Detrender,Normalize,Regressout,ReduceOutlier,ShiftSample
+from .util import print_start_msg, print_finish_msg
 
 
 def average_sample(x, group=[], verbose=True):
