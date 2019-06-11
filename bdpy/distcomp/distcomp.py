@@ -41,6 +41,15 @@ class DistComp(object):
             warnings.warn('Failed to unlock the computation. Possibly double running.')
 
 
+    def islocked_lock(self):
+        is_locked = os.path.isfile(self.lockfile)
+        if not is_locked:
+            with open(self.lockfile, 'w'):
+                pass
+
+        return is_locked
+
+
     def __lockfilename(self, comp_id):
         '''Return the lock file path'''
         return os.path.join(self.lockdir, comp_id + '.lock')
