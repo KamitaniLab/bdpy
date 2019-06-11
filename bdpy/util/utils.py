@@ -15,6 +15,7 @@ __all__ = ['create_groupvector',
 
 
 import os
+import warnings
 
 import numpy as np
 
@@ -135,7 +136,11 @@ def makedir_ifnot(dir_path):
         True if the directory was created.
     '''
     if not os.path.isdir(dir_path):
-        os.makedirs(dir_path)
+        try:
+            os.makedirs(dir_path)
+        except OSError:
+            warnings.warn('Failed to create directory %s.' % dir_path)
+            return False
         return True
     else:
         return False

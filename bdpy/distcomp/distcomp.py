@@ -8,6 +8,7 @@ __all__ = ['DistComp']
 
 
 import os
+import warnings
 
 
 class DistComp(object):
@@ -34,7 +35,10 @@ class DistComp(object):
 
         
     def unlock(self):
-        os.remove(self.lockfile)
+        try:
+            os.remove(self.lockfile)
+        except OSError:
+            warnings.warn('Failed to unlock the computation. Possibly double running.')
 
 
     def __lockfilename(self, comp_id):
