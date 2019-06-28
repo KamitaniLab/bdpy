@@ -67,7 +67,7 @@ class FeatureSelector(object):
                 str_buf += i
 
             # Detect 'top' operator
-            if len(str_buf) >= 3 and str_buf[-3:] == 'top':
+            if len(str_buf) == 3 and str_buf[-3:] == 'top':
                 if len(str_buf) != 3:
                     output_buf.append(str_buf[:-3])
                 output_buf.append('top')
