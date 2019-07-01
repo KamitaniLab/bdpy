@@ -6,7 +6,7 @@ import os
 import unittest
 
 import numpy as np
-
+#sys.path.append('../')
 from bdpy import ml
 
 

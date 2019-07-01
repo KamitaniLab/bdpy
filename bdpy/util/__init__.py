@@ -5,4 +5,4 @@ This package is a part of BdPy
 """
 
 
-from utils import *
+from .utils import *

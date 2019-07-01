@@ -9,7 +9,7 @@ __all__ = ['select_top']
 
 
 import numpy as np
-from util import print_start_msg, print_finish_msg
+from .util import print_start_msg, print_finish_msg
 
 
 def select_top(data, value, num, axis=0, verbose=True):
