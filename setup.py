@@ -22,7 +22,7 @@ if __name__ == '__main__':
           version=version_num,
           description='Brain decoder toolbox',
           author='Shuntaro Aoki',
-          author_email='kamitanilab.contact@gmail.com',
+          author_email='brainliner-admin@atr.jp',
           url='https://github.com/KamitaniLab/bdpy',
           license='MIT',
           packages=['bdpy',
