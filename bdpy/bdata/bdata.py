@@ -275,7 +275,7 @@ class BData(object):
             raise ValueError('You need to specify `where`.')
 
         mdv_lst = [self.get_metadata(s, where=where) for s in sources]
-        mdv_new = np.sum(np.vstack(mdv_lst), axis=0)
+        mdv_new = np.nansum(np.vstack(mdv_lst), axis=0)
         mdv_new[mdv_new > 1] = 1
 
         self.add_metadata(key, mdv_new, description, where=where)
