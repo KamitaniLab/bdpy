@@ -18,3 +18,8 @@ dist
 .coverage
 htmlcov
 .pylintrc
+
+junk
+tmp
+test_local
+test_versions
