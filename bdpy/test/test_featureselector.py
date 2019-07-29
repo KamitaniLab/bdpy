@@ -45,16 +45,16 @@ class TestFeatureSelector(unittest.TestCase):
         self.assertEqual(test_output, exp_output)
 
 
-    def test_lexical_analysis_0004(self):
+    # def test_lexical_analysis_0004(self):
         
-        test_input = 'HOGE top 100'
-        exp_output = ('HOGE', 'top', '100')
+    #     test_input = 'HOGE top 100'
+    #     exp_output = ('HOGE', 'top', '100')
 
-        selector = FeatureSelector(test_input)
+    #     selector = FeatureSelector(test_input)
         
-        test_output = selector.token
+    #     test_output = selector.token
         
-        self.assertEqual(test_output, exp_output)
+    #     self.assertEqual(test_output, exp_output)
 
 
     def test_parse_0001(self):
@@ -81,16 +81,16 @@ class TestFeatureSelector(unittest.TestCase):
         self.assertEqual(test_output, exp_output)
 
 
-    def test_parse_0003(self):
+    # def test_parse_0003(self):
         
-        test_input = 'HOGE top 100 @ A = 1'
-        exp_output = ('HOGE', '100', 'top', 'A', '1', '=', '@')
+    #     test_input = 'HOGE top 100 @ A = 1'
+    #     exp_output = ('HOGE', '100', 'top', 'A', '1', '=', '@')
 
-        selector = FeatureSelector(test_input)
+    #     selector = FeatureSelector(test_input)
         
-        test_output = selector.rpn
+    #     test_output = selector.rpn
         
-        self.assertEqual(test_output, exp_output)
+    #     self.assertEqual(test_output, exp_output)
 
 
     def test_parse_0004(self):
