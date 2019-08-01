@@ -534,10 +534,11 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             with open(os.path.join(data_path, run['bold_json']), 'r') as f:
                 bold_metainfo = json.load(f)
             tr = bold_metainfo['RepetitionTime']
+            tr_ms = tr * 1000 # To avoid numerical error
 
-            if tlen_event != n_sample * tr:
+            if tlen_event * 1000 != (n_sample * tr_ms):
                 raise ValueError('The number of volumes in the EPI file (%s) '
-                                 'and time duration in the corresponding task '
+                                 'and time duration in the corresponding task (%s) '
                                  'event file mismatch!'
                                  % (epi, run['task_event_file']))
 
