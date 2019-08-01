@@ -36,8 +36,8 @@ import h5py
 import numpy as np
 import scipy.io as sio
 
-from metadata import MetaData
-from featureselector import FeatureSelector
+from .metadata import MetaData
+from .featureselector import FeatureSelector
 
 
 # BData class ##########################################################
@@ -182,7 +182,7 @@ class BData(object):
 
         # Add new metadata
         column_description = '1 = %s' % name
-        column_value = [np.nan for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
+        column_value = [np.nan for _ in range(colnum_has)] + [1 for _ in range(colnum_add)]
 
         self.metadata.set(name, column_value, column_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
@@ -257,7 +257,7 @@ class BData(object):
 
         if where is not None:
             attr_ind = self.metadata.get(where, 'value') == 1
-            add_value = np.array([np.nan for _ in xrange(self.metadata.get_value_len())])
+            add_value = np.array([np.nan for _ in range(self.metadata.get_value_len())])
             add_value[attr_ind] = value
         else:
             add_value = value
@@ -707,7 +707,7 @@ class BData(object):
         v[np.isnan(v)] = -np.inf
 
         sorted_index = np.argsort(v)[::-1] # Decending order
-        order = range(len(v))
+        order = np.arange(len(v))
         for i, x in enumerate(sorted_index):
             order[x] = i
 
