@@ -26,10 +26,9 @@ class FeatureSelector(object):
 
     ## Class variables #####################
     signs = ('(', ')')
-    operators = ('=', '|', '&', '@', 'top')
+    operators = ('=', '|', '&', '@')
 
     __op_order = {'='   : 10,
-                  'top' : 10,
                   '|'   : 5,
                   '&'   : 5,
                   '@'   : 3,
@@ -65,13 +64,6 @@ class FeatureSelector(object):
                 output_buf.append(i)
             else:
                 str_buf += i
-
-            # Detect 'top' operator
-            if len(str_buf) == 3 and str_buf[-3:] == 'top':
-                if len(str_buf) != 3:
-                    output_buf.append(str_buf[:-3])
-                output_buf.append('top')
-                str_buf = ''
 
         if len(str_buf) > 0:
             output_buf.append(str_buf)

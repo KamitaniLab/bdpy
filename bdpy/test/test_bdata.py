@@ -299,55 +299,55 @@ class TestBdata(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
-    def test_select_pass0006(self):
-        """Test for 'top'"""
+    # def test_select_pass0006(self):
+    #     """Test for 'top'"""
 
-        test_input = 'Val_A top 5'
-        exp_output = self.data.dataSet[:, np.array([0, 1, 2, 8, 9], dtype=int)]
+    #     test_input = 'Val_A top 5'
+    #     exp_output = self.data.dataSet[:, np.array([0, 1, 2, 8, 9], dtype=int)]
 
-        test_output = self.data.select(test_input)
+    #     test_output = self.data.select(test_input)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    #     np.testing.assert_array_equal(test_output, exp_output)
 
-    def test_select_pass0007(self):
-        """Test for 'top'"""
+    # def test_select_pass0007(self):
+    #     """Test for 'top'"""
 
-        test_input = 'Val_A top 10'
-        exp_output = self.data.dataSet[:, 0:10]
+    #     test_input = 'Val_A top 10'
+    #     exp_output = self.data.dataSet[:, 0:10]
 
-        test_output = self.data.select(test_input)
+    #     test_output = self.data.select(test_input)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    #     np.testing.assert_array_equal(test_output, exp_output)
 
-    def test_select_pass0008(self):
-        """Test for 'top' and '@'"""
+    # def test_select_pass0008(self):
+    #     """Test for 'top' and '@'"""
 
-        test_input = 'Val_A top 3 @ Mask_0:5 = 1'
-        exp_output = self.data.dataSet[:, 0:3]
+    #     test_input = 'Val_A top 3 @ Mask_0:5 = 1'
+    #     exp_output = self.data.dataSet[:, 0:3]
 
-        test_output = self.data.select(test_input)
+    #     test_output = self.data.select(test_input)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    #     np.testing.assert_array_equal(test_output, exp_output)
 
-    def test_select_pass0009(self):
-        """Test for 'top' and '@'"""
+    # def test_select_pass0009(self):
+    #     """Test for 'top' and '@'"""
 
-        test_input = 'Val_A top 3 @ (Mask_3:3 = 1 | Mask_6:3 = 1)'
-        exp_output = self.data.dataSet[:, [3, 7, 8]]
+    #     test_input = 'Val_A top 3 @ (Mask_3:3 = 1 | Mask_6:3 = 1)'
+    #     exp_output = self.data.dataSet[:, [3, 7, 8]]
 
-        test_output = self.data.select(test_input)
+    #     test_output = self.data.select(test_input)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    #     np.testing.assert_array_equal(test_output, exp_output)
 
-    def test_select_pass0010(self):
-        """Test for 'top' and '@'"""
+    # def test_select_pass0010(self):
+    #     """Test for 'top' and '@'"""
 
-        test_input = 'Val_A top 3 @ Mask_3:3 = 1 | Mask_6:3 = 1'
-        exp_output = self.data.dataSet[:, [3, 7, 8]]
+    #     test_input = 'Val_A top 3 @ Mask_3:3 = 1 | Mask_6:3 = 1'
+    #     exp_output = self.data.dataSet[:, [3, 7, 8]]
 
-        test_output = self.data.select(test_input)
+    #     test_output = self.data.select(test_input)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    #     np.testing.assert_array_equal(test_output, exp_output)
 
 if __name__ == "__main__":
     test_suite = unittest.TestLoader().loadTestsFromTestCase(TestBdata)
