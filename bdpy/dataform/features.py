@@ -43,7 +43,7 @@ class Features(object):
         if type(dpath) != list:
             dpath = [dpath]
         self.__dpath = dpath
-        self.__feat_index = feature_index
+        self.__feat_index_table = feature_index
 
         self.__feature_file_table = {} # Stimulus feature file tables
         self.__labels = []             # Stimulus labels
@@ -56,10 +56,10 @@ class Features(object):
         self.__features = None        # Loaded features
         self.__feature_index = None   # Indexes of loaded features
 
-        if self.__feat_index is not None:
-            if not os.path.exists(self.__feat_index):
-                raise RuntimeError('%s do not exist' % self.__feat_index)
-            self.__feat_index = hdf5storage.loadmat(self.__feat_index)['index']
+        if self.__feat_index_table is not None:
+            if not os.path.exists(self.__feat_index_table):
+                raise RuntimeError('%s do not exist' % self.__feat_index_table)
+            self.__feat_index_table = hdf5storage.loadmat(self.__feat_index_table)['index']
 
     @property
     def labels(self):
@@ -96,9 +96,9 @@ class Features(object):
         )
         self.__c_feature_name = layer
 
-        if self.__feat_index is not None:
+        if self.__feat_index_table is not None:
             # Select features by index
-            self.__feature_index = self.__feat_index[layer]
+            self.__feature_index = self.__feat_index_table[layer]
             n_sample = self.__features.shape[0]
             n_feat = np.array(self.__features.shape[1:]).prod()
 
