@@ -16,11 +16,12 @@ import glob
 
 import numpy as np
 import scipy.io as sio
+import hdf5storage
 
 
 class Features(object):
     '''DNN features class.
-    
+
     Parameters
     ----------
     dpath: str or list
@@ -38,10 +39,11 @@ class Features(object):
        List of DNN layers
     '''
 
-    def __init__(self, dpath=[], ext='mat'):
+    def __init__(self, dpath=[], ext='mat', feature_index=None):
         if type(dpath) != list:
             dpath = [dpath]
         self.__dpath = dpath
+        self.__feat_index = feature_index
 
         self.__feature_file_table = {} # Stimulus feature file tables
         self.__labels = []             # Stimulus labels
@@ -51,6 +53,12 @@ class Features(object):
 
         self.__c_feature_name = None  # Loaded layer
         self.__features = None        # Loaded features
+        self.__feature_index = None   # Indexes of loaded features
+
+        if self.__feat_index is not None:
+            if not os.path.exists(self.__feat_index):
+                raise RuntimeError('%s do not exist' % self.__feat_index)
+            self.__feat_index = hdf5storage.loadmat(self.__feat_index)['index']
 
     @property
     def labels(self):
@@ -66,18 +74,18 @@ class Features(object):
 
     def get_features(self, layer):
         '''Return features in `layer`.
-        
+
         Parameters
         ----------
         layer: str
             DNN layer
-            
+
         Returns
         -------
         numpy.ndarray, shape=(n_samples, shape_layers)
             DNN features
         '''
-        
+
         if layer == self.__c_feature_name:
             return self.__features
 
@@ -87,7 +95,15 @@ class Features(object):
         )
         self.__c_feature_name = layer
 
-        return self.__features 
+        if self.__feat_index is not None:
+            # Select features by index
+            index = self.__feat_index[layer]
+            n_sample = self.__features.shape[0]
+            n_feat = np.array(self.__features.shape[1:]).prod()
+
+            self.__features = self.__features.reshape([n_sample, n_feat], order='C')[:, index]
+
+        return self.__features
 
     def __collect_feature_files(self, ext='mat'):
         dpath_lst = self.__dpath
@@ -111,7 +127,7 @@ class Features(object):
                 {
                     lay:
                     {
-                        label: 
+                        label:
                          os.path.join(label_dir[label], lay, label + '.' + ext)
                          for label in self.__labels
                     }
