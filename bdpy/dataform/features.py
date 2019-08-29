@@ -156,6 +156,7 @@ class Features(object):
         labels = []
         for lay in layers:
             lay_dir = os.path.join(dpath, lay)
+            lay_dir = lay_dir.replace('[', '[[]') # Use glob.escape for Python 3.4 or later
             files = glob.glob(os.path.join(lay_dir, '*.' + ext))
             labels_t = sorted([os.path.splitext(os.path.basename(f))[0] for f in files])
             if not labels:
