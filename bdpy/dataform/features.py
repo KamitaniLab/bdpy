@@ -48,6 +48,7 @@ class Features(object):
         self.__feature_file_table = {} # Stimulus feature file tables
         self.__labels = []             # Stimulus labels
         self.__index = []              # Stimulus index (one-based)
+        self.__feature_index = []      # Feature (unit) index
         self.__layers = []             # DNN layers
         self.__collect_feature_files(ext=ext)
 
@@ -97,13 +98,23 @@ class Features(object):
 
         if self.__feat_index is not None:
             # Select features by index
-            index = self.__feat_index[layer]
+            self.__feature_index = self.__feat_index[layer]
             n_sample = self.__features.shape[0]
             n_feat = np.array(self.__features.shape[1:]).prod()
 
-            self.__features = self.__features.reshape([n_sample, n_feat], order='C')[:, index]
+            self.__features = self.__features.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
 
         return self.__features
+
+    def save_feature_index(self, fname):
+        '''Save feature indexes in `fname`'''
+        if len(self.__feature_index) == 0:
+            raise RuntimeError('No feature index specified')
+
+        hdf5storage.savemat(fname,
+                            {'index': self.__feature_index},
+                            format='7.3', oned_as='column',
+                            store_python_metadata=True)
 
     def __collect_feature_files(self, ext='mat'):
         dpath_lst = self.__dpath
