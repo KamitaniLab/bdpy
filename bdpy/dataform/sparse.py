@@ -46,10 +46,10 @@ def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
     return None
 
 
-def save_multiarrays(fname, arrays, dtype=np.float64):
+def save_multiarrays(fname, arrays):
     '''Save arrays (dense).'''
 
-    save_dict = {k: v.astype(dtype) for k, v in arrays.items()}
+    save_dict = {k: v for k, v in arrays.items()}
     hdf5storage.savemat(fname,
                         save_dict,
                         format='7.3', oned_as='column',
