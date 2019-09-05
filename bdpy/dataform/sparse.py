@@ -3,7 +3,7 @@
 This file is a part of bdpy.
 '''
 
-__all__ = ['SparseArray', 'load_array', 'save_array']
+__all__ = ['SparseArray', 'load_array', 'save_array', 'save_multiarrays']
 
 
 import os
@@ -42,6 +42,18 @@ def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
                             {key: array.astype(dtype)},
                             format='7.3', oned_as='column',
                             store_python_metadata=True)
+
+    return None
+
+
+def save_multiarrays(fname, arrays, dtype=np.float64):
+    '''Save arrays (dense).'''
+
+    save_dict = {k: v.astype(dtype) for k, v in arrays.items()}
+    hdf5storage.savemat(fname,
+                        save_dict,
+                        format='7.3', oned_as='column',
+                        store_python_metadata=True)
 
     return None
 
