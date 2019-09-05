@@ -73,6 +73,10 @@ class Features(object):
     def layers(self):
         return self.__layers
 
+    @property
+    def feature_index(self):
+        return self.__feature_index
+
     def get_features(self, layer):
         '''Return features in `layer`.
 
