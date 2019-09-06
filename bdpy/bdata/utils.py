@@ -136,7 +136,7 @@ def metadata_equal(d0, d1, strict=False):
             return False
 
         try:
-            np.testing.assert_equal(d0.metadata.value, d1.metadata.value)
+            np.testing.assert_equal(d0_mval, d1_mval)
         except AssertionError:
             return False
 
