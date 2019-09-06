@@ -7,7 +7,7 @@ import numpy as np
 from .bdata import BData
 
 
-def vstack(bdata_list, successive=[]):
+def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_description=False):
     '''Concatenate datasets vertically.
 
     Currently, `concat_dataset` does not validate the consistency of meta-data
@@ -20,6 +20,12 @@ def vstack(bdata_list, successive=[]):
     successsive : list, optional
         Sucessive columns. The values of columns specified here are inherited
         from the preceding data.
+    metadata_merge : str, optional
+        Meta-data merge strategy ('strict' or 'minimal'; default: strict).
+        'strict' requires that concatenated datasets share exactly the same meta-data.
+        'minimal' keeps meta-data only shared across the concatenated datasets.
+    ignore_metadata_description : bool
+        Ignore meta-data description when merging the datasets (default: False).
 
     Returns
     -------
@@ -51,19 +57,37 @@ def vstack(bdata_list, successive=[]):
             dat.dataset = ds_copy.dataset
             dat.metadata = ds_copy.metadata
         else:
+            # Check metadata consistency
+            if metadata_merge == 'strict':
+                if not metadata_equal(dat, ds_copy):
+                    raise ValueError('Inconsistent meta-data.')
+            elif metadata_merge == 'minimal':
+                # Only meta-data shared across BDatas are kept.
+                shared_mkeys = sorted(list(set(dat.metadata.key) & set(ds_copy.metadata.key)))
+                shared_mdesc = []
+                shared_mvalue_lst = []
+                for mkey in shared_mkeys:
+                    d0_desc, d0_value = dat.metadata.get(mkey, 'description'), dat.metadata.get(mkey, 'value')
+                    d1_desc, d1_value = ds_copy.metadata.get(mkey, 'description'), ds_copy.metadata.get(mkey, 'value')
+
+                    if not ignore_metadata_description and not d0_desc == d1_desc:
+                        raise ValueError('Inconsistent meta-data description (%s)' % mkey)
+                    try:
+                        np.testing.assert_equal(d0_value, d1_value)
+                    except AssertionError:
+                        raise ValueError('Inconsistent meta-data value (%s)' % mkey)
+                    shared_mdesc.append(d0_desc)
+                    shared_mvalue_lst.append(d0_value)
+                shared_mvalue = np.vstack(shared_mvalue_lst)
+
+                dat.metadata.key = shared_mkeys
+                dat.metadata.description = shared_mdesc
+                dat.metadata.value = shared_mvalue
+            else:
+                raise ValueError('Unknown meta-data merge strategy: %s' % metadata_merge)
+
             # Concatenate BDatas
             dat.dataset = np.vstack([dat.dataset, ds_copy.dataset])
-
-            # Check metadata consistency
-            if not dat.metadata.key == ds_copy.metadata.key:
-                raise ValueError('Metadata keys are inconsistent. ')
-            if not dat.metadata.description == ds_copy.metadata.description:
-                raise ValueError('Metadata descriptions are inconsistent. ')
-            # np.array_equal doesn't work because np.nan != np.nan
-            try:
-                np.testing.assert_equal(dat.metadata.value, ds_copy.metadata.value)
-            except AssertionError:
-                raise ValueError('Metadata values are inconsistent. ')
 
         # Update the last values in sucessive columns
         for s in successive:
