@@ -99,3 +99,45 @@ def concat_dataset(data_list, successive=[]):
     '''
 
     return vstack(data_list, successive=successive)
+
+
+def metadata_equal(d0, d1, strict=False):
+    '''Check whether `d0` and `d1` share the same meta-data.'''
+
+    equal = True
+
+    # Strict check
+    if not d0.metadata.key == d1.metadata.key:
+        equal = False
+    if not d0.metadata.description == d1.metadata.description:
+        equal = False
+    try:
+        np.testing.assert_equal(d0.metadata.value, d1.metadata.value)
+    except AssertionError:
+        equal = False
+
+    if equal:
+        return True
+
+    if strict:
+        return False
+
+    # Loose check (ignore the order of meta-data)
+    d0_mkeys = sorted(d0.metadata.key)
+    d1_mkeys = sorted(d1.metadata.key)
+    if not d0_mkeys == d1_mkeys:
+        return False
+
+    for mkey in d0_mkeys:
+        d0_mdesc, d1_mdesc = d0.metadata.get(mkey, 'description'), d1.metadata.get(mkey, 'description')
+        d0_mval, d1_mval = d0.metadata.get(mkey, 'value'), d1.metadata.get(mkey, 'value')
+
+        if not d0_mdesc == d1_mdesc:
+            return False
+
+        try:
+            np.testing.assert_equal(d0.metadata.value, d1.metadata.value)
+        except AssertionError:
+            return False
+
+    return True
