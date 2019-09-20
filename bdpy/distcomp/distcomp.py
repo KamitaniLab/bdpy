@@ -40,7 +40,8 @@ class DistComp(object):
             else:
                 return False
         elif self.__backend == 'sqlite3':
-            if self.__status_db(args[0]) == 'locked':
+            comp_id = args[0]
+            if self.__status_db(comp_id) == 'locked':
                 return True
             else:
                 return False
@@ -58,13 +59,13 @@ class DistComp(object):
                 pass
         elif self.__backend == 'sqlite3':
             comp_id = args[0]
-            with closing(sqlite3.connect(self.__db_path)) as conn:
-                c = conn.cursor()
-                if self.__status_db(comp_id) == 'not_found':
-                    c.execute('insert into computation (name, status) values ("%s", "locked")' % comp_id)
-                else:
-                    c.execute('update computation set status = "locked" where name = "%s"' % comp_id)
-                conn.commit()
+            with sqlite3.connect(self.__db_path, isolation_level='EXCLUSIVE') as db:
+                try:
+                    db.execute('INSERT INTO computation (name, status) VALUES ("%s", "locked")' % comp_id)
+                    return True
+                except db.Error:
+                    print('Already locked')
+                    return False
         else:
             raise ValueError('Unknown backend: %s' % self.__backend)
 
@@ -81,14 +82,14 @@ class DistComp(object):
                 warnings.warn('Failed to unlock the computation. Possibly double running.')
         elif self.__backend == 'sqlite3':
             comp_id = args[0]
-            with closing(sqlite3.connect(self.__db_path)) as conn:
-                c = conn.cursor()
-                if self.__status_db(comp_id) == 'not_found':
-                    # TOOD: add warning
-                    pass
-                else:
-                    c.execute('update computation set status = "unlocked" where name = "%s"' % comp_id)
-                conn.commit()
+            status = self.__status_db(comp_id)
+            with sqlite3.connect(self.__db_path, isolation_level='EXCLUSIVE') as db:
+                try:
+                    db.execute('DELETE FROM computation WHERE name = "%s"' % comp_id)
+                    return True
+                except db.Error:
+                    print('Already unlocked')
+                    return False
         else:
             raise ValueError('Unknown backend: %s' % self.__backend)
 
@@ -111,20 +112,16 @@ class DistComp(object):
         return os.path.join(self.lockdir, comp_id + '.lock')
 
     def __init_db(self):
-        with closing(sqlite3.connect(self.__db_path)) as conn:
+        with sqlite3.connect(self.__db_path, isolation_level='EXCLUSIVE') as conn:
             c = conn.cursor()
             c.execute('CREATE TABLE computation(name TEXT UNIQUE, status TEXT)')
-            conn.commit()
         return None
 
     def __status_db(self, comp_id):
         '''Return status of `comp_id`.'''
-        with closing(sqlite3.connect(self.__db_path)) as conn:
-            c = conn.cursor()
-            r = [row[0] for row in c.execute('SELECT STATUS FROM computation WHERE name = "%s"' % comp_id)]
-            if len(r) > 1:
-                raise RuntimeError()
-            elif len(r) == 0:
+        with sqlite3.connect(self.__db_path, isolation_level='EXCLUSIVE') as db:
+            r = [row[0] for row in db.execute('SELECT STATUS FROM computation WHERE name = "%s"' % comp_id)]
+            if len(r) == 0:
                 st = 'not_found'
             else:
                 st = r[0]
