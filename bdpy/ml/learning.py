@@ -8,12 +8,14 @@ import warnings
 import uuid
 import pickle
 import copy
+import yaml
+import glob
 from time import time
 from datetime import datetime
 
 import numpy as np
 
-from bdpy.dataform import save_array
+from bdpy.dataform import save_array, load_array
 from bdpy.distcomp import DistComp
 from bdpy.util import makedir_ifnot
 
@@ -274,6 +276,8 @@ class ModelTraining(object):
         loop_start_time = time()
         time_elapsed = []
 
+        output_files_all = []
+
         for i, i_chunk in enumerate(chunk_index):
             if self.id is None:
                 training_id_chunk = 'chunk%08d' % i
@@ -282,6 +286,7 @@ class ModelTraining(object):
 
             # Output file setting
             output_files = self.__output_file(chunk=i)
+            output_files_all.extend(output_files)
 
             # Check chunk results
             if self.__is_done(output_files):
@@ -322,7 +327,25 @@ class ModelTraining(object):
                 print('Estimated computation end time: %s' % datetime.fromtimestamp(est_time_end).strftime('%Y-%m-%d %H:%M:%S'))
                 print('')
 
-        # TODO: Check results
+        # Check outputs and add information
+        if self.__is_done(output_files_all):
+            if os.path.isdir(self.save_path):
+                info_file = os.path.join(self.save_path, 'info.yaml')
+
+                if os.path.exists(info_file):
+                    with open(info_file, 'r') as f:
+                        info = yaml.load(f)
+                else:
+                    info = {}
+
+                if not '_status' in info:
+                    info.update({'_status': {}})
+
+                info['_status'].update({'computation_id':     self.id,
+                                        'computation_status': 'done'})
+
+                with open(info_file, 'w') as f:
+                    f.write(yaml.dump(info, default_flow_style=False))
 
         return self.model
 
@@ -391,3 +414,90 @@ class ModelTraining(object):
     def __is_done(self, output_files):
         check_outputs = [os.path.exists(out_file['file_path']) for out_file in output_files]
         return all(check_outputs)
+
+
+#-----------------------------------------------------------------------
+class ModelTest(object):
+    '''Model test (prediction) class.'''
+
+    def __init__(self, model, X):
+        self.model = model
+        self.X = X
+
+        self.id = str(uuid.uuid4())
+        self.model_format = 'pickle'
+        self.model_path = None
+        self.model_parameters = {}     # Parameters passed to model.predict()
+        self.dtype = None
+        self.chunk_axis = None
+        self.verbose = 1
+
+    def run(self):
+        '''Run test.'''
+
+        if self.dtype is not None:
+            self.X = self.X.astype(self.dtype)
+
+        if self.model_path is None:
+            y_pred = self.model.predict(self.X, **self.model_parameters)
+            return y_pred
+
+        if self.model_format == 'pickle':
+            if os.path.isfile(self.model_path):
+                model_files = [self.model_path]
+            elif os.path.isdir(self.model_path):
+                model_files = sorted(glob.glob(os.path.join(self.model_path, '*.pkl')))
+            else:
+                raise ValueError('Invalid model path: %s' % self.model_path)
+        elif self.model_format == 'bdmodel':
+            if os.path.isfile(self.model_path):
+                raise ValueError('BDmodel should be specified as a directory, not a file')
+
+            # W: shape = (n_voxels, shape_features)
+            if os.path.isdir(os.path.join(self.model_path, 'W')):
+                W_files = sorted(glob.glob(os.path.join(self.model_path, 'W', '*.mat')))
+            elif os.path.isfile(os.path.join(self.model_path, 'W.mat')):
+                W_files = [os.path.join(self.model_path, 'W.mat')]
+            else:
+                raise RuntimeError('W not found.')
+
+            # b: shape = (1, shape_features)
+            if os.path.isdir(os.path.join(self.model_path, 'b')):
+                b_files = sorted(glob.glob(os.path.join(self.model_path, 'b', '*.mat')))
+            elif os.path.isfile(os.path.join(self.model_path, 'b.mat')):
+                b_files = [os.path.join(self.model_path, 'b.mat')]
+            else:
+                raise RuntimeError('b not found.')
+
+            model_files = [(w, b) for w, b in zip(W_files, b_files)]
+
+        else:
+            raise ValueError('Unknown model format: %s' % self.model_format)
+
+        # Prediction loop
+        y_pred_list = []
+        for i, model_file in enumerate(model_files):
+            print('Chunk %d' % i)
+            start_time = time()
+
+            if self.model_format == 'pickle':
+                with open(model_file, 'rb') as f:
+                    model = pickle.load(f)
+            elif self.model_format == 'bdmodel':
+                W = load_array(model_file[0], key='W')
+                b = load_array(model_file[1], key='b')
+                model = self.model
+                model.W = W
+                model.b = b
+            else:
+                raise ValueError('Unknown model format: %s' % self.model_format)
+
+            y_pred = model.predict(self.X, **self.model_parameters)
+            y_pred_list.append(y_pred)
+
+            print('Elapsed time: %f s' % (time() - start_time))
+
+        if self.chunk_axis is None:
+            return y_pred_list[0]
+        else:
+            return np.concatenate(y_pred_list, axis=self.chunk_axis)
