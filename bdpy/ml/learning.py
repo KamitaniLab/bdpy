@@ -289,11 +289,10 @@ class ModelTraining(object):
                 continue
 
             # Parallel computation setup
-            if distcomp.islocked(training_id_chunk):
+            # DistComp.lock() returns True if the computation is not locked and successfully locked.
+            if not distcomp.lock(training_id_chunk):
                 if self.verbose >= 1: print('%s is already running. Skipped.' % training_id_chunk)
                 continue
-
-            distcomp.lock(training_id_chunk)
 
             if self.__chunking:
                 Y = np.take(self.Y, [i_chunk], axis=self.chunk_axis)
