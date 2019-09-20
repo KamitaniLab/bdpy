@@ -59,7 +59,6 @@ class DistComp(object):
         elif self.__backend == 'sqlite3':
             comp_id = args[0]
             with closing(sqlite3.connect(self.__db_path)) as conn:
-                conn = sqlite3.connect(self.__db_path)
                 c = conn.cursor()
                 if self.__status_db(comp_id) == 'not_found':
                     c.execute('insert into computation (name, status) values ("%s", "locked")' % comp_id)
@@ -83,7 +82,6 @@ class DistComp(object):
         elif self.__backend == 'sqlite3':
             comp_id = args[0]
             with closing(sqlite3.connect(self.__db_path)) as conn:
-                conn = sqlite3.connect(self.__db_path)
                 c = conn.cursor()
                 if self.__status_db(comp_id) == 'not_found':
                     # TOOD: add warning
@@ -122,7 +120,6 @@ class DistComp(object):
     def __status_db(self, comp_id):
         '''Return status of `comp_id`.'''
         with closing(sqlite3.connect(self.__db_path)) as conn:
-            conn = sqlite3.connect(self.__db_path)
             c = conn.cursor()
             r = [row[0] for row in c.execute('SELECT STATUS FROM computation WHERE name = "%s"' % comp_id)]
             if len(r) > 1:
