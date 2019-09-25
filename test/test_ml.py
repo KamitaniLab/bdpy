@@ -1,14 +1,16 @@
+# coding: utf-8
 '''Tests for ml'''
 
 
 import os
 import unittest
 import shutil
+import pickle
 
 import numpy as np
 
 from bdpy.dataform import load_array
-from bdpy.ml import ModelTraining
+from bdpy.ml import ModelTraining, ModelTest
 from bdpy.distcomp import DistComp
 
 from sklearn.linear_model import LinearRegression
@@ -132,6 +134,76 @@ class TestUtil(unittest.TestCase):
 
             self.assertEqual(W.shape, (500, 1, 4, 4))
             self.assertEqual(b.shape, (1, 1, 4, 4))
+
+    def test_ModelTest_sklearn_nochunk_pkl(self):
+        X = np.random.rand(30, 500)
+
+        model_path = './test_models/lir-nochunk-pkl/model.pkl'
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+
+        test = ModelTest(model, X)
+        y_pred = test.run()
+        self.assertEqual(y_pred.shape, (30, 50))
+
+    def test_ModelTest_sklearn_nochunk_pkl_modelpath(self):
+        X = np.random.rand(30, 500)
+
+        model = LinearRegression()
+        model_path = './test_models/lir-nochunk-pkl/model.pkl'
+
+        test = ModelTest(model, X)
+        test.model_path = model_path
+        y_pred = test.run()
+        self.assertEqual(y_pred.shape, (30, 50))
+
+    def test_ModelTest_fastl2lir_nochunk_pkl_modelpath(self):
+        X = np.random.rand(30, 500)
+
+        model = FastL2LiR()
+        model_path = './test_models/fastl2lir-nochunk-pkl/model.pkl'
+
+        test = ModelTest(model, X)
+        test.model_path = model_path
+        y_pred = test.run()
+        self.assertEqual(y_pred.shape, (30, 50))
+
+    def test_ModelTest_fastl2lir_chunk_pkl_modelpath(self):
+        X = np.random.rand(30, 500)
+
+        model = FastL2LiR()
+        model_path = './test_models/fastl2lir-chunk-pkl/model'
+
+        test = ModelTest(model, X)
+        test.model_path = model_path
+        test.chunk_axis = 1
+        y_pred = test.run()
+        self.assertEqual(y_pred.shape, (30, 4, 8, 8))
+
+    def test_ModelTest_fastl2lir_nochunk_bd_modelpath(self):
+        X = np.random.rand(30, 500)
+
+        model = FastL2LiR()
+        model_path = './test_models/fastl2lir-nochunk-bd/model'
+
+        test = ModelTest(model, X)
+        test.model_path = model_path
+        test.model_format = 'bdmodel'
+        y_pred = test.run()
+        self.assertEqual(y_pred.shape, (30, 50))
+
+    def test_ModelTest_fastl2lir_chunk_bd_modelpath(self):
+        X = np.random.rand(30, 500)
+
+        model = FastL2LiR()
+        model_path = './test_models/fastl2lir-chunk-bd/model'
+
+        test = ModelTest(model, X)
+        test.model_path = model_path
+        test.model_format = 'bdmodel'
+        test.chunk_axis = 1
+        y_pred = test.run()
+        self.assertEqual(y_pred.shape, (30, 4, 8, 8))
 
 
 if __name__ == '__main__':
