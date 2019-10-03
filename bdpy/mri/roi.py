@@ -364,7 +364,7 @@ def merge_rois(bdata, roi_name, merge_expr):
         raise RuntimeError('Something goes wrong in merge_rois.')
 
     merged_roi_mv = out_stack[0]
-    description = 'Merged ROI (%s)' % merge_expr
+    description = 'Merged ROI: %s' % ' '.join(tokens)
     bdata.add_metadata(roi_name, merged_roi_mv, description)
 
     num_voxels = np.nansum(merged_roi_mv).astype(int)
