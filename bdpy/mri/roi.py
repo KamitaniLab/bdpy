@@ -59,6 +59,9 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
         roi_flag = get_roiflag(mask_xyz_all, voxel_xyz)
 
     # Add the ROI flag as metadata in `bdata`
+    md_keys = []
+    md_descs = []
+
     for i, roi in enumerate(roi_mask):
         roi_name = roi_prefix + '_' + os.path.basename(roi).replace('.nii.gz', '').replace('.nii', '')
 
@@ -69,7 +72,18 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
 
         print('Adding %s' % roi_name)
         print('  %s' % roi_desc)
-        bdata.add_metadata(roi_name, roi_flag[i, :], description=roi_desc, where=brain_data)
+        md_keys.append(roi_name)
+        md_descs.append(roi_desc)
+
+    bdata.metadata.key.extend(md_keys)
+    bdata.metadata.description.extend(md_descs)
+
+    brain_data_index = bdata.get_metadata(brain_data)
+    new_md_v = np.zeros([roi_flag.shape[0], bdata.metadata.value.shape[1]])
+    new_md_v[:, :] = np.nan
+    new_md_v[:, brain_data_index == 1] = roi_flag
+
+    bdata.metadata.value = np.vstack([bdata.metadata.value, new_md_v])
 
     if return_roi_flag:
         return bdata, roi_flag
