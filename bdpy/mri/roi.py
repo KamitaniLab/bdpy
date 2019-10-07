@@ -353,6 +353,7 @@ def merge_rois(bdata, roi_name, merge_expr):
         elif tkn == '-':
             b = out_stack.pop()
             a = out_stack.pop()
+            out = a - b
         else:
             out = bdata.get_metadata(tkn)
         out[np.isnan(out)] = 0
