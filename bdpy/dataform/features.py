@@ -94,10 +94,17 @@ class Features(object):
         if layer == self.__c_feature_name:
             return self.__features
 
-        self.__features = np.vstack(
-            [sio.loadmat(self.__feature_file_table[layer][label])['feat']
-             for label in self.__labels]
-        )
+        try:
+            self.__features = np.vstack(
+                [sio.loadmat(self.__feature_file_table[layer][label])['feat']
+                 for label in self.__labels]
+            )
+        except NotImplementedError:
+            self.__features = np.vstack(
+                [hdf5storage.loadmat(self.__feature_file_table[layer][label])['feat']
+                 for label in self.__labels]
+            )
+
         self.__c_feature_name = layer
 
         if self.__feat_index_table is not None:
