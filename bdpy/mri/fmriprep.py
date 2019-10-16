@@ -473,6 +473,12 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     ijk = np.array([])
 
     motionparam_list = []
+    confounds = {'global_signal':          [],
+                 'white_matter':           [],
+                 'csf':                    [],
+                 'dvars':                  [],
+                 'std_dvars':              [],
+                 'framewise_displacement': []}
 
     ses_label_list = []
     run_label_list = []
@@ -522,6 +528,10 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
             mp = np.hstack([np.c_[conf_pd[a]] for a in mp_label])
             motionparam_list.append(mp)
+
+            for c in confounds:
+                x = np.c_[conf_pd[c]]
+                confounds[c].append(x)
 
             # Load task event file
             event_file = os.path.join(data_path, run['task_event_file'])
@@ -588,6 +598,9 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     block_label = np.vstack(block_label_list)
     labels_label = np.vstack(labels_list)
 
+    for c in confounds:
+        confounds.update({c: np.vstack(confounds[c])})
+
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
 
@@ -612,6 +625,20 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     bdata.add_metadata('MotionParameter_rot_x', [0, 0, 0, 1, 0, 0], 'Motion parameter: x rotation', where='MotionParameter')
     bdata.add_metadata('MotionParameter_rot_y', [0, 0, 0, 0, 1, 0], 'Motion parameter: y rotation', where='MotionParameter')
     bdata.add_metadata('MotionParameter_rot_z', [0, 0, 0, 0, 0, 1], 'Motion parameter: z rotation', where='MotionParameter')
+
+    confounds_array = np.hstack([confounds['global_signal'],
+                                 confounds['white_matter'],
+                                 confounds['csf'],
+                                 confounds['dvars'],
+                                 confounds['std_dvars'],
+                                 confounds['framewise_displacement']])
+    bdata.add(confounds_array, 'Confounds')
+    bdata.add_metadata('GlobalSignal',          [1, 0, 0, 0, 0, 0], 'Confounds: Average signal in brain mask', where='Confounds')
+    bdata.add_metadata('WhiteMatterSignal',     [0, 1, 0, 0, 0, 0], 'Confounds: Average signal in white matter', where='Confounds')
+    bdata.add_metadata('CSFSignal',             [0, 0, 1, 0, 0, 0], 'Confounds: Average signal in CSF', where='Confounds')
+    bdata.add_metadata('DVARS',                 [0, 0, 0, 1, 0, 0], 'Confounds: Original DVARS', where='Confounds')
+    bdata.add_metadata('STD_DVARS',             [0, 0, 0, 0, 1, 0], 'Confounds: Standardized DVARS', where='Confounds')
+    bdata.add_metadata('FramewiseDisplacement', [0, 0, 0, 0, 0, 1], 'Confounds: Framewise displacement (bulk-head motion)', where='Confounds')
 
     for i, col in enumerate(cols):
         metadata_vec = np.empty((len(cols),))
