@@ -198,6 +198,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
                           fmriprep_dir='derivatives/fmriprep',
                           label_mapper=None, exclude={},
                           split_task_label=False,
+                          with_confounds=False,
                           return_data_labels=False,
                           return_list=False):
     '''Create BData from FMRIPREP outputs.
@@ -626,19 +627,20 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     bdata.add_metadata('MotionParameter_rot_y', [0, 0, 0, 0, 1, 0], 'Motion parameter: y rotation', where='MotionParameter')
     bdata.add_metadata('MotionParameter_rot_z', [0, 0, 0, 0, 0, 1], 'Motion parameter: z rotation', where='MotionParameter')
 
-    confounds_array = np.hstack([confounds['global_signal'],
-                                 confounds['white_matter'],
-                                 confounds['csf'],
-                                 confounds['dvars'],
-                                 confounds['std_dvars'],
-                                 confounds['framewise_displacement']])
-    bdata.add(confounds_array, 'Confounds')
-    bdata.add_metadata('GlobalSignal',          [1, 0, 0, 0, 0, 0], 'Confounds: Average signal in brain mask', where='Confounds')
-    bdata.add_metadata('WhiteMatterSignal',     [0, 1, 0, 0, 0, 0], 'Confounds: Average signal in white matter', where='Confounds')
-    bdata.add_metadata('CSFSignal',             [0, 0, 1, 0, 0, 0], 'Confounds: Average signal in CSF', where='Confounds')
-    bdata.add_metadata('DVARS',                 [0, 0, 0, 1, 0, 0], 'Confounds: Original DVARS', where='Confounds')
-    bdata.add_metadata('STD_DVARS',             [0, 0, 0, 0, 1, 0], 'Confounds: Standardized DVARS', where='Confounds')
-    bdata.add_metadata('FramewiseDisplacement', [0, 0, 0, 0, 0, 1], 'Confounds: Framewise displacement (bulk-head motion)', where='Confounds')
+    if with_confounds:
+        confounds_array = np.hstack([confounds['global_signal'],
+                                     confounds['white_matter'],
+                                     confounds['csf'],
+                                     confounds['dvars'],
+                                     confounds['std_dvars'],
+                                     confounds['framewise_displacement']])
+        bdata.add(confounds_array, 'Confounds')
+        bdata.add_metadata('GlobalSignal',          [1, 0, 0, 0, 0, 0], 'Confounds: Average signal in brain mask', where='Confounds')
+        bdata.add_metadata('WhiteMatterSignal',     [0, 1, 0, 0, 0, 0], 'Confounds: Average signal in white matter', where='Confounds')
+        bdata.add_metadata('CSFSignal',             [0, 0, 1, 0, 0, 0], 'Confounds: Average signal in CSF', where='Confounds')
+        bdata.add_metadata('DVARS',                 [0, 0, 0, 1, 0, 0], 'Confounds: Original DVARS', where='Confounds')
+        bdata.add_metadata('STD_DVARS',             [0, 0, 0, 0, 1, 0], 'Confounds: Standardized DVARS', where='Confounds')
+        bdata.add_metadata('FramewiseDisplacement', [0, 0, 0, 0, 0, 1], 'Confounds: Framewise displacement (bulk-head motion)', where='Confounds')
 
     for i, col in enumerate(cols):
         metadata_vec = np.empty((len(cols),))
