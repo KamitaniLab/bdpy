@@ -343,7 +343,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
             print('----------------------------------------')
             print('Subject: %s\n' % sbj)
 
-            bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
+            bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict, with_confounds=with_confounds)
             bdata_list.append(bdata)
             data_labels.append(sbj)
 
@@ -463,7 +463,7 @@ class BrainData(object):
         return data_matrix
 
 
-def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
+def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False):
     if data_mode in ['surface_standard', 'surface_standard_41k', 'surface_standard_10k', 'surface_native']:
         is_surf = True
     else:
