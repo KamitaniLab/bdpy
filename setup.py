@@ -8,21 +8,19 @@ This file is a part of BdPy.
 from setuptools import setup
 
 
-VERSION_FILE = 'version'
+VERSION = 0.13
 
 
 if __name__ == '__main__':
 
-    # Get version num
-    with open(VERSION_FILE, 'r') as f:
-        version_num = f.readline().strip()
-
     # Setup
     setup(name='bdpy',
-          version=version_num,
-          description='Brain decoder toolbox',
-          author='Shuntaro Aoki',
+          version=VERSION,
+          description='Brain decoder toolbox for Python',
+          author='Shuntaro C. Aoki',
           author_email='brainliner-admin@atr.jp',
+          maintainer='Shuntaro C. Aoki',
+          maintainer_email='brainliner-admin@atr.jp',
           url='https://github.com/KamitaniLab/bdpy',
           license='MIT',
           packages=['bdpy',
