@@ -145,7 +145,7 @@ class TestBdata(unittest.TestCase):
         b.add(testdata_a, 'TestDataA')
         b.add(testdata_b, 'TestDataB')
 
-        b.add_metadata(md_key, md_val, attribute='TestDataA')
+        b.add_metadata(md_key, md_val, where='TestDataA')
 
         assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
 
@@ -192,6 +192,7 @@ class TestBdata(unittest.TestCase):
         b.add(testdata_b, 'TestDataB')
 
         b.add_metadata(md_key, md_val, where='TestDataA', attribute='TestDataB')
+        #b.add_metadata(md_key, md_val, where='TestDataA')
 
         assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
 
