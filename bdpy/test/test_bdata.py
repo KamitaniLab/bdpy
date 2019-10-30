@@ -299,6 +299,16 @@ class TestBdata(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
+    def test_select_or_keyonly(self):
+        '''Test for '|' (or) only with key.'''
+
+        test_input = 'Mask_0:3 | Mask_3:3 '
+        exp_output = self.data.dataSet[:, 0:6]
+
+        test_output = self.data.select(test_input)
+
+        np.testing.assert_array_equal(test_output, exp_output)
+
     def test_select_wildcard(self):
         '''Test for wildcard in select.'''
 
