@@ -299,6 +299,16 @@ class TestBdata(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
+    def test_select_wildcard(self):
+        '''Test for wildcard in select.'''
+
+        test_input = 'Mask_*'
+        exp_output = self.data.dataset[:, 0:8]
+
+        test_output = self.data.select(test_input)
+
+        np.testing.assert_array_equal(test_output, exp_output)
+
     # def test_select_pass0006(self):
     #     """Test for 'top'"""
 
