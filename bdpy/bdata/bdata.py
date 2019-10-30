@@ -477,6 +477,7 @@ class BData(object):
                     else:
                         # 'i' should be a meta-data key
                         i = np.array(self.get_metadata(i))
+                        i = np.array([n == 1 for n in i], dtype=bool)
 
                 stack.append(i)
 
