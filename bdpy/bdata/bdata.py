@@ -31,6 +31,7 @@ import warnings
 import time
 import datetime
 import inspect
+import re
 
 import h5py
 import numpy as np
@@ -476,8 +477,7 @@ class BData(object):
                         i = float(i)
                     else:
                         # 'i' should be a meta-data key
-                        i = np.array(self.get_metadata(i))
-                        i = np.array([n == 1 for n in i], dtype=bool)
+                        i = self.__metadata_key_to_bool_vector(i)
 
                 stack.append(i)
 
@@ -700,6 +700,19 @@ class BData(object):
 
 
     # Private methods --------------------------------------------------
+
+    def __metadata_key_to_bool_vector(self, key):
+        '''Convert meta-dat key(s) to boolean vector.'''
+        key_esc = re.escape(key).replace('\*', '.*')
+        keys = [k for k in self.metadata.key if re.match(key_esc, k)]
+        if len(keys) == 0:
+            raise RuntimeError('Meta-data %s not found' % key)
+        vals = np.vstack([
+            self.get_metadata(k)
+            for k in keys])
+        vals = (vals == 1)
+        vec = np.sum(vals, axis=0).astype(bool)
+        return vec
 
     def __get_order(self, v, sort_order='descend'):
 
