@@ -330,6 +330,16 @@ class TestBdata(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
+    def test_select_subtraction(self):
+        """Test for '-' (subtraction)"""
+
+        test_input = 'Mask_0:5 - Mask_0:3'
+        exp_output = self.data.dataSet[:, 3:5]
+
+        test_output = self.data.select(test_input)
+
+        np.testing.assert_array_equal(test_output, exp_output)
+
     # def test_select_pass0006(self):
     #     """Test for 'top'"""
 

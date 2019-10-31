@@ -26,12 +26,13 @@ class FeatureSelector(object):
 
     # Class variables ##################
     signs = ('(', ')')
-    operators = ('=', '|', '&', '+', '@')
+    operators = ('=', '|', '&', '+', '-', '@')
 
     __op_order = {'=': 10,
                   '|': 5,
                   '&': 5,
                   '+': 5,
+                  '-': 5,
                   '@': 3,
                   '(': -1,
                   ')': -1}

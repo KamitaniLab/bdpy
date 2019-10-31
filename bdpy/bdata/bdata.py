@@ -433,7 +433,7 @@ class BData(object):
                 stack.append(order)
                 buf_sel.append(n)
 
-            elif i == '|' or i == '&':
+            elif i in ['|', '&', '-']:
                 r = stack.pop()
                 l = stack.pop()
 
@@ -453,6 +453,8 @@ class BData(object):
                     result = np.logical_or(l, r)
                 elif i == '&':
                     result = np.logical_and(l, r)
+                elif i == '-':
+                    result = np.logical_and(l, np.logical_not(r))
 
                 stack.append(result)
 
