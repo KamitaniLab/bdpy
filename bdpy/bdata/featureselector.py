@@ -71,7 +71,6 @@ class FeatureSelector(object):
 
         # Convert '+' to '|'
         output_buf = ['|' if a == '+' else a for a in output_buf]
-        print(output_buf)
 
         return tuple(output_buf)
 
