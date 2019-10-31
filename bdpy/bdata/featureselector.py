@@ -1,12 +1,12 @@
-"""
+'''
 Feature selector class
 
 This file is a part of BdPy
-"""
+'''
 
 
 class FeatureSelector(object):
-    """
+    '''
     Feature selector class
 
     Parameters
@@ -22,21 +22,20 @@ class FeatureSelector(object):
         Tokens
     rpn : tuple
         Tokens in reversed polish notation
-    """
+    '''
 
-    ## Class variables #####################
+    # Class variables ##################
     signs = ('(', ')')
     operators = ('=', '|', '&', '@')
 
-    __op_order = {'='   : 10,
-                  '|'   : 5,
-                  '&'   : 5,
-                  '@'   : 3,
-                  '('   : -1,
-                  ')'   : -1}
+    __op_order = {'=': 10,
+                  '|': 5,
+                  '&': 5,
+                  '@': 3,
+                  '(': -1,
+                  ')': -1}
 
-
-    ## Methods #############################
+    # Methods ##########################
 
     def __init__(self, expression):
         self.expression = expression
@@ -45,9 +44,8 @@ class FeatureSelector(object):
 
         self.index = None
 
-
     def lexical_analysis(self, expression):
-        """Lexical analyser"""
+        '''Lexical analyser'''
 
         str_buf = ''
         output_buf = []
@@ -71,9 +69,8 @@ class FeatureSelector(object):
 
         return tuple(output_buf)
 
-
     def parse(self, token_list):
-        """Parser for selection command"""
+        '''Parser for selection command'''
 
         out_que = []
         op_stack = []
