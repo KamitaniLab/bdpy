@@ -26,11 +26,12 @@ class FeatureSelector(object):
 
     # Class variables ##################
     signs = ('(', ')')
-    operators = ('=', '|', '&', '@')
+    operators = ('=', '|', '&', '+', '@')
 
     __op_order = {'=': 10,
                   '|': 5,
                   '&': 5,
+                  '+': 5,
                   '@': 3,
                   '(': -1,
                   ')': -1}
@@ -66,6 +67,10 @@ class FeatureSelector(object):
         if len(str_buf) > 0:
             output_buf.append(str_buf)
             str_buf = ''
+
+        # Convert '+' to '|'
+        output_buf = ['|' if a == '+' else a for a in output_buf]
+        print(output_buf)
 
         return tuple(output_buf)
 

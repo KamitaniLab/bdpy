@@ -320,6 +320,16 @@ class TestBdata(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
+    def test_select_plus(self):
+        """Test for '+' (or)"""
+
+        test_input = 'Mask_0:3 = 1 + Mask_3:3 = 1'
+        exp_output = self.data.dataSet[:, 0:6]
+
+        test_output = self.data.select(test_input)
+
+        np.testing.assert_array_equal(test_output, exp_output)
+
     # def test_select_pass0006(self):
     #     """Test for 'top'"""
 
