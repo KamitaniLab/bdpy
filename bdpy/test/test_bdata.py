@@ -314,7 +314,7 @@ class TestBdata(unittest.TestCase):
         '''Test for wildcard in select.'''
 
         test_input = 'Mask_*'
-        exp_output = self.data.dataset[:, 0:8]
+        exp_output = self.data.dataset[:, 0:9]
 
         test_output = self.data.select(test_input)
 
