@@ -669,10 +669,10 @@ class BData(object):
                 fcode = ''
             callstack_code.append(fcode)
 
-        header = {'ctime': t_now_str,
-                  'ctime_epoch': t_now,
-                  'callstack': callstack,
-                  'callstack_code': callstack_code}
+        self.__header.update({'ctime': t_now_str,
+                              'ctime_epoch': t_now,
+                              'callstack': callstack,
+                              'callstack_code': callstack_code})
 
         if file_type is None:
             file_type = self.__get_filetype(file_name)
@@ -692,10 +692,10 @@ class BData(object):
                                     "metaData" : {"key" : md_keys,
                                                   "description" : md_desc,
                                                   "value" : md_vals},
-                                    'header' : header})
+                                    'header' : self.__header})
 
         elif file_type == "HDF5":
-            self.__save_h5(file_name, header=header)
+            self.__save_h5(file_name, header=self.__header)
 
         else:
             raise ValueError("Unknown file type: %s" % (file_type))
