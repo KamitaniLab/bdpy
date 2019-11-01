@@ -334,7 +334,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
                 print('----------------------------------------')
                 print('Subject: %s\n' % sbj)
                 print('Task:    %s'   % tsk)
-                bdata = __create_bdata_fmriprep_subject(tskdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
+                bdata = __create_bdata_fmriprep_subject(tskdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict, with_confounds=with_confounds)
                 bdata_list.append(bdata)
                 data_labels.append('%s_%s' % (sbj, tsk))
     else:
