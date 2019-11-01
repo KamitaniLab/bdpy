@@ -334,6 +334,10 @@ class BData(object):
         '''
         self.set_metadatadescription(metakey, description)
 
+    def update_header(self, header):
+        '''Update header.'''
+        self.__header.update(header)
+
     def applyfunc(self, func, where=None, **kargs):
         '''Apply `func` to the dataset.'''
 
