@@ -8,8 +8,7 @@ This file is a part of BdPy.
 from setuptools import setup
 
 
-VERSION = 0.13
-
+VERSION = '0.14rc0'
 
 if __name__ == '__main__':
 
