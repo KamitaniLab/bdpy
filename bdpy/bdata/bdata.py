@@ -678,22 +678,7 @@ class BData(object):
             file_type = self.__get_filetype(file_name)
 
         if file_type == "Matlab":
-            md_key = []
-            md_desc = []
-            md_value = []
-
-            md_keys = self.metadata.key
-            md_desc = self.metadata.description
-            md_vals = self.metadata.value
-
-            # 'key' and 'description' are saved as cell arrays
-            # For compatibility with Matlab, save `dataset` and `metadata` as `dataSet` and `metaData`
-            sio.savemat(file_name, {"dataSet" : self.dataset,
-                                    "metaData" : {"key" : md_keys,
-                                                  "description" : md_desc,
-                                                  "value" : md_vals},
-                                    'header' : self.__header})
-
+            raise RuntimeError('Saving BData as a mat file is no longer supported. Please save the data as HDF5 (.h5).')
         elif file_type == "HDF5":
             self.__save_h5(file_name, header=self.__header)
 
