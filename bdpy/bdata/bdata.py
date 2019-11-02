@@ -782,6 +782,9 @@ class BData(object):
         else:
             self.dataset = np.asarray(dat["dataset"])
 
+        if 'header' in dat:
+            self.__header = dat['header']
+
         self.__metadata.key = md_keys
         self.__metadata.value = md_values
         self.__metadata.description = md_descs
