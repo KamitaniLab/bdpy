@@ -800,6 +800,13 @@ class BData(object):
                 for k, v in header.items():
                     h5file.create_dataset('/header/' + k, data=v)
 
+            # vmap
+            h5file.create_group('/vmap')
+            for mk, vm in self.__vmap.items():
+                h5file.create_group('/vmap/' + mk)
+                for k, v in vm.items():
+                    h5file.create_dataset('/vmap/' + mk + '/' + str(k), data=v)
+
     def __load_mat(self, load_filename):
         '''Load dataset and metadata from Matlab file'''
 
@@ -848,6 +855,13 @@ class BData(object):
 
         if 'header' in dat:
             self.__header = {k: dat['header'][k].value for k in dat['header'].keys()}
+
+        if 'vmap' in dat:
+            for mk in dat['vmap'].keys():
+                vmap = {}
+                for k in dat['vmap'][mk].keys():
+                    vmap.update({float(k): dat['vmap'][mk][k].value})
+            self.__vmap.update({mk: vmap})
 
         self.__metadata.key = md_keys
         self.__metadata.value = md_values
