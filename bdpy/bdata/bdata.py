@@ -641,7 +641,11 @@ class BData(object):
         if not key in self.__vmap:
             raise ValueError('Key not found in vmap: %s' % key)
         value = self.select(key).flatten()
-        label = [self.__vmap[key][x] for x in value]
+        label = []
+        for x in value:
+            if np.isnan(x):
+                x = np.nan
+            label.append(self.__vmap[key][x])
         return label
 
     def get_vmap(self, key):
