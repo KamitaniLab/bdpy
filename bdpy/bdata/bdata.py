@@ -72,6 +72,7 @@ class BData(object):
         self.__dataset = np.ndarray((0, 0), dtype=float)
         self.__metadata = MetaData()
         self.__header = {}
+        self.__vmap = {}
 
         if file_name is not None:
             self.load(file_name, file_type)
@@ -633,6 +634,45 @@ class BData(object):
         for k, d in zip(self.metadata.key, self.metadata. description):
             print('| ' + k + ' ' * (max_key - len(k)) + ' | ' + d + ' ' * (max_desc - len(d)) + ' |')
 
+    # Value-label map --------------------------------------------------------
+
+    def get_vmap(self, key):
+        '''Returns vmap of `key`.'''
+        if key in self.__vmap:
+            return self.__vmap[key]
+        else:
+            raise ValueError('%s not found in vmap' % key)
+
+    def add_vmap(self, key, vmap):
+        '''Add vmap.'''
+        if type(vmap) is not dict:
+            raise TypeError('`vmap` should be a dictionary.')
+        for k in vmap.keys():
+            if type(k) is str:
+                raise TypeError('Keys of `vmap` should be numerical.')
+
+        if key in self.__vmap:
+            # Check vmap consistency
+            if self.__check_vmap_consistency(vmap, self.__vmap[key]):
+                self.__vmap[key].update(vmap)
+            else:
+                raise ValueError('Invalid vmap.')
+        else:
+            self.__vmap.update({key: vmap})
+
+        return None
+
+    def __check_vmap_consistency(self, vmap_new, vmap_old):
+        for key in vmap_new.keys():
+            if not key in vmap_old:
+                continue
+            if vmap_old[key] != vmap_new[key]:
+                print('Inconsistent label:')
+                print('    Key: %f' % key)
+                print('    Old label: %s' % vmap_old[key])
+                print('    New label: %s' % vmap_new[key])
+                return False
+        return True
 
     # File I/O---------------------------------------------------------
 
