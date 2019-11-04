@@ -636,6 +636,14 @@ class BData(object):
 
     # Value-label map --------------------------------------------------------
 
+    def get_label(self, key):
+        '''Get `key` as labels.'''
+        if not key in self.__vmap:
+            raise ValueError('Key not found in vmap: %s' % key)
+        value = self.select(key).flatten()
+        label = [self.__vmap['Label'][x] for x in value]
+        return label
+
     def get_vmap(self, key):
         '''Returns vmap of `key`.'''
         if key in self.__vmap:
