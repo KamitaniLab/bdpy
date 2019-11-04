@@ -56,6 +56,11 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
             # Create new BData
             dat.dataset = ds_copy.dataset
             dat.metadata = ds_copy.metadata
+
+            # vmap
+            vmap_keys = ds_copy.get_vmap_keys()
+            for vk in vmap_keys:
+                dat.add_vmap(vk, ds_copy.get_vmap(vk))
         else:
             # Check metadata consistency
             if metadata_merge == 'strict':
@@ -88,6 +93,11 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
 
             # Concatenate BDatas
             dat.dataset = np.vstack([dat.dataset, ds_copy.dataset])
+
+            # Merge vmap
+            vmap_keys = ds_copy.get_vmap_keys()
+            for vk in vmap_keys:
+                dat.add_vmap(vk, ds_copy.get_vmap(vk))
 
         # Update the last values in sucessive columns
         for s in successive:
