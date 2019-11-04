@@ -463,6 +463,33 @@ class BrainData(object):
         return data_matrix
 
 
+class LabelMapper(object):
+    '''Label mapper class.'''
+
+    def __init__(self, l2v_map):
+        self.__l2v_map = l2v_map
+        self.__v2l_map = {}
+
+    def get_value(self, mkey, label):
+        if not mkey in self.__l2v_map:
+            raise RuntimeError('%s not found in label mapper' % mkey)
+
+        val = self.__l2v_map[mkey][label]
+        if not mkey in self.__v2l_map:
+            self.__v2l_map.update({mkey: {val: label}})
+        else:
+            if label in self.__v2l_map[mkey].values():
+                label_exist = self.__v2l_map[mkey][val]
+                if label != label_exist:
+                    raise RuntimeError('Invalid label-value mapping (possibly non-unique values in label mapper)')
+            self.__v2l_map[mkey].update({val: label})
+
+        return val
+
+    def dump(self):
+        return self.__v2l_map
+
+
 def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False):
     if data_mode in ['surface_standard', 'surface_standard_41k', 'surface_standard_10k', 'surface_native']:
         is_surf = True
@@ -488,6 +515,8 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
     last_run = 0
     last_block = 0
+
+    act_label_map = LabelMapper(label_mapper)
 
     for i, (ses, sesdata) in enumerate(subject_data.items()):
         print('Session: %d (%s)' % (i + 1, ses))
@@ -573,7 +602,8 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                 label_vals = []
                 for p in cols:
                     if p in label_mapper:
-                        label_vals.append(label_mapper[p][row[p]])
+                        v = act_label_map.get_value(p, row[p])
+                        label_vals.append(v)
                     else:
                         label_vals.append(row[p])
                 label_vals = np.array([np.nan if x == 'n/a' else np.float(x)
@@ -604,6 +634,11 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
+
+    # Value-label mapper
+    vmap = act_label_map.dump()
+    for k in vmap:
+        bdata.add_vmap(k, vmap[k])
 
     if is_surf:
         bdata.add(braindata, 'VertexData')
