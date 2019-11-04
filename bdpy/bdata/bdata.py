@@ -651,6 +651,9 @@ class BData(object):
         else:
             raise ValueError('%s not found in vmap' % key)
 
+    def get_vmap_keys(self):
+        return self.__vmap.keys()
+
     def add_vmap(self, key, vmap):
         '''Add vmap.'''
         if type(vmap) is not dict:
