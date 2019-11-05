@@ -662,6 +662,9 @@ class BData(object):
 
     def add_vmap(self, key, vmap):
         '''Add vmap.'''
+        if not key in self.__metadata.key:
+            raise ValueError('%s not found in metadata.' % key)
+
         if type(vmap) is not dict:
             raise TypeError('`vmap` should be a dictionary.')
         for k in vmap.keys():
