@@ -79,12 +79,12 @@ class TestVstack(TestCase):
         bdata1.add(x1_label, 'Label')
         bdata1.add_vmap('Label', x1_label_map)
 
-        bdata_merged = vstack([bdata0, bdata1], successive=['Label'])
+        bdata_merged = vstack([bdata0, bdata1])
 
         np.testing.assert_array_equal(bdata_merged.select('Data'),
                                       np.vstack([x0_data, x1_data]))
         np.testing.assert_array_equal(bdata_merged.select('Label'),
-                                      np.vstack([x0_label, x1_label + 10]))
+                                      np.vstack([x0_label, x1_label]))
 
         # Check vmap
         assert bdata0.get_vmap('Label') == bdata1.get_vmap('Label')
@@ -111,7 +111,7 @@ class TestVstack(TestCase):
         bdata1.add(x1_label, 'Label')
         bdata1.add_vmap('Label', x1_label_map)
 
-        bdata_merged = vstack([bdata0, bdata1], successive=['Label'])
+        bdata_merged = vstack([bdata0, bdata1])
 
         np.testing.assert_array_equal(bdata_merged.select('Data'),
                                       np.vstack([x0_data, x1_data]))
