@@ -116,7 +116,7 @@ class TestVstack(TestCase):
         np.testing.assert_array_equal(bdata_merged.select('Data'),
                                       np.vstack([x0_data, x1_data]))
         np.testing.assert_array_equal(bdata_merged.select('Label'),
-                                      np.vstack([x0_label, x1_label + 10]))
+                                      np.vstack([x0_label, x1_label]))
 
         # Check vmap
         merged_vmap = {}
