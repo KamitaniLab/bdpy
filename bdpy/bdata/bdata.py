@@ -674,13 +674,25 @@ class BData(object):
         if key in self.__vmap:
             # Check vmap consistency
             if self.__check_vmap_consistency(vmap, self.__vmap[key]):
-                self.__vmap[key].update(vmap)
+                vmap_add = self.__get_act_vmap(key, vmap)
+                self.__vmap[key].update(vmap_add)
             else:
-                raise ValueError('Invalid vmap.')
+                raise ValueError('Invalid vmap: labels are inconsistent between old and new vmaps.')
         else:
-            self.__vmap.update({key: vmap})
+            vmap_add = self.__get_act_vmap(key, vmap)
+            self.__vmap.update({key: vmap_add})
 
         return None
+
+    def __get_act_vmap(self, key, vmap):
+        values = np.unique(self.get(key))
+        try:
+            vmap_add = {}
+            for val in values:
+                vmap_add.update({val: vmap[val]})
+        except KeyError:
+            raise ValueError('Invalid vmap: label for %f not found.' % val)
+        return vmap_add
 
     def __check_vmap_consistency(self, vmap_new, vmap_old):
         for key in vmap_new.keys():
