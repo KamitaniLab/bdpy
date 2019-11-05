@@ -111,6 +111,19 @@ class TestVmap(TestCase):
         with self.assertRaises(ValueError):
             bdata.add_vmap('Label', label_map)
 
+    def test_vmap_add_invalid_name_vmap(self):
+        bdata = bdpy.BData()
+        bdata.add(np.random.rand(4, 3), 'MainData')
+        bdata.add(np.arange(4) + 1, 'Label')
+
+        label_map = {1: 'label-1',
+                     2: 'label-2',
+                     3: 'label-3',
+                     4: 'label-4'}
+
+        with self.assertRaises(ValueError):
+            bdata.add_vmap('InvalidLabel', label_map)
+
 
 if __name__ == "__main__":
     test_suite = TestLoader().loadTestsFromTestCase(TestVmap)
