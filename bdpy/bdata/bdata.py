@@ -644,8 +644,10 @@ class BData(object):
         label = []
         for x in value:
             if np.isnan(x):
-                x = np.nan
-            label.append(self.__vmap[key][x])
+                v = 'n/a'
+            else:
+                v = self.__vmap[key][x]
+            label.append(v)
         return label
 
     def get_vmap(self, key):

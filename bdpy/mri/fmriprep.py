@@ -258,7 +258,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
             else:
                 raise ValueError('Unsuppored label mapper file: %s' % lbmp_file)
 
-            lbmp_dict.update({'n/a': np.nan})
+            #lbmp_dict.update({'n/a': np.nan})
             label_mapper_dict.update({lbmp: lbmp_dict})
 
     # Load fmriprep outputs
@@ -473,6 +473,9 @@ class LabelMapper(object):
     def get_value(self, mkey, label):
         if not mkey in self.__l2v_map:
             raise RuntimeError('%s not found in label mapper' % mkey)
+
+        if label == 'n/a':
+            return np.nan
 
         val = self.__l2v_map[mkey][label]
         if not mkey in self.__v2l_map:
