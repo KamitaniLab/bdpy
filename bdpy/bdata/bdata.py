@@ -690,6 +690,8 @@ class BData(object):
         try:
             vmap_add = {}
             for val in values:
+                if np.isnan(val):
+                    continue
                 vmap_add.update({val: vmap[val]})
         except KeyError:
             raise ValueError('Invalid vmap: label for %f not found.' % val)
