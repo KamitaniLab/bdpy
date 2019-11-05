@@ -674,6 +674,7 @@ class BData(object):
         if key in self.__vmap:
             # Check vmap consistency
             if self.__check_vmap_consistency(vmap, self.__vmap[key]):
+                vmap.update(self.__vmap[key])
                 vmap_add = self.__get_act_vmap(key, vmap)
                 self.__vmap[key].update(vmap_add)
             else:
