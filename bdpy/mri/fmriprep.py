@@ -638,11 +638,6 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
 
-    # Value-label mapper
-    vmap = act_label_map.dump()
-    for k in vmap:
-        bdata.add_vmap(k, vmap[k])
-
     if is_surf:
         bdata.add(braindata, 'VertexData')
         n_vertex = brain.n_vertex
@@ -698,6 +693,11 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
         bdata.add_metadata('voxel_i', ijk[0, :], 'Voxel i index', where='VoxelData')
         bdata.add_metadata('voxel_j', ijk[1, :], 'Voxel j index', where='VoxelData')
         bdata.add_metadata('voxel_k', ijk[2, :], 'Voxel k index', where='VoxelData')
+
+    # Value-label mapper
+    vmap = act_label_map.dump()
+    for k in vmap:
+        bdata.add_vmap(k, vmap[k])
 
     return bdata
 
