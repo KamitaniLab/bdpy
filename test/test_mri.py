@@ -16,7 +16,7 @@ class TestMri(unittest.TestCase):
 
         super(TestMri, self).__init__(*args, **kwargs)
 
-        self.data_dir = './bdpy/test/data'
+        self.data_dir = './data/mri'
         self.test_files = ['epi0001.img', 'epi0002.img', 'epi0003.img', 'epi0004.img', 'epi0005.img']
         self.exp_file = 'epi.mat'
 
