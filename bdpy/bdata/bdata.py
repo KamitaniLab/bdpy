@@ -3,7 +3,7 @@
 This file is a part of BdPy
 
 
-API lits
+API list
 --------
 
 - Data modification
