@@ -1,6 +1,8 @@
-"""Tests for bdpy.bdata"""
+'''Tests for bdpy.bdata'''
 
-import unittest
+
+from unittest import TestCase, TestLoader, TextTestRunner
+
 import copy
 
 import numpy as np
@@ -9,8 +11,8 @@ from numpy.testing import assert_array_equal
 import bdpy
 
 
-class TestBdata(unittest.TestCase):
-    """Tests of 'bdata' module"""
+class TestBdata(TestCase):
+    '''Tests of 'bdata' module'''
 
     def __init__(self, *args, **kwargs):
 
@@ -35,7 +37,7 @@ class TestBdata(unittest.TestCase):
         self.data.add_metadata('Val_A',    [9, 7, 5, 3, 1, 0, 2, 4, 6, 8], where='VoxelData')
 
     def test_add(self):
-        """Test for add."""
+        '''Test for add.'''
 
         colname = 'TestData'
         data = np.random.rand(5, 10)
@@ -48,12 +50,12 @@ class TestBdata(unittest.TestCase):
                                       np.array([1] * 10))
 
     def test_add_2(self):
-        """Test for add."""
+        '''Test for add.'''
 
         colnames = ['TestData1', 'TestData2']
         datalist = [np.random.rand(5, 10),
                     np.random.rand(5, 3)]
-        
+
         b = bdpy.BData()
 
         for c, d in zip(colnames, datalist):
@@ -68,7 +70,7 @@ class TestBdata(unittest.TestCase):
                                       np.array([np.nan] * 10 + [1] * 3))
 
     def test_add_3(self):
-        """Test for add."""
+        '''Test for add.'''
 
         b = bdpy.BData()
         data_a1 = np.random.rand(10, 10)
@@ -87,14 +89,14 @@ class TestBdata(unittest.TestCase):
                                       np.array([np.nan] * 10 + [1] * 3 + [np.nan] * 5))
 
     def test_add_metadata_1(self):
-        """Test for add_metadata."""
+        '''Test for add_metadata.'''
 
         md_key = 'TestMetaData'
         md_desc = 'Metadata for test'
         md_val = np.random.rand(10)
 
         testdata = np.random.rand(10, 10)
-        
+
         b = bdpy.BData()
         b.add(testdata, 'TestData')
         b.add_metadata(md_key, md_val, md_desc)
@@ -106,7 +108,7 @@ class TestBdata(unittest.TestCase):
                            md_val)
 
     def test_add_metadata_2(self):
-        """Test for add_metadata."""
+        '''Test for add_metadata.'''
 
         md_key_1 = 'TestMetaData1'
         md_desc_1 = 'Metadata for test 1'
@@ -117,7 +119,7 @@ class TestBdata(unittest.TestCase):
         md_val_2 = np.random.rand(10)
 
         testdata = np.random.rand(10, 10)
-        
+
         b = bdpy.BData()
         b.add(testdata, 'TestData')
         b.add_metadata(md_key_1, md_val_1, md_desc_1)
@@ -132,7 +134,7 @@ class TestBdata(unittest.TestCase):
                            md_val_2)
 
     def test_add_metadata_3(self):
-        """Test for add_metadata."""
+        '''Test for add_metadata.'''
 
         md_key = 'TestMetaData'
         md_desc = 'Metadata for test'
@@ -140,7 +142,7 @@ class TestBdata(unittest.TestCase):
 
         testdata_a = np.random.rand(10, 10)
         testdata_b = np.random.rand(10, 10)
-        
+
         b = bdpy.BData()
         b.add(testdata_a, 'TestDataA')
         b.add(testdata_b, 'TestDataB')
@@ -155,7 +157,7 @@ class TestBdata(unittest.TestCase):
                            np.hstack((md_val, [np.nan] * 10)))
 
     def test_add_metadata_4(self):
-        """Test for add_metadata."""
+        '''Test for add_metadata.'''
 
         md_key = 'TestMetaData'
         md_desc = 'Metadata for test'
@@ -163,7 +165,7 @@ class TestBdata(unittest.TestCase):
 
         testdata_a = np.random.rand(10, 10)
         testdata_b = np.random.rand(10, 10)
-        
+
         b = bdpy.BData()
         b.add(testdata_a, 'TestDataA')
         b.add(testdata_b, 'TestDataB')
@@ -178,7 +180,7 @@ class TestBdata(unittest.TestCase):
                            np.hstack((md_val, [np.nan] * 10)))
 
     def test_add_metadata_5(self):
-        """Test for add_metadata."""
+        '''Test for add_metadata.'''
 
         md_key = 'TestMetaData'
         md_desc = 'Metadata for test'
@@ -186,13 +188,13 @@ class TestBdata(unittest.TestCase):
 
         testdata_a = np.random.rand(10, 10)
         testdata_b = np.random.rand(10, 10)
-        
+
         b = bdpy.BData()
         b.add(testdata_a, 'TestDataA')
         b.add(testdata_b, 'TestDataB')
 
         b.add_metadata(md_key, md_val, where='TestDataA', attribute='TestDataB')
-        #b.add_metadata(md_key, md_val, where='TestDataA')
+        # b.add_metadata(md_key, md_val, where='TestDataA')
 
         assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
 
@@ -213,7 +215,7 @@ class TestBdata(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_get_1(self):
-        """Test for get."""
+        '''Test for get.'''
 
         b = bdpy.BData()
 
@@ -231,7 +233,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_get_2(self):
-        """Test for get."""
+        '''Test for get.'''
 
         b = bdpy.BData()
 
@@ -248,10 +250,10 @@ class TestBdata(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
-    ## Tests for select() ##########
+    # Tests for select()
 
     def test_select_pass0001(self):
-        """Test for '='"""
+        '''Test for "="'''
 
         test_input = 'Mask_0:3 = 1'
         exp_output = self.data.dataSet[:, 0:3]
@@ -261,7 +263,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_select_pass0002(self):
-        """Test for '|' (or)"""
+        '''Test for "|" (or)'''
 
         test_input = 'Mask_0:3 = 1 | Mask_3:3 = 1'
         exp_output = self.data.dataSet[:, 0:6]
@@ -271,7 +273,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_select_pass0003(self):
-        """Test for '&' (and)"""
+        '''Test for "&" (and)'''
 
         test_input = 'Mask_0:3 = 1 & Mask_0:5 = 1'
         exp_output = self.data.dataSet[:, 0:3]
@@ -281,7 +283,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_select_pass0004(self):
-        """Test for three condition terms"""
+        '''Test for three condition terms'''
 
         test_input = 'Mask_0:5 = 1 & Mask_0:3 = 1 | Mask_3:3 = 1'
         exp_output = self.data.dataSet[:, 0:6]
@@ -291,7 +293,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_select_pass0005(self):
-        """Test for parentheses"""
+        '''Test for parentheses'''
 
         test_input = 'Mask_0:5 = 1 & (Mask_0:3 = 1 | Mask_3:3 = 1)'
         exp_output = self.data.dataSet[:, 0:5]
@@ -321,7 +323,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_select_plus(self):
-        """Test for '+' (or)"""
+        '''Test for "+" (or)'''
 
         test_input = 'Mask_0:3 = 1 + Mask_3:3 = 1'
         exp_output = self.data.dataSet[:, 0:6]
@@ -331,7 +333,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_select_subtraction(self):
-        """Test for '-' (subtraction)"""
+        '''Test for "-" (subtraction)'''
 
         test_input = 'Mask_0:5 - Mask_0:3'
         exp_output = self.data.dataSet[:, 3:5]
@@ -341,7 +343,7 @@ class TestBdata(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     # def test_select_pass0006(self):
-    #     """Test for 'top'"""
+    #     '''Test for "top"'''
 
     #     test_input = 'Val_A top 5'
     #     exp_output = self.data.dataSet[:, np.array([0, 1, 2, 8, 9], dtype=int)]
@@ -351,7 +353,7 @@ class TestBdata(unittest.TestCase):
     #     np.testing.assert_array_equal(test_output, exp_output)
 
     # def test_select_pass0007(self):
-    #     """Test for 'top'"""
+    #     '''Test for "top"'''
 
     #     test_input = 'Val_A top 10'
     #     exp_output = self.data.dataSet[:, 0:10]
@@ -361,7 +363,7 @@ class TestBdata(unittest.TestCase):
     #     np.testing.assert_array_equal(test_output, exp_output)
 
     # def test_select_pass0008(self):
-    #     """Test for 'top' and '@'"""
+    #     '''Test for "top" and "@"'''
 
     #     test_input = 'Val_A top 3 @ Mask_0:5 = 1'
     #     exp_output = self.data.dataSet[:, 0:3]
@@ -371,7 +373,7 @@ class TestBdata(unittest.TestCase):
     #     np.testing.assert_array_equal(test_output, exp_output)
 
     # def test_select_pass0009(self):
-    #     """Test for 'top' and '@'"""
+    #     '''Test for "top" and "@"'''
 
     #     test_input = 'Val_A top 3 @ (Mask_3:3 = 1 | Mask_6:3 = 1)'
     #     exp_output = self.data.dataSet[:, [3, 7, 8]]
@@ -381,7 +383,7 @@ class TestBdata(unittest.TestCase):
     #     np.testing.assert_array_equal(test_output, exp_output)
 
     # def test_select_pass0010(self):
-    #     """Test for 'top' and '@'"""
+    #     '''Test for "top" and "@"'''
 
     #     test_input = 'Val_A top 3 @ Mask_3:3 = 1 | Mask_6:3 = 1'
     #     exp_output = self.data.dataSet[:, [3, 7, 8]]
@@ -390,6 +392,7 @@ class TestBdata(unittest.TestCase):
 
     #     np.testing.assert_array_equal(test_output, exp_output)
 
+
 if __name__ == "__main__":
-    test_suite = unittest.TestLoader().loadTestsFromTestCase(TestBdata)
-    unittest.TextTestRunner(verbosity=2).run(test_suite)
+    test_suite = TestLoader().loadTestsFromTestCase(TestBdata)
+    TextTestRunner(verbosity=2).run(test_suite)

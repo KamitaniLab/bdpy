@@ -1,9 +1,12 @@
+'''Test for bdpy.vstack'''
+
+
 from unittest import TestCase, TestLoader, TextTestRunner
+
+import numpy as np
 
 import bdpy
 from bdpy import vstack
-
-import numpy as np
 
 
 class TestVstack(TestCase):
@@ -14,7 +17,7 @@ class TestVstack(TestCase):
 
         x1_data = np.random.rand(10, 20)
         x1_label = np.random.rand(10, 1)
-        
+
         bdata0 = bdpy.BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
@@ -38,7 +41,7 @@ class TestVstack(TestCase):
         x1_data = np.random.rand(10, 20)
         x1_label = np.random.rand(10, 1)
         x1_run = np.arange(10).reshape(10, 1) + 1
-        
+
         bdata0 = bdpy.BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
@@ -56,14 +59,15 @@ class TestVstack(TestCase):
         np.testing.assert_array_equal(bdata_merged.select('Label'),
                                       np.vstack([x0_label, x1_label]))
         np.testing.assert_array_equal(bdata_merged.select('Run'),
-                                      np.vstack([x0_run, x1_run + len(x0_run)]))
+                                      np.vstack([x0_run,
+                                                 x1_run + len(x0_run)]))
 
     def test_vstack_vmap(self):
         x0_data = np.random.rand(10, 20)
         x0_label = np.random.permutation(np.arange(10)).reshape(10, 1) + 1
 
         x0_label_map = {k: 'label_%04d' % k for k in x0_label.flatten()}
-        
+
         x1_data = np.random.rand(10, 20)
         x1_label = np.random.permutation(np.arange(10)).reshape(10, 1) + 1
 
@@ -95,7 +99,7 @@ class TestVstack(TestCase):
         x0_label = np.random.permutation(np.arange(10)).reshape(10, 1) + 1
 
         x0_label_map = {k: 'label_%04d' % k for k in x0_label.flatten()}
-        
+
         x1_data = np.random.rand(10, 20)
         x1_label = np.random.permutation(np.arange(10)).reshape(10, 1) + 11
 
@@ -129,7 +133,7 @@ class TestVstack(TestCase):
         x0_label = np.random.permutation(np.arange(10)).reshape(10, 1) + 1
 
         x0_label_map = {k: 'label_%04d' % k for k in x0_label.flatten()}
-        
+
         x1_data = np.random.rand(10, 20)
         x1_label = np.random.permutation(np.arange(10)).reshape(10, 1) + 1
 
@@ -146,7 +150,7 @@ class TestVstack(TestCase):
         bdata1.add_vmap('Label', x1_label_map)
 
         with self.assertRaises(ValueError):
-            bdata_merged = vstack([bdata0, bdata1], successive=['Label'])
+            vstack([bdata0, bdata1], successive=['Label'])
 
 
 if __name__ == "__main__":

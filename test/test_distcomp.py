@@ -1,14 +1,15 @@
 '''Tests for distcomp'''
 
 
+from unittest import TestCase, TestLoader, TextTestRunner
+
 import os
-import unittest
 import shutil
 
 from bdpy.distcomp import DistComp
 
 
-class TestUtil(unittest.TestCase):
+class TestUtil(TestCase):
     def test_distcomp_file(self):
         lockdir = './tmp'
         comp_id = 'test-distcomp-fs'
@@ -21,22 +22,25 @@ class TestUtil(unittest.TestCase):
         distcomp = DistComp(lockdir='./tmp', comp_id=comp_id)
         self.assertTrue(os.path.isdir(lockdir))
         self.assertFalse(distcomp.islocked())
-        
+
         # lock
         distcomp.lock()
-        self.assertTrue(os.path.isfile(os.path.join(lockdir, comp_id + '.lock')))
+        self.assertTrue(os.path.isfile(os.path.join(lockdir,
+                                                    comp_id + '.lock')))
         self.assertTrue(distcomp.islocked())
 
         # unlock
         distcomp.unlock()
-        self.assertFalse(os.path.isfile(os.path.join(lockdir, comp_id + '.lock')))
+        self.assertFalse(os.path.isfile(os.path.join(lockdir,
+                                                     comp_id + '.lock')))
         self.assertFalse(distcomp.islocked())
 
         # islocked_lock
         distcomp.islocked_lock()
-        self.assertTrue(os.path.isfile(os.path.join(lockdir, comp_id + '.lock')))
+        self.assertTrue(os.path.isfile(os.path.join(lockdir,
+                                                    comp_id + '.lock')))
         self.assertTrue(distcomp.islocked())
-        
+
         shutil.rmtree(lockdir)
 
     def test_distcomp_sqlite3(self):
@@ -45,7 +49,7 @@ class TestUtil(unittest.TestCase):
             os.remove(db_path)
 
         comp_id = 'test-distcomp-sqlite3-1'
-            
+
         # init
         distcomp = DistComp(backend='sqlite3', db_path=db_path)
         self.assertTrue(os.path.isfile(db_path))
@@ -63,6 +67,7 @@ class TestUtil(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             distcomp.islocked_lock(comp_id)
 
+
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestUtil)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    suite = TestLoader().loadTestsFromTestCase(TestUtil)
+    TextTestRunner(verbosity=2).run(suite)
