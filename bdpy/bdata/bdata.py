@@ -88,10 +88,6 @@ class BData(object):
     def dataset(self, value):
         self.__dataset = value
 
-    @dataset.deleter
-    def dataset(self):
-        del self.__dataset
-
     # metadata
     @property
     def metadata(self):
@@ -100,10 +96,6 @@ class BData(object):
     @metadata.setter
     def metadata(self, value):
         self.__metadata = value
-
-    @metadata.deleter
-    def metadata(self):
-        del self.__metadata
 
     # header
     @property
@@ -119,10 +111,6 @@ class BData(object):
     def dataSet(self, value):
         self.__dataset = value
 
-    @dataSet.deleter
-    def dataSet(self):
-        del self.__dataset
-
     # metaData
     @property
     def metaData(self):
@@ -131,10 +119,6 @@ class BData(object):
     @metaData.setter
     def metaData(self, value):
         self.__metadata = value
-
-    @metaData.deleter
-    def metaData(self):
-        del self.__metadata
 
     # Misc -------------------------------------------------------------
 
