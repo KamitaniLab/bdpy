@@ -596,7 +596,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             for k, row in events.iterrows():
                 onset = row['onset']
                 duration = row['duration']
-                nsmp = int(duration / tr) # TODO: fix for float
+                nsmp = int(np.round(duration / tr))
 
                 # Block
                 blocks.append(np.ones((nsmp, 1)) * (k + 1))
