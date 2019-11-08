@@ -872,7 +872,7 @@ class BData(object):
                 vmap = {}
                 for k in dat['vmap'][mk].keys():
                     vmap.update({float(k): dat['vmap'][mk][k].value})
-            self.__vmap.update({mk: vmap})
+                self.__vmap.update({mk: vmap})
 
         self.__metadata.key = md_keys
         self.__metadata.value = md_values
