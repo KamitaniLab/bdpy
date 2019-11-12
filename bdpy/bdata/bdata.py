@@ -10,7 +10,7 @@ API list
     - add
     - update
     - add_metadata
-    - rename_meatadata
+    - rename_metadata
     - set_metadatadescription
 - Data access
     - select
@@ -267,7 +267,7 @@ class BData(object):
         self.add_metadata(key, mdv_new, description, where=where)
 
 
-    def rename_meatadata(self, key_old, key_new):
+    def rename_metadata(self, key_old, key_new):
         '''Rename meta-data key
 
         Parameters
@@ -279,8 +279,8 @@ class BData(object):
         -------
         None
         '''
-        self.metadata[key_new] = self.metadata[key_old]
-        del self.metadata[key_old]
+        self.metadata.key[self.metadata.key.index(key_old)] = key_new
+        return None
 
 
     def set_metadatadescription(self, key, description):
