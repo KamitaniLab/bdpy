@@ -1,5 +1,8 @@
 # BdPy
 
+[![PyPI version](https://badge.fury.io/py/bdpy.svg)](https://badge.fury.io/py/bdpy)
+[![GitHub license](https://img.shields.io/github/license/KamitaniLab/bdpy)](https://github.com/KamitaniLab/bdpy/blob/master/LICENSE)
+
 Python package for brain decoding analysis
 
 ## Requirements
