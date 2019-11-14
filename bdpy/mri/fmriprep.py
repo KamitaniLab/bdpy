@@ -562,9 +562,10 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             mp = np.hstack([np.c_[conf_pd[a]] for a in mp_label])
             motionparam_list.append(mp)
 
-            for c in confounds:
-                x = np.c_[conf_pd[c]]
-                confounds[c].append(x)
+            if with_confounds:
+                for c in confounds:
+                    x = np.c_[conf_pd[c]]
+                    confounds[c].append(x)
 
             # Load task event file
             event_file = os.path.join(data_path, run['task_event_file'])
@@ -632,8 +633,9 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     block_label = np.vstack(block_label_list)
     labels_label = np.vstack(labels_list)
 
-    for c in confounds:
-        confounds.update({c: np.vstack(confounds[c])})
+    if with_confounds:
+        for c in confounds:
+            confounds.update({c: np.vstack(confounds[c])})
 
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
