@@ -7,6 +7,7 @@ import itertools
 import os
 import re
 import json
+import warnings
 from collections import OrderedDict
 
 import numpy as np
@@ -493,7 +494,7 @@ class LabelMapper(object):
         return self.__v2l_map
 
 
-def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False):
+def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False, cut_run=False):
     if data_mode in ['surface_standard', 'surface_standard_41k', 'surface_standard_10k', 'surface_native']:
         is_surf = True
     else:
@@ -581,10 +582,18 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             tr_ms = tr * 1000 # To avoid numerical error
 
             if tlen_event * 1000 != (n_sample * tr_ms):
-                raise ValueError('The number of volumes in the EPI file (%s) '
-                                 'and time duration in the corresponding task (%s) '
-                                 'event file mismatch!'
-                                 % (epi, run['task_event_file']))
+                if cut_run:
+                    cut_duration = (tlen_event * 1000 - (n_sample * tr_ms)) / 1000
+                    warnings.warn('The number of volumes in the EPI file (%s) '
+                                  'and time duration in the corresponding task (%s) '
+                                  'event file mismatch! The first %f sec in the task '
+                                  'event file will be cropped.'
+                                  % (epi, run['task_event_file'], cut_duration))
+                else:
+                    raise ValueError('The number of volumes in the EPI file (%s) '
+                                     'and time duration in the corresponding task (%s) '
+                                     'event file mismatch!'
+                                     % (epi, run['task_event_file']))
 
             # Make block and labels
             blocks = []
@@ -597,6 +606,16 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             for k, row in events.iterrows():
                 onset = row['onset']
                 duration = row['duration']
+
+                if cut_run:
+                    if cut_duration > 0:
+                        onset = onset - cut_duration
+                        if onset < 0:
+                            onset = 0
+                            duration = duration - cut_duration
+                    elif cut_duration < 0:
+                        raise NotImplementedError
+
                 nsmp = int(np.round(duration / tr))
 
                 # Block
