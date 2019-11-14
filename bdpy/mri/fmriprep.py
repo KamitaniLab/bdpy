@@ -494,6 +494,10 @@ class LabelMapper(object):
         return self.__v2l_map
 
 
+def create_bdata_singlesubject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False, cut_run=False):
+    return __create_bdata_fmriprep_subject(subject_data, data_mode, data_path=data_path, label_mapper=label_mapper, with_confounds=with_confounds, cut_run=cut_run)
+
+
 def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False, cut_run=False):
     if data_mode in ['surface_standard', 'surface_standard_41k', 'surface_standard_10k', 'surface_native']:
         is_surf = True
