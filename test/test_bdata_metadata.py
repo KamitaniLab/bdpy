@@ -13,7 +13,6 @@ class TestBdataMetadata(TestCase):
     '''Tests for bdpy.bdata.metadata.'''
 
     def __init__(self, *args, **kwargs):
-
         super(TestBdataMetadata, self).__init__(*args, **kwargs)
 
     def test_set_get(self):
@@ -52,6 +51,19 @@ class TestBdataMetadata(TestCase):
         assert_array_equal(md.get('MetaData_A', 'value'), [10] * 10 + [0] * 5)
         assert_array_equal(md.get('MetaData_A', 'description'), 'Test metadata A')
         assert_array_equal(md.get('MetaData_B', 'value'), [0] * 10 + [1] * 5)
+        assert_array_equal(md.get('MetaData_B', 'description'), 'Test metadata B')
+
+    def test_set_get_overwrite_resize(self):
+        '''Test for MetaData.set() and MetaData.get(); overwriting and resizing values.'''
+        md = bdpy.bdata.metadata.MetaData()
+        md.set('MetaData_A', [1, 1, 1, 0, 0], 'Test metadata A')
+        md.set('MetaData_B', [0, 0, 0, 1, 1], 'Test metadata B')
+
+        md.set('MetaData_A', [2, 2, 2, 0, 0, 1, 1], 'Test metadata A')
+
+        assert_array_equal(md.get('MetaData_A', 'value'), [2, 2, 2, 0, 0, 1, 1])
+        assert_array_equal(md.get('MetaData_A', 'description'), 'Test metadata A')
+        assert_array_equal(md.get('MetaData_B', 'value'), [0, 0, 0, 1, 1, np.nan, np.nan])
         assert_array_equal(md.get('MetaData_B', 'description'), 'Test metadata B')
 
     def test_set_get_update(self):
