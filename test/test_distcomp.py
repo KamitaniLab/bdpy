@@ -44,11 +44,14 @@ class TestUtil(TestCase):
         shutil.rmtree(lockdir)
 
     def test_distcomp_sqlite3(self):
-        db_path = './distcomp.db'
+        db_path = './tmp/distcomp.db'
+        comp_id = 'test-distcomp-sqlite3-1'
+
         if os.path.exists(db_path):
             os.remove(db_path)
 
-        comp_id = 'test-distcomp-sqlite3-1'
+        if not os.path.exists(os.path.dirname(db_path)):
+            os.mkdir(os.path.dirname(db_path))
 
         # init
         distcomp = DistComp(backend='sqlite3', db_path=db_path)
@@ -66,6 +69,8 @@ class TestUtil(TestCase):
         # islocked_lock
         with self.assertRaises(NotImplementedError):
             distcomp.islocked_lock(comp_id)
+
+        os.remove(db_path)
 
 
 if __name__ == '__main__':
