@@ -10,7 +10,7 @@ import pickle
 import copy
 import yaml
 import glob
-from time import time
+from time import time, sleep
 from datetime import datetime
 
 import numpy as np
@@ -333,8 +333,15 @@ class ModelTraining(object):
                 info_file = os.path.join(self.save_path, 'info.yaml')
 
                 if os.path.exists(info_file):
-                    with open(info_file, 'r') as f:
-                        info = yaml.load(f)
+                    while True:
+                        with open(info_file, 'r') as f:
+                            info = yaml.load(f)
+                        if info is None:
+                            print('Failed to load info from %s. Retrying ...' % info_file)
+                            sleep(1)
+                        else:
+                            print('Loaded info from %s' % info_file)
+                            break
                 else:
                     info = {}
 
