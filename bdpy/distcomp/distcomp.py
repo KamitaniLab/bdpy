@@ -82,7 +82,6 @@ class DistComp(object):
                 warnings.warn('Failed to unlock the computation. Possibly double running.')
         elif self.__backend == 'sqlite3':
             comp_id = args[0]
-            status = self.__status_db(comp_id)
             with sqlite3.connect(self.__db_path, isolation_level='EXCLUSIVE') as db:
                 try:
                     db.execute('DELETE FROM computation WHERE name = "%s"' % comp_id)
