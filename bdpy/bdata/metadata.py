@@ -37,10 +37,6 @@ class MetaData(object):
     def key(self, x):
         self.__key = x
 
-    @key.deleter
-    def key(self):
-        del self.__key
-
     @property
     def value(self):
         return self.__value
@@ -49,10 +45,6 @@ class MetaData(object):
     def value(self, x):
         self.__value = x
 
-    @value.deleter
-    def value(self):
-        del self.__value
-
     @property
     def description(self):
         return self.__description
@@ -60,10 +52,6 @@ class MetaData(object):
     @description.setter
     def description(self, x):
         self.__description = x
-
-    @description.deleter
-    def description(self):
-        del self.__description
 
     def set(self, key, value, description, updater=None):
         """
