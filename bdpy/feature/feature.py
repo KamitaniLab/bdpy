@@ -5,7 +5,8 @@ def normalize_feature(feature,
                       channel_wise_mean=True, channel_wise_std=True,
                       channel_axis=0,
                       std_ddof=1,
-                      shift=None, scale=None):
+                      shift=None, scale=None,
+                      scaling_only=False):
     '''Normalize feature.
 
     Parameters
@@ -52,12 +53,15 @@ def normalize_feature(feature,
     if isinstance(scale, str) and scale == 'self':
         scale = feat_std
 
-    feat_n = ((feature - feat_mean) / feat_std)
+    if scaling_only:
+        feat_n = (feature / feat_std) * scale
+    else:
+        feat_n = ((feature - feat_mean) / feat_std)
 
-    if not scale is None:
-        feat_n = feat_n * scale
-    if not shift is None:
-        feat_n = feat_n + shift
+        if not scale is None:
+            feat_n = feat_n * scale
+        if not shift is None:
+            feat_n = feat_n + shift
 
     if not feature.shape == feat_n.shape:
         try:

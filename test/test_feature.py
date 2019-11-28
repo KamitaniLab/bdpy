@@ -139,6 +139,13 @@ class TestUtilFeature(TestCase):
                                       shift='self', scale='self',
                                       std_ddof=1)
 
+        # SD scaling only
+        feat_valid = (feat / feat_std_all) * feat_std0
+        feat_test = normalize_feature(feat,
+                                      scaling_only=True,
+                                      channel_wise_std=False,
+                                      scale=feat_std0, std_ddof=1)
+
         np.testing.assert_array_equal(feat_test, feat_valid)
 
 
