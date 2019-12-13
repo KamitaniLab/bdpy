@@ -37,6 +37,7 @@ if __name__ == '__main__':
                     'bdpy.fig',
                     'bdpy.ml',
                     'bdpy.mri',
+                    'bdpy.opendata',
                     'bdpy.preproc',
                     'bdpy.stats',
                     'bdpy.util'],
