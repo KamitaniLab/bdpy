@@ -287,12 +287,12 @@ class ModelTraining(object):
             self.X = (self.X - self.X_normalize['mean']) / self.X_normalize['std']
 
         # Model training loop
-        loop_start_time = time()
         time_elapsed = []
-
         output_files_all = []
 
         for i, i_chunk in enumerate(chunk_index):
+            loop_start_time = time()
+
             if self.id is None:
                 training_id_chunk = 'chunk%08d' % i
             else:
