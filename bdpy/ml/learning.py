@@ -214,6 +214,10 @@ class ModelTraining(object):
         Training ID
     model_parameters : dict
         Parameters of the models. This will be passed to model.fit().
+    X_normalize, Y_normalize : dict
+        Normalization parameters for X and Y.
+    Y_sort : dict
+        Sorting parameters for Y.
     dtype
         Data type (e.g., np.float32)
     chunk_axis
@@ -222,7 +226,7 @@ class ModelTraining(object):
     save_format : str ('pickle' of 'bdmodel')
     save_path : str
     verbose : int (0 or 1)
-        Verbosity level
+        Verbosity level.
     '''
 
     def __init__(self, model, X, Y):
@@ -230,6 +234,11 @@ class ModelTraining(object):
         self.model = model    # Model instance
         self.X = X            # Input, shape = (n_samples, n_features)
         self.Y = Y            # Target variables, shape = (n_samples, n_variables)
+
+        # X and Y preprocessing parameters
+        self.X_normalize = None
+        self.Y_normalize = None
+        self.Y_sort = None
 
         # Optional properties
         self.id = str(uuid.uuid4())
@@ -272,6 +281,11 @@ class ModelTraining(object):
         else:
             distcomp = self.distcomp
 
+        # X normalization
+        if not self.X_normalize is None:
+            print('Normalizing X')
+            self.X = (self.X - self.X_normalize['mean']) / self.X_normalize['std']
+
         # Model training loop
         loop_start_time = time()
         time_elapsed = []
@@ -303,6 +317,21 @@ class ModelTraining(object):
                 Y = np.take(self.Y, [i_chunk], axis=self.chunk_axis)
             else:
                 Y = self.Y
+
+            # Y preprocessing
+            if not self.Y_normalize is None:
+                print('Normalizing Y')
+                if self.__chunking:
+                    y_mean = np.take(self.Y_normalize['mean'], [i_chunk], axis=self.chunk_axis)
+                    y_norm = np.take(self.Y_normalize['std'], [i_chunk], axis=self.chunk_axis)
+                else:
+                    y_mean = self.Y_normalize['mean']
+                    y_norm = self.Y_normalize['std']
+                Y = (Y - y_mean) / y_norm
+
+            if not self.Y_sort is None:
+                print('Sorting Y')
+                Y = Y[self.Y_sort['index'], :]
 
             # Training
             if self.verbose >= 1: print('Training: %s' % training_id_chunk)
