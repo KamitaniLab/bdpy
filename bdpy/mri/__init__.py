@@ -9,3 +9,4 @@ from load_mri import load_mri
 from roi import add_roimask, get_roiflag, add_roilabel, add_rois, merge_rois
 from fmriprep import create_bdata_fmriprep, FmriprepData
 from spm import create_bdata_spm_domestic
+from image import export_brain_image
