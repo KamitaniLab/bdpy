@@ -285,6 +285,7 @@ class ModelTraining(object):
         if not self.X_normalize is None:
             print('Normalizing X')
             self.X = (self.X - self.X_normalize['mean']) / self.X_normalize['std']
+            self.X[np.isinf(self.X)] = 0
 
         # Model training loop
         time_elapsed = []
@@ -328,6 +329,7 @@ class ModelTraining(object):
                     y_mean = self.Y_normalize['mean']
                     y_norm = self.Y_normalize['std']
                 Y = (Y - y_mean) / y_norm
+                Y[np.isinf(Y)] = 0
 
             if not self.Y_sort is None:
                 print('Sorting Y')
