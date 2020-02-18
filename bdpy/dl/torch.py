@@ -68,6 +68,10 @@ class ImageDataset(torch.utils.data.Dataset):
 
         data = np.asarray(img)
 
+        # Monotone to RGB
+        if data.ndim == 2:
+            data = np.stack([data, data, data], axis=2)
+
         # Resize the image
         if not self.__resize is None:
             data = np.array(Image.fromarray(data).resize(self.__resize, resample=2))  # bicubic
