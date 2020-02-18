@@ -15,382 +15,240 @@ class TestBdata(TestCase):
     '''Tests of 'bdata' module'''
 
     def __init__(self, *args, **kwargs):
-
         super(TestBdata, self).__init__(*args, **kwargs)
 
-        self.data = bdpy.BData()
-
-        x = np.array([[0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
-                      [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-                      [20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
-                      [30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
-                      [40, 41, 42, 43, 44, 45, 46, 47, 48, 49]])
-        g = np.array([1, 2, 3, 4, 5])
-
-        self.data.add(x, 'VoxelData')
-        self.data.add(g, 'Group')
-
-        self.data.add_metadata('Mask_0:3', [1, 1, 1, 0, 0, 0, 0, 0, 0, 0], where='VoxelData')
-        self.data.add_metadata('Mask_3:3', [0, 0, 0, 1, 1, 1, 0, 0, 0, 0], where='VoxelData')
-        self.data.add_metadata('Mask_6:3', [0, 0, 0, 0, 0, 0, 1, 1, 1, 0], where='VoxelData')
-        self.data.add_metadata('Mask_0:5', [1, 1, 1, 1, 1, 0, 0, 0, 0, 0], where='VoxelData')
-        self.data.add_metadata('Val_A',    [9, 7, 5, 3, 1, 0, 2, 4, 6, 8], where='VoxelData')
-
-    def test_add(self):
-        '''Test for add.'''
-
-        colname = 'TestData'
-        data = np.random.rand(5, 10)
-
-        b = bdpy.BData()
-        b.add(data, colname)
-
-        np.testing.assert_array_equal(b.dataSet, data)
-        np.testing.assert_array_equal(b.metadata.get(colname, 'value'),
-                                      np.array([1] * 10))
-
-    def test_add_2(self):
-        '''Test for add.'''
-
-        colnames = ['TestData1', 'TestData2']
-        datalist = [np.random.rand(5, 10),
-                    np.random.rand(5, 3)]
+    def test_add_get(self):
+        '''Test for BData.add and get.'''
+        data_x = np.random.rand(5, 10)
+        data_y = np.random.rand(5, 8)
+        data_z = np.random.rand(5, 20)
 
         b = bdpy.BData()
 
-        for c, d in zip(colnames, datalist):
-            b.add(d, c)
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
+        b.add(data_z, 'Data_Z')
 
-        # Test
-        np.testing.assert_array_equal(b.dataSet, np.hstack(datalist))
+        # dataset
+        assert_array_equal(b.get('Data_X'), data_x)
+        assert_array_equal(b.get('Data_Y'), data_y)
+        assert_array_equal(b.get('Data_Z'), data_z)
 
-        np.testing.assert_array_equal(b.metadata.get(colnames[0], 'value'),
-                                      np.array([1] * 10 + [np.nan] * 3))
-        np.testing.assert_array_equal(b.metadata.get(colnames[1], 'value'),
-                                      np.array([np.nan] * 10 + [1] * 3))
+        # metadata
+        assert_array_equal(b.metadata.get('Data_X', 'value'), np.array([1] * 10 + [np.nan] * 8 + [np.nan] * 20))
+        assert_array_equal(b.metadata.get('Data_Y', 'value'), np.array([np.nan] * 10 + [1] * 8 + [np.nan] * 20))
+        assert_array_equal(b.metadata.get('Data_Z', 'value'), np.array([np.nan] * 10 + [np.nan] * 8 + [1] * 20))
 
-    def test_add_3(self):
-        '''Test for add.'''
+        # metadata (BData.get_metadata)
+        assert_array_equal(b.get_metadata('Data_X'), np.array([1] * 10 + [np.nan] * 8 + [np.nan] * 20))
+        assert_array_equal(b.get_metadata('Data_Y'), np.array([np.nan] * 10 + [1] * 8 + [np.nan] * 20))
+        assert_array_equal(b.get_metadata('Data_Z'), np.array([np.nan] * 10 + [np.nan] * 8 + [1] * 20))
 
-        b = bdpy.BData()
-        data_a1 = np.random.rand(10, 10)
-        data_b = np.random.rand(10, 3)
-        data_a2 = np.random.rand(10, 5)
+    def test_metadata_add_get(self):
+        '''Test for add/get_metadata.'''
 
-        b.add(data_a1, 'TestDataA')
-        b.add(data_b, 'TestDataB')
-        b.add(data_a2, 'TestDataA')
+        data_x = np.random.rand(5, 10)
+        data_y = np.random.rand(5, 8)
 
-        np.testing.assert_array_equal(b.dataSet, np.hstack((data_a1, data_b, data_a2)))
+        n_col = data_x.shape[1] + data_y.shape[1]
 
-        np.testing.assert_array_equal(b.metadata.get('TestDataA', 'value'),
-                                      np.array([1] * 10 + [np.nan] * 3 + [1] * 5))
-        np.testing.assert_array_equal(b.metadata.get('TestDataB', 'value'),
-                                      np.array([np.nan] * 10 + [1] * 3 + [np.nan] * 5))
-
-    def test_add_metadata_1(self):
-        '''Test for add_metadata.'''
-
-        md_key = 'TestMetaData'
-        md_desc = 'Metadata for test'
-        md_val = np.random.rand(10)
-
-        testdata = np.random.rand(10, 10)
+        metadata_a = np.random.rand(n_col)
+        metadata_b = np.random.rand(n_col)
 
         b = bdpy.BData()
-        b.add(testdata, 'TestData')
-        b.add_metadata(md_key, md_val, md_desc)
 
-        assert_array_equal(b.dataSet, testdata)
-        assert_array_equal(b.metadata.get('TestData', 'value'),
-                           np.array([1] * 10))
-        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
-                           md_val)
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
 
-    def test_add_metadata_2(self):
-        '''Test for add_metadata.'''
+        b.add_metadata('Metadata_A', metadata_a)
+        b.add_metadata('Metadata_B', metadata_b)
 
-        md_key_1 = 'TestMetaData1'
-        md_desc_1 = 'Metadata for test 1'
-        md_val_1 = np.random.rand(10)
+        assert_array_equal(b.metadata.get('Metadata_A', 'value'), metadata_a)
+        assert_array_equal(b.metadata.get('Metadata_B', 'value'), metadata_b)
+        assert_array_equal(b.get_metadata('Metadata_A'), metadata_a)
+        assert_array_equal(b.get_metadata('Metadata_B'), metadata_b)
 
-        md_key_2 = 'TestMetaData2'
-        md_desc_2 = 'Metadata for test 2'
-        md_val_2 = np.random.rand(10)
+    def test_metadata_add_get_where(self):
+        '''Test for add/get_metadata with where option.'''
 
-        testdata = np.random.rand(10, 10)
+        data_x = np.random.rand(5, 10)
+        data_y = np.random.rand(5, 8)
 
-        b = bdpy.BData()
-        b.add(testdata, 'TestData')
-        b.add_metadata(md_key_1, md_val_1, md_desc_1)
-        b.add_metadata(md_key_2, md_val_2, md_desc_2)
-
-        assert_array_equal(b.dataSet, testdata)
-        assert_array_equal(b.metadata.get('TestData', 'value'),
-                           np.array([1] * 10))
-        assert_array_equal(b.metadata.get('TestMetaData1', 'value'),
-                           md_val_1)
-        assert_array_equal(b.metadata.get('TestMetaData2', 'value'),
-                           md_val_2)
-
-    def test_add_metadata_3(self):
-        '''Test for add_metadata.'''
-
-        md_key = 'TestMetaData'
-        md_desc = 'Metadata for test'
-        md_val = np.random.rand(10)
-
-        testdata_a = np.random.rand(10, 10)
-        testdata_b = np.random.rand(10, 10)
+        metadata_a = np.random.rand(10)
+        metadata_b = np.random.rand(8)
 
         b = bdpy.BData()
-        b.add(testdata_a, 'TestDataA')
-        b.add(testdata_b, 'TestDataB')
 
-        b.add_metadata(md_key, md_val, where='TestDataA')
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
 
-        assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
+        b.add_metadata('Metadata_A', metadata_a, where='Data_X')
+        b.add_metadata('Metadata_B', metadata_b, where='Data_Y')
 
-        assert_array_equal(b.metadata.get('TestDataA', 'value'),
-                           np.array([1] * 10 + [np.nan] * 10))
-        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
-                           np.hstack((md_val, [np.nan] * 10)))
-
-    def test_add_metadata_4(self):
-        '''Test for add_metadata.'''
-
-        md_key = 'TestMetaData'
-        md_desc = 'Metadata for test'
-        md_val = np.random.rand(10)
-
-        testdata_a = np.random.rand(10, 10)
-        testdata_b = np.random.rand(10, 10)
-
-        b = bdpy.BData()
-        b.add(testdata_a, 'TestDataA')
-        b.add(testdata_b, 'TestDataB')
-
-        b.add_metadata(md_key, md_val, where='TestDataA')
-
-        assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
-
-        assert_array_equal(b.metadata.get('TestDataA', 'value'),
-                           np.array([1] * 10 + [np.nan] * 10))
-        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
-                           np.hstack((md_val, [np.nan] * 10)))
-
-    def test_add_metadata_5(self):
-        '''Test for add_metadata.'''
-
-        md_key = 'TestMetaData'
-        md_desc = 'Metadata for test'
-        md_val = np.random.rand(10)
-
-        testdata_a = np.random.rand(10, 10)
-        testdata_b = np.random.rand(10, 10)
-
-        b = bdpy.BData()
-        b.add(testdata_a, 'TestDataA')
-        b.add(testdata_b, 'TestDataB')
-
-        b.add_metadata(md_key, md_val, where='TestDataA', attribute='TestDataB')
-        # b.add_metadata(md_key, md_val, where='TestDataA')
-
-        assert_array_equal(b.dataSet, np.hstack((testdata_a, testdata_b)))
-
-        assert_array_equal(b.metadata.get('TestDataA', 'value'),
-                           np.array([1] * 10 + [np.nan] * 10))
-        assert_array_equal(b.metadata.get('TestMetaData', 'value'),
-                           np.hstack((md_val, [np.nan] * 10)))
+        assert_array_equal(b.get_metadata('Metadata_A'), np.hstack([metadata_a, np.array([np.nan] * 8)]))
+        assert_array_equal(b.get_metadata('Metadata_B'), np.hstack([np.array([np.nan] * 10), metadata_b]))
+        assert_array_equal(b.get_metadata('Metadata_A', where='Data_X'), metadata_a)
+        assert_array_equal(b.get_metadata('Metadata_B', where='Data_Y'), metadata_b)
 
     def test_set_metadatadescription_1(self):
         '''Test for set_metadatadescription.'''
 
-        expected = 'Test for set_metadatadescription'
+        data_x = np.random.rand(5, 10)
+        data_y = np.random.rand(5, 8)
 
-        data = copy.deepcopy(self.data)
-        data.set_metadatadescription('Val_A', expected)
-        actual = data.metadata.description[-1]
-
-        self.assertEqual(actual, expected)
-
-    def test_get_1(self):
-        '''Test for get.'''
+        metadata_a = np.random.rand(10)
+        metadata_b = np.random.rand(8)
 
         b = bdpy.BData()
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
+        b.add_metadata('Metadata_A', metadata_a, where='Data_X')
+        b.add_metadata('Metadata_B', metadata_b, where='Data_Y')
 
-        attr_A = 'TestAttr_A'
-        data_A = np.random.rand(10, 10)
-        b.add(data_A, attr_A)
+        metadata_desc = 'Test metadata description'
 
-        attr_B = 'TestAttr_B'
-        data_B = np.random.rand(10, 2)
-        b.add(data_B, attr_B)
+        b.set_metadatadescription('Metadata_A', metadata_desc)
 
-        exp_output = np.hstack((data_A, data_B))
-        test_output = b.get()
+        self.assertEqual(b.metadata.get('Metadata_A', 'description'), metadata_desc)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    def test_select(self):
+        '''Test for BData.select.'''
 
-    def test_get_2(self):
-        '''Test for get.'''
+        data_x = np.random.rand(5, 10)
+        data_y = np.random.rand(5, 5)
 
         b = bdpy.BData()
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
 
-        attr_A = 'TestAttr_A'
-        data_A = np.random.rand(10, 10)
-        b.add(data_A, attr_A)
+        b.add_metadata('ROI_0:5', [1, 1, 1, 1, 1, 0, 0, 0, 0, 0], where='Data_X')
+        b.add_metadata('ROI_3:8', [0, 0, 0, 1, 1, 1, 1, 1, 0, 0], where='Data_X')
+        b.add_metadata('ROI_4:9', [0, 0, 0, 0, 1, 1, 1, 1, 1, 0], where='Data_X')
 
-        attr_B = 'TestAttr_B'
-        data_B = np.random.rand(10, 2)
-        b.add(data_B, attr_B)
+        assert_array_equal(b.select('Data_X'), data_x)
+        assert_array_equal(b.select('Data_X = 1'), data_x)
 
-        exp_output = data_A
-        test_output = b.get('TestAttr_A')
+        assert_array_equal(b.select('ROI_0:5'), data_x[:, 0:5])
+        assert_array_equal(b.select('ROI_0:5 & ROI_3:8'), data_x[:, 3:5])
+        assert_array_equal(b.select('ROI_0:5 = 1 & ROI_3:8 = 1'), data_x[:, 3:5])
+        assert_array_equal(b.select('ROI_0:5 | ROI_3:8'), data_x[:, 0:8])
+        assert_array_equal(b.select('ROI_0:5 = 1 | ROI_3:8 = 1'), data_x[:, 0:8])
+        assert_array_equal(b.select('(ROI_0:5 | ROI_3:8) & ROI_4:9'), data_x[:, 4:8])
+        assert_array_equal(b.select('ROI_0:5 | (ROI_3:8 & ROI_4:9)'), data_x[:, 0:8])
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        assert_array_equal(b.select('ROI_*'), data_x[:, 0:9])
+        assert_array_equal(b.select('ROI_0:5 + ROI_3:8'), data_x[:, 0:8])
+        assert_array_equal(b.select('ROI_0:5 - ROI_3:8'), data_x[:, 0:3])
 
-    # Tests for select()
+    # Tests for vmap
+    def test_vmap_add_get(self):
+        bdata = bdpy.BData()
+        bdata.add(np.random.rand(4, 3), 'MainData')
+        bdata.add(np.arange(4) + 1, 'Label')
 
-    def test_select_pass0001(self):
-        '''Test for "="'''
+        label_map = {1: 'label-1',
+                     2: 'label-2',
+                     3: 'label-3',
+                     4: 'label-4'}
+        label = ['label-1', 'label-2', 'label-3', 'label-4']
 
-        test_input = 'Mask_0:3 = 1'
-        exp_output = self.data.dataSet[:, 0:3]
+        bdata.add_vmap('Label', label_map)
+        assert bdata.get_vmap('Label') == label_map
 
-        test_output = self.data.select(test_input)
+        # Get labels
+        np.testing.assert_array_equal(bdata.get_label('Label'), label)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    def test_vmap_add_same_map(self):
+        bdata = bdpy.BData()
+        bdata.add(np.random.rand(4, 3), 'MainData')
+        bdata.add(np.arange(4) + 1, 'Label')
 
-    def test_select_pass0002(self):
-        '''Test for "|" (or)'''
+        label_map = {1: 'label-1',
+                     2: 'label-2',
+                     3: 'label-3',
+                     4: 'label-4'}
+        label = ['label-1', 'label-2', 'label-3', 'label-4']
 
-        test_input = 'Mask_0:3 = 1 | Mask_3:3 = 1'
-        exp_output = self.data.dataSet[:, 0:6]
+        bdata.add_vmap('Label', label_map)
+        bdata.add_vmap('Label', label_map)
+        assert bdata.get_vmap('Label') == label_map
 
-        test_output = self.data.select(test_input)
+        # Get labels
+        np.testing.assert_array_equal(bdata.get_label('Label'), label)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    def test_vmap_errorcases(self):
+        n_sample = 4
 
-    def test_select_pass0003(self):
-        '''Test for "&" (and)'''
+        bdata = bdpy.BData()
+        bdata.add(np.random.rand(n_sample, 3), 'MainData')
+        bdata.add(np.arange(n_sample) + 1, 'Label')
 
-        test_input = 'Mask_0:3 = 1 & Mask_0:5 = 1'
-        exp_output = self.data.dataSet[:, 0:3]
+        label_map = {(i + 1): 'label-%04d' % (i + 1) for i in range(n_sample)}
 
-        test_output = self.data.select(test_input)
+        bdata.add_vmap('Label', label_map)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        # Vmap not found
+        with self.assertRaises(ValueError):
+            bdata.get_label('MainData')
 
-    def test_select_pass0004(self):
-        '''Test for three condition terms'''
+        # Invalid vmap (map is not a dict)
+        label_map_invalid = range(n_sample)
+        with self.assertRaises(TypeError):
+            bdata.add_vmap('Label', label_map_invalid)
 
-        test_input = 'Mask_0:5 = 1 & Mask_0:3 = 1 | Mask_3:3 = 1'
-        exp_output = self.data.dataSet[:, 0:6]
+        # Invalid vmap (key is str)
+        label_map_invalid = {'label-%04d' % i: i for i in range(n_sample)}
+        with self.assertRaises(TypeError):
+            bdata.add_vmap('Label', label_map_invalid)
 
-        test_output = self.data.select(test_input)
+        # Inconsistent vmap
+        label_map_inconsist = {i: 'label-%04d-inconsist' % i
+                               for i in range(n_sample)}
+        with self.assertRaises(ValueError):
+            bdata.add_vmap('Label', label_map_inconsist)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+    def test_vmap_add_unnecessary_vmap(self):
+        bdata = bdpy.BData()
+        bdata.add(np.random.rand(4, 3), 'MainData')
+        bdata.add(np.arange(4) + 1, 'Label')
 
-    def test_select_pass0005(self):
-        '''Test for parentheses'''
+        label_map = {1: 'label-1',
+                     2: 'label-2',
+                     3: 'label-3',
+                     4: 'label-4',
+                     5: 'label-5'}
+        label_map_ture = {1: 'label-1',
+                          2: 'label-2',
+                          3: 'label-3',
+                          4: 'label-4'}
 
-        test_input = 'Mask_0:5 = 1 & (Mask_0:3 = 1 | Mask_3:3 = 1)'
-        exp_output = self.data.dataSet[:, 0:5]
+        bdata.add_vmap('Label', label_map)
+        assert bdata.get_vmap('Label') == label_map_ture
 
-        test_output = self.data.select(test_input)
+    def test_vmap_add_insufficient_vmap(self):
+        bdata = bdpy.BData()
+        bdata.add(np.random.rand(4, 3), 'MainData')
+        bdata.add(np.arange(4) + 1, 'Label')
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        label_map = {1: 'label-1',
+                     2: 'label-2',
+                     3: 'label-3'}
 
-    def test_select_or_keyonly(self):
-        '''Test for '|' (or) only with key.'''
+        with self.assertRaises(ValueError):
+            bdata.add_vmap('Label', label_map)
 
-        test_input = 'Mask_0:3 | Mask_3:3 '
-        exp_output = self.data.dataSet[:, 0:6]
+    def test_vmap_add_invalid_name_vmap(self):
+        bdata = bdpy.BData()
+        bdata.add(np.random.rand(4, 3), 'MainData')
+        bdata.add(np.arange(4) + 1, 'Label')
 
-        test_output = self.data.select(test_input)
+        label_map = {1: 'label-1',
+                     2: 'label-2',
+                     3: 'label-3',
+                     4: 'label-4'}
 
-        np.testing.assert_array_equal(test_output, exp_output)
-
-    def test_select_wildcard(self):
-        '''Test for wildcard in select.'''
-
-        test_input = 'Mask_*'
-        exp_output = self.data.dataset[:, 0:9]
-
-        test_output = self.data.select(test_input)
-
-        np.testing.assert_array_equal(test_output, exp_output)
-
-    def test_select_plus(self):
-        '''Test for "+" (or)'''
-
-        test_input = 'Mask_0:3 = 1 + Mask_3:3 = 1'
-        exp_output = self.data.dataSet[:, 0:6]
-
-        test_output = self.data.select(test_input)
-
-        np.testing.assert_array_equal(test_output, exp_output)
-
-    def test_select_subtraction(self):
-        '''Test for "-" (subtraction)'''
-
-        test_input = 'Mask_0:5 - Mask_0:3'
-        exp_output = self.data.dataSet[:, 3:5]
-
-        test_output = self.data.select(test_input)
-
-        np.testing.assert_array_equal(test_output, exp_output)
-
-    # def test_select_pass0006(self):
-    #     '''Test for "top"'''
-
-    #     test_input = 'Val_A top 5'
-    #     exp_output = self.data.dataSet[:, np.array([0, 1, 2, 8, 9], dtype=int)]
-
-    #     test_output = self.data.select(test_input)
-
-    #     np.testing.assert_array_equal(test_output, exp_output)
-
-    # def test_select_pass0007(self):
-    #     '''Test for "top"'''
-
-    #     test_input = 'Val_A top 10'
-    #     exp_output = self.data.dataSet[:, 0:10]
-
-    #     test_output = self.data.select(test_input)
-
-    #     np.testing.assert_array_equal(test_output, exp_output)
-
-    # def test_select_pass0008(self):
-    #     '''Test for "top" and "@"'''
-
-    #     test_input = 'Val_A top 3 @ Mask_0:5 = 1'
-    #     exp_output = self.data.dataSet[:, 0:3]
-
-    #     test_output = self.data.select(test_input)
-
-    #     np.testing.assert_array_equal(test_output, exp_output)
-
-    # def test_select_pass0009(self):
-    #     '''Test for "top" and "@"'''
-
-    #     test_input = 'Val_A top 3 @ (Mask_3:3 = 1 | Mask_6:3 = 1)'
-    #     exp_output = self.data.dataSet[:, [3, 7, 8]]
-
-    #     test_output = self.data.select(test_input)
-
-    #     np.testing.assert_array_equal(test_output, exp_output)
-
-    # def test_select_pass0010(self):
-    #     '''Test for "top" and "@"'''
-
-    #     test_input = 'Val_A top 3 @ Mask_3:3 = 1 | Mask_6:3 = 1'
-    #     exp_output = self.data.dataSet[:, [3, 7, 8]]
-
-    #     test_output = self.data.select(test_input)
-
-    #     np.testing.assert_array_equal(test_output, exp_output)
+        with self.assertRaises(ValueError):
+            bdata.add_vmap('InvalidLabel', label_map)
 
 
 if __name__ == "__main__":
