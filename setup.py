@@ -33,6 +33,7 @@ if __name__ == '__main__':
                     'bdpy.bdata',
                     'bdpy.dataform',
                     'bdpy.distcomp',
+                    'bdpy.dl',
                     'bdpy.feature',
                     'bdpy.fig',
                     'bdpy.ml',
