@@ -11,7 +11,7 @@ import torch
 class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
-    def __init__(self, images, labels=None, resize=None, shape='chw', transform=None):
+    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None):
         '''
         Parameters
         ----------
@@ -19,6 +19,8 @@ class ImageDataset(torch.utils.data.Dataset):
             List of image file paths.
         labels : list, optional
             List of image labels (default: image file names).
+        label_dirname : bool, optional
+            Use directory names as labels if True (default: False).
         resize : None or tuple, optional
             If not None, images will be resized by the specified size.
         shape : str ({'chw', 'hwc', ...}), optional
@@ -31,16 +33,19 @@ class ImageDataset(torch.utils.data.Dataset):
         - Images are converted to RGB. Alpha channels in RGBA images are ignored.
         '''
 
-        image_files = []
+        image_labels = []
         for imf in images:
             # TODO: validate the image file
-            image_files.append(os.path.basename(imf))
+            if label_dirname:
+                image_labels.append(os.path.basename(os.path.dirname(imf)))
+            else:
+                image_labels.append(os.path.basename(imf))
 
         self.data_path = images
         if not labels is None:
             self.labels = labels
         else:
-            self.labels = image_files
+            self.labels = image_labels
         self.n_sample = len(images)
         self.transform = transform
         # Custom transforms
