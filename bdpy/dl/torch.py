@@ -11,7 +11,7 @@ import torch
 class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
-    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None):
+    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None, preload=False, preload_limit=np.inf):
         '''
         Parameters
         ----------
@@ -25,21 +25,40 @@ class ImageDataset(torch.utils.data.Dataset):
             If not None, images will be resized by the specified size.
         shape : str ({'chw', 'hwc', ...}), optional
             Specify array shape (channel, hieght, and width).
-        transform
+        transform : optional
             Transformers (applied after resizing, reshaping, ans scaling to [0, 1])
+        preload : bool, optional
+            Pre-load images (default: False).
+        preload_limit : int
+            Memory size limit of preloading in GiB (default: unlimited).
 
         Note
         ----
         - Images are converted to RGB. Alpha channels in RGBA images are ignored.
         '''
 
+        self.transform = transform
+        # Custom transforms
+        self.__shape = shape
+        self.__resize = resize
+
+        self.__data = {}
+        preload_size = 0
         image_labels = []
-        for imf in images:
+        for i, imf in enumerate(images):
             # TODO: validate the image file
             if label_dirname:
                 image_labels.append(os.path.basename(os.path.dirname(imf)))
             else:
                 image_labels.append(os.path.basename(imf))
+            if preload:
+                data = self.__load_image(imf)
+                data_size = data.size * data.itemsize
+                if preload_size + data_size > preload_limit * (1024 ** 3):
+                    preload = False
+                    continue
+                self.__data.update({i: data})
+                preload_size += data_size
 
         self.data_path = images
         if not labels is None:
@@ -47,16 +66,27 @@ class ImageDataset(torch.utils.data.Dataset):
         else:
             self.labels = image_labels
         self.n_sample = len(images)
-        self.transform = transform
-        # Custom transforms
-        self.__shape = shape
-        self.__resize = resize
 
     def __len__(self):
         return self.n_sample
 
     def __getitem__(self, idx):
-        img = Image.open(self.data_path[idx])
+        if idx in self.__data:
+            data = self.__data[idx]
+        else:
+            data = self.__load_image(self.data_path[idx])
+
+        if not self.transform is None:
+            date = self.transform(data)
+        else:
+            data = torch.Tensor(data)
+
+        label = self.labels[idx]
+
+        return data, label
+
+    def __load_image(self, fpath):
+        img = Image.open(fpath)
 
         # CMYK, RGBA --> RGB
         if img.mode == 'CMYK':
@@ -85,9 +115,4 @@ class ImageDataset(torch.utils.data.Dataset):
         # Scaling to [0, 1]
         data = data / 255.
 
-        if not self.transform is None:
-            date = self.transform(data)
-        else:
-            data = torch.Tensor(data)
-        label = self.labels[idx]
-        return data, label
+        return data
