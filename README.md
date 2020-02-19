@@ -7,8 +7,7 @@ Python package for brain decoding analysis
 
 ## Requirements
 
-- Python 2 (mainly developed with Python 2.7.16)
-    - Python 3 support is upcoming.
+- Python 2.7, 3.6, or later
 - numpy
 - scipy
 - scikit-learn
@@ -32,9 +31,12 @@ $ pip install bdpy
 - bdata: BdPy data format (BData)
 - dataform: Data format
 - distcomp: Distributed computation
+- dl: Deep learning
+- feature: DNN features
 - fig: Making figures
 - ml: Machine learning
 - mri: MRI
+- opendata: Open data
 - preproc: Preprocessing
 - stats: Statistics
 - util: Miscellaneous utilities
