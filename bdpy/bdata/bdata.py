@@ -869,7 +869,13 @@ class BData(object):
             self.dataset = np.asarray(dat["dataset"], dtype=np.float)
 
         if 'header' in dat:
-            self.__header = {self.__to_unicode(k): self.__to_unicode(dat['header'][k].value) for k in dat['header'].keys()}
+            for k, v in dat['header'].items():
+                k = self.__to_unicode(k)
+                if isinstance(v.value, np.ndarray):
+                    v = [self.__to_unicode(x) for x in v.value]
+                else:
+                    v = self.__to_unicode(v.value)
+                self.__header.update({k: v})
 
         if 'vmap' in dat:
             for mk in dat['vmap'].keys():
