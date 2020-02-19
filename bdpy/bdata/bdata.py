@@ -878,6 +878,19 @@ class BData(object):
         self.__metadata.value = md_values
         self.__metadata.description = md_descs
 
+    def __to_unicode(self, s):
+        '''Convert s (bytes) to unicode str.'''
+        if sys.version_info.major == 3:
+            if isinstance(s, bytes):
+                return s.decode('utf-8')
+        return s
+
+    def __to_bytes(self, s):
+        '''Convert s (unicode str) to bytes.'''
+        if sys.version_info.major == 3:
+            if isinstance(s, str):
+                return s.encode('utf-8')
+        return s
 
     def __get_filetype(self, file_name):
         '''Return the type of `file_name` based on the file extension'''
