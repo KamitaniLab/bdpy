@@ -33,7 +33,7 @@ def normalize_feature(feature,
     if feature.ndim == 1:
         axes_along = None
     else:
-        axes = range(feature.ndim)
+        axes = list(range(feature.ndim))
         axes.remove(channel_axis)
         axes_along = tuple(axes)
 

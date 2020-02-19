@@ -37,7 +37,7 @@ def load_epi(datafiles):
     xyz = np.array([])
 
     for df in datafiles:
-        print "Loading %s" % df
+        print("Loading %s" % df)
 
         # Load an EPI image
         img = nipy.load_image(df)
@@ -80,9 +80,9 @@ def _get_xyz(affine, volume_shape):
     '''
 
     i_len, j_len, k_len = volume_shape
-    ijk = np.array(list(itr.product(xrange(i_len),
-                                    xrange(j_len),
-                                    xrange(k_len),
+    ijk = np.array(list(itr.product(range(i_len),
+                                    range(j_len),
+                                    range(k_len),
                                     [1]))).T
 
     return np.dot(affine, ijk)[:-1]

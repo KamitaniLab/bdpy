@@ -3,4 +3,4 @@
 This package is a part of BdPy.
 '''
 
-from distcomp import *
+from .distcomp import *

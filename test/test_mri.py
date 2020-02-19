@@ -40,7 +40,7 @@ class TestMri(TestCase):
         exp_hash = np.dot([100, 1, 0.01], self.exp_xyz)
         index_map = -1 * np.ones(num_voxel)
 
-        for i in xrange(num_voxel):
+        for i in range(num_voxel):
             txyz = test_xyz[:, i]
             thash = np.dot([100, 1, 0.01], txyz)
 
