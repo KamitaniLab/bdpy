@@ -27,6 +27,7 @@ __all__ = ['BData']
 
 
 import os
+import sys
 import warnings
 import time
 import datetime
@@ -851,12 +852,12 @@ class BData(object):
         dat = h5py.File(load_filename)
 
         if 'metaData' in dat:
-            md_keys = dat["metaData"]['key'][:].tolist()
-            md_descs = dat["metaData"]['description'][:].tolist()
+            md_keys = [self.__to_unicode(x) for x in dat["metaData"]['key'][:].tolist()]
+            md_descs = [self.__to_unicode(x) for x in dat["metaData"]['description'][:].tolist()]
             md_values = np.asarray(dat["metaData"]['value'], dtype=np.float)
         else:
-            md_keys = dat["metadata"]['key'][:].tolist()
-            md_descs = dat["metadata"]['description'][:].tolist()
+            md_keys = [self.__to_unicode(x) for x in dat["metadata"]['key'][:].tolist()]
+            md_descs = [self.__to_unicode(x) for x in dat["metadata"]['description'][:].tolist()]
             md_values = np.asarray(dat["metadata"]['value'], dtype=np.float)
 
         if 'dataSet' in dat:
@@ -865,13 +866,13 @@ class BData(object):
             self.dataset = np.asarray(dat["dataset"], dtype=np.float)
 
         if 'header' in dat:
-            self.__header = {k: dat['header'][k].value for k in dat['header'].keys()}
+            self.__header = {self.__to_unicode(k): self.__to_unicode(dat['header'][k].value) for k in dat['header'].keys()}
 
         if 'vmap' in dat:
             for mk in dat['vmap'].keys():
                 vmap = {}
                 for k in dat['vmap'][mk].keys():
-                    vmap.update({float(k): dat['vmap'][mk][k].value})
+                    vmap.update({float(k): self.__to_unicode(dat['vmap'][mk][k].value)})
                 self.__vmap.update({mk: vmap})
 
         self.__metadata.key = md_keys
