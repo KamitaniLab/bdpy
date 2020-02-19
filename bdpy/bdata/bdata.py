@@ -802,22 +802,25 @@ class BData(object):
             md_vals = self.metadata.value
 
             h5file.create_group('/metadata')
-            h5file.create_dataset('/metadata/key', data=md_keys)
-            h5file.create_dataset('/metadata/description', data=md_desc)
+            h5file.create_dataset('/metadata/key', data=[self.__to_bytes(x) for x in md_keys])
+            h5file.create_dataset('/metadata/description', data=[self.__to_bytes(x) for x in md_desc])
             h5file.create_dataset('/metadata/value', data=md_vals)
 
             # header
             if header is not None:
                 h5file.create_group('/header')
                 for k, v in header.items():
-                    h5file.create_dataset('/header/' + k, data=v)
+                    if isinstance(v, list):
+                        h5file.create_dataset('/header/' + k, data=[self.__to_bytes(x) for x in v])
+                    else:
+                        h5file.create_dataset('/header/' + k, data=self.__to_bytes(v)) # FIXME: save unicode str as is
 
             # vmap
             h5file.create_group('/vmap')
             for mk, vm in self.__vmap.items():
                 h5file.create_group('/vmap/' + mk)
                 for k, v in vm.items():
-                    h5file.create_dataset('/vmap/' + mk + '/' + str(k), data=v)
+                    h5file.create_dataset('/vmap/' + mk + '/' + str(k), data=self.__to_bytes(v)) # FIXME: save unicode str as is
 
     def __load_mat(self, load_filename):
         '''Load dataset and metadata from Matlab file'''
