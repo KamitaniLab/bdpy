@@ -62,7 +62,7 @@ class ImageDataset(torch.utils.data.Dataset):
         if img.mode == 'CMYK':
             img = img.convert('RGB')
         if img.mode == 'RGBA':
-            bg = PIL.Image.new('RGB', img.size, (255, 255, 255))
+            bg = Image.new('RGB', img.size, (255, 255, 255))
             bg.paste(img, mask=img.split()[3])
             img = bg
 
