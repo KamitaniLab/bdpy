@@ -7,9 +7,10 @@ import PIL
 import caffe
 import numpy as np
 from bdpy.dataform import save_array
+from tqdm import tqdm
 
 
-def extract_image_features(image_file, net, layers=[], crop_center=False, image_preproc=[], save_dir=None, verbose=False, return_features=True):
+def extract_image_features(image_file, net, layers=[], crop_center=False, image_preproc=[], save_dir=None, verbose=False, progbar=False, return_features=True):
     '''
     Extract DNN features of a given image.
 
@@ -43,6 +44,10 @@ def extract_image_features(image_file, net, layers=[], crop_center=False, image_
         image_file = [image_file]
 
     features_dict = {}
+
+    if progbar:
+        image_file = tqdm(image_file)
+
     for imgf in image_file:
         if verbose:
             print('Image:  %s' % imgf)
