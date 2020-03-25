@@ -9,7 +9,7 @@ import numpy as np
 from bdpy.dataform import save_array
 
 
-def extract_image_features(image_file, net, layers=[], center_crop=True, image_preproc=[], save_dir=None, verbose=False, return_features=True):
+def extract_image_features(image_file, net, layers=[], crop_center=False, image_preproc=[], save_dir=None, verbose=False, return_features=True):
     '''
     Extract DNN features of a given image.
 
@@ -20,7 +20,7 @@ def extract_image_features(image_file, net, layers=[], center_crop=True, image_p
     net : Caffe network instance
     layers : list
       List of DNN layers of which features are returned.
-    center_crop : bool (default: True)
+    crop_center : bool (default: False)
       Crop the center of an image or not.
     image_preproc : list (default: [])
       List of additional preprocessing functions. The function input/output
@@ -67,7 +67,7 @@ def extract_image_features(image_file, net, layers=[], center_crop=True, image_p
             img = img.convert('RGB')
 
         # Center cropping
-        if center_crop:
+        if crop_center:
             w, h = img.size
             img = img.crop(((w - min(img.size)) // 2,
                             (h - min(img.size)) // 2,
