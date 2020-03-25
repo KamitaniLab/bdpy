@@ -9,7 +9,7 @@ import numpy as np
 from bdpy.dataform import save_array
 
 
-def extract_image_features(image_file, net, layers=[], center_crop=True, save_dir=None, verbose=False, return_features=True):
+def extract_image_features(image_file, net, layers=[], center_crop=True, image_preproc=[], save_dir=None, verbose=False, return_features=True):
     '''
     Extract DNN features of a given image.
 
@@ -22,6 +22,10 @@ def extract_image_features(image_file, net, layers=[], center_crop=True, save_di
       List of DNN layers of which features are returned.
     center_crop : bool (default: True)
       Crop the center of an image or not.
+    image_preproc : list (default: [])
+      List of additional preprocessing functions. The function input/output
+      should be a PIL.Image instance. The preprocessing functions are applied
+      after RGB conversion, center-cropping, and resizing of the input image.
     save_dir : None or str (default: None)
       Save the features in the specified directory if not None.
     verbose : bool (default: False)
@@ -72,6 +76,9 @@ def extract_image_features(image_file, net, layers=[], center_crop=True, save_di
 
         # Resize
         img = img.resize(image_size, PIL.Image.BICUBIC)
+
+        for p in image_preproc:
+            img = p(img)
 
         img_array = np.array(img)
 
