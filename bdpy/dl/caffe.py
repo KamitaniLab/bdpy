@@ -119,6 +119,7 @@ def extract_image_features(image_file, net, layers=[], crop_center=False, image_
                 if os.path.exists(save_file):
                     if verbose:
                         print('%s already exists. Skipped.' % save_file)
+                    continue
                 save_array(save_file, feat, key='feat', dtype=np.float32, sparse=False)
                 if verbose:
                     print('%s saved.' % save_file)
