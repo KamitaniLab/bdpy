@@ -1,5 +1,6 @@
 '''Utility functions for BData'''
 
+
 import copy
 
 import numpy as np
@@ -136,7 +137,17 @@ def concat_dataset(data_list, successive=[]):
 
 
 def metadata_equal(d0, d1, strict=False):
-    '''Check whether `d0` and `d1` share the same meta-data.'''
+    '''Check whether `d0` and `d1` share the same meta-data.
+
+    Parameters
+    ----------
+    d0, d1 : BData
+    strict : bool, optional
+
+    Returns
+    -------
+    bool
+    '''
 
     equal = True
 
