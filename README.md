@@ -15,10 +15,23 @@ Python package for brain decoding analysis
 
 ### Optional requirements
 
-- 'dataform' module
+- `dataform` module
+    - hdf5storage
     - pandas
-- 'mri' module
+- `dl.caffe` module
+    - Caffe
+    - PIL
+    - tqdm
+- `dl.torch` module
+    - PyTorch
+    - PIL
+- `fig` module
+    - matplotlib
+    - PIL
+- `mri` module
     - nipy
+    - nibabel
+    - pandas
 
 ## Installation
 
@@ -28,17 +41,17 @@ $ pip install bdpy
 
 ## Packages
 
-- bdata: BdPy data format (BData)
-- dataform: Data format
-- distcomp: Distributed computation
-- dl: Deep learning
-- feature: DNN features
-- fig: Making figures
-- ml: Machine learning
-- mri: MRI
-- opendata: Open data
-- preproc: Preprocessing
-- stats: Statistics
+- bdata: BdPy data format (BData) core package
+- dataform: Utilities for various data format
+- distcomp: Distributed computation utilities
+- dl: Deep learning utilities
+- feature: Utilities for DNN features
+- fig: Utilities for figure creation
+- ml: Machine learning utilities
+- mri: MRI utilities
+- opendata: Open data utilities
+- preproc: Utilities for preprocessing
+- stats: Utilities for statistics
 - util: Miscellaneous utilities
 
 ## BdPy data format
@@ -47,11 +60,6 @@ BdPy data format (or BrainDecoderToolbox2 data format; BData) consists of two va
 
 See [BData API examples](https://github.com/KamitaniLab/bdpy/blob/master/docs/bdata_api_examples.md) for useage of BData.
 
-## For developers
-
-Please send your pull requests to `dev` branch, not to `master`.
-
-## Contributors
+## Developers
 
 - Shuntaro C. Aoki (Kyoto Univ)
-- Misato Tanaka (DNI, ATR)
