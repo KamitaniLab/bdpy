@@ -514,7 +514,20 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                  'csf':                    [],
                  'dvars':                  [],
                  'std_dvars':              [],
-                 'framewise_displacement': []}
+                 'framewise_displacement': [],
+                 'a_comp_cor_00':          [],
+                 'a_comp_cor_01':          [],
+                 'a_comp_cor_02':          [],
+                 'a_comp_cor_03':          [],
+                 'a_comp_cor_04':          [],
+                 'a_comp_cor_05':          [],
+                 't_comp_cor_00':          [],
+                 't_comp_cor_01':          [],
+                 't_comp_cor_02':          [],
+                 't_comp_cor_03':          [],
+                 't_comp_cor_04':          [],
+                 't_comp_cor_05':          [],
+    }
 
     ses_label_list = []
     run_label_list = []
