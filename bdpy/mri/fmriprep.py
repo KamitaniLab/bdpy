@@ -705,7 +705,6 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                                      confounds['dvars'],
                                      confounds['std_dvars'],
                                      confounds['framewise_displacement'],
-                                     confounds['std_dvars'],
                                      confounds['a_comp_cor_00'],
                                      confounds['a_comp_cor_01'],
                                      confounds['a_comp_cor_02'],
