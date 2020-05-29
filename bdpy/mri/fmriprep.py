@@ -734,12 +734,12 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
         bdata.add_metadata('aCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
         bdata.add_metadata('aCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
         bdata.add_metadata('tCompCor',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tcompCor_0',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tcompCor_1',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tcompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tcompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tcompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tcompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_0',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_1',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 'Confounds: Temporal CompCor', where='Confounds')
 
     for i, col in enumerate(cols):
         metadata_vec = np.empty((len(cols),))
