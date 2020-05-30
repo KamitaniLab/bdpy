@@ -527,6 +527,12 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                  't_comp_cor_03':          [],
                  't_comp_cor_04':          [],
                  't_comp_cor_05':          [],
+                 'cosine00':               [],
+                 'cosine01':               [],
+                 'cosine02':               [],
+                 'cosine03':               [],
+                 'cosine04':               [],
+                 'cosine05':               [],
     }
 
     ses_label_list = []
@@ -717,28 +723,41 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                                      confounds['t_comp_cor_03'],
                                      confounds['t_comp_cor_04'],
                                      confounds['t_comp_cor_05'],
+                                     confounds['cosine00'],
+                                     confounds['cosine01'],
+                                     confounds['cosine02'],
+                                     confounds['cosine03'],
+                                     confounds['cosine04'],
+                                     confounds['cosine05'],
         ])
         bdata.add(confounds_array, 'Confounds')
-        bdata.add_metadata('GlobalSignal',          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in brain mask', where='Confounds')
-        bdata.add_metadata('WhiteMatterSignal',     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in white matter', where='Confounds')
-        bdata.add_metadata('CSFSignal',             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in CSF', where='Confounds')
-        bdata.add_metadata('DVARS',                 [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Original DVARS', where='Confounds')
-        bdata.add_metadata('STD_DVARS',             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Standardized DVARS', where='Confounds')
-        bdata.add_metadata('FramewiseDisplacement', [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Framewise displacement (bulk-head motion)', where='Confounds')
-        bdata.add_metadata('aCompCor',              [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_0',            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_1',            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_0',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_1',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('GlobalSignal',          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in brain mask', where='Confounds')
+        bdata.add_metadata('WhiteMatterSignal',     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in white matter', where='Confounds')
+        bdata.add_metadata('CSFSignal',             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in CSF', where='Confounds')
+        bdata.add_metadata('DVARS',                 [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Original DVARS', where='Confounds')
+        bdata.add_metadata('STD_DVARS',             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Standardized DVARS', where='Confounds')
+        bdata.add_metadata('FramewiseDisplacement', [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Framewise displacement (bulk-head motion)', where='Confounds')
+        bdata.add_metadata('aCompCor',              [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
+        bdata.add_metadata('aCompCor_0',            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
+        bdata.add_metadata('aCompCor_1',            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
+        bdata.add_metadata('aCompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
+        bdata.add_metadata('aCompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
+        bdata.add_metadata('aCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
+        bdata.add_metadata('aCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_0',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_1',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('tCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
+        bdata.add_metadata('Cosine',                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
+        bdata.add_metadata('Cosine_0',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
+        bdata.add_metadata('Cosine_1',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
+        bdata.add_metadata('Cosine_2',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
+        bdata.add_metadata('Cosine_3',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
+        bdata.add_metadata('Cosine_4',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
+        bdata.add_metadata('Cosine_5',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
 
     for i, col in enumerate(cols):
         metadata_vec = np.empty((len(cols),))
