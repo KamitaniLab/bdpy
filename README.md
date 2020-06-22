@@ -39,6 +39,12 @@ Python package for brain decoding analysis
 $ pip install bdpy
 ```
 
+If the installation failed with Python 3, please try below.
+
+```shell
+$ pip install git+https://github.com/KamitaniLab/bdpy.git
+```
+
 ## Packages
 
 - bdata: BdPy data format (BData) core package
