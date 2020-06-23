@@ -8,7 +8,7 @@ import numpy as np
 from .bdata import BData
 
 
-def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_description=False):
+def vstack(bdata_list, successive=[], metadata_merge='minimal', ignore_metadata_description=False):
     '''Concatenate datasets vertically.
 
     Currently, `concat_dataset` does not validate the consistency of meta-data
