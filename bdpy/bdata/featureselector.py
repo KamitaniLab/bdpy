@@ -52,18 +52,36 @@ class FeatureSelector(object):
         str_buf = ''
         output_buf = []
 
-        for i in expression:
-            if i == ' ':
+        i = 0
+        while i < len(expression):
+            if expression[i] == ' ':
                 # Ignore a white-space
+                i += 1
                 continue
-            elif self.signs.count(i) or self.operators.count(i):
+            elif expression[i] == '"':
+                i += 1
+                while expression[i] != '"':
+                    str_buf += expression[i]
+                    i += 1
+                i += 1
+                continue
+            elif expression[i] == "'":
+                i += 1
+                while expression[i] != "'":
+                    str_buf += expression[i]
+                    i += 1
+                i += 1
+                continue
+            elif self.signs.count(expression[i]) or self.operators.count(expression[i]):
                 if len(str_buf) > 0:
                     output_buf.append(str_buf)
                     str_buf = ''
 
-                output_buf.append(i)
+                output_buf.append(expression[i])
             else:
-                str_buf += i
+                str_buf += expression[i]
+
+            i += 1
 
         if len(str_buf) > 0:
             output_buf.append(str_buf)
