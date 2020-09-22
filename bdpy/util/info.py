@@ -4,6 +4,7 @@ import datetime
 import time
 import yaml
 import hashlib
+import warnings
 
 
 def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
@@ -43,6 +44,12 @@ def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
     if os.path.isfile(run_info_file):
         with open(run_info_file, 'r') as f:
             info_yaml = yaml.load(f)
+        while info_yaml is None:
+            warnings.warn('Failed to load info from %s. Retrying...'
+                          % run_info_file)
+            with open(run_info_file, 'r') as f:
+                info_yaml = yaml.load(f)
+
     else:
         info_yaml = {}
 
