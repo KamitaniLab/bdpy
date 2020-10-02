@@ -604,7 +604,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             tr = bold_metainfo['RepetitionTime']
             tr_ms = tr * 1000 # To avoid numerical error
 
-            if tlen_event * 1000 != (n_sample * tr_ms):
+            if int(tlen_event * 1000) != int(n_sample * tr_ms):
                 if cut_run:
                     cut_duration = (tlen_event * 1000 - (n_sample * tr_ms)) / 1000
                     warnings.warn('The number of volumes in the EPI file (%s) '
