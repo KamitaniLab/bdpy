@@ -509,31 +509,32 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     ijk = np.array([])
 
     motionparam_list = []
-    confounds = {'global_signal':          [],
-                 'white_matter':           [],
-                 'csf':                    [],
-                 'dvars':                  [],
-                 'std_dvars':              [],
-                 'framewise_displacement': [],
-                 'a_comp_cor_00':          [],
-                 'a_comp_cor_01':          [],
-                 'a_comp_cor_02':          [],
-                 'a_comp_cor_03':          [],
-                 'a_comp_cor_04':          [],
-                 'a_comp_cor_05':          [],
-                 't_comp_cor_00':          [],
-                 't_comp_cor_01':          [],
-                 't_comp_cor_02':          [],
-                 't_comp_cor_03':          [],
-                 't_comp_cor_04':          [],
-                 't_comp_cor_05':          [],
-                 'cosine00':               [],
-                 'cosine01':               [],
-                 'cosine02':               [],
-                 'cosine03':               [],
-                 'cosine04':               [],
-                 'cosine05':               [],
-    }
+    # confounds = {'global_signal':          [],
+    #              'white_matter':           [],
+    #              'csf':                    [],
+    #              'dvars':                  [],
+    #              'std_dvars':              [],
+    #              'framewise_displacement': [],
+    #              'a_comp_cor_00':          [],
+    #              'a_comp_cor_01':          [],
+    #              'a_comp_cor_02':          [],
+    #              'a_comp_cor_03':          [],
+    #              'a_comp_cor_04':          [],
+    #              'a_comp_cor_05':          [],
+    #              't_comp_cor_00':          [],
+    #              't_comp_cor_01':          [],
+    #              't_comp_cor_02':          [],
+    #              't_comp_cor_03':          [],
+    #              't_comp_cor_04':          [],
+    #              't_comp_cor_05':          [],
+    #              'cosine00':               [],
+    #              'cosine01':               [],
+    #              'cosine02':               [],
+    #              'cosine03':               [],
+    #              'cosine04':               [],
+    #              'cosine05':               [],
+    # }
+    confounds = {}
 
     ses_label_list = []
     run_label_list = []
@@ -587,9 +588,13 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             motionparam_list.append(mp)
 
             if with_confounds:
-                for c in confounds:
+                confounds_keys = [k for k in list(conf_pd.columns) if not k in mp_label_col]
+                for c in confounds_keys:
                     x = np.c_[conf_pd[c]]
-                    confounds[c].append(x)
+                    if c in confounds:
+                        confounds[c].append(x)
+                    else:
+                        confounds.update({c: [x]})
 
             # Load task event file
             event_file = os.path.join(data_path, run['task_event_file'])
@@ -679,6 +684,9 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
         for c in confounds:
             confounds.update({c: np.vstack(confounds[c])})
 
+        if len(set([c.shape for c in confounds.values()])) != 1:
+            raise RuntimeError('Invalid confounds.')
+
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
 
@@ -705,59 +713,94 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     bdata.add_metadata('MotionParameter_rot_z', [0, 0, 0, 0, 0, 1], 'Motion parameter: z rotation', where='MotionParameter')
 
     if with_confounds:
-        confounds_array = np.hstack([confounds['global_signal'],
-                                     confounds['white_matter'],
-                                     confounds['csf'],
-                                     confounds['dvars'],
-                                     confounds['std_dvars'],
-                                     confounds['framewise_displacement'],
-                                     confounds['a_comp_cor_00'],
-                                     confounds['a_comp_cor_01'],
-                                     confounds['a_comp_cor_02'],
-                                     confounds['a_comp_cor_03'],
-                                     confounds['a_comp_cor_04'],
-                                     confounds['a_comp_cor_05'],
-                                     confounds['t_comp_cor_00'],
-                                     confounds['t_comp_cor_01'],
-                                     confounds['t_comp_cor_02'],
-                                     confounds['t_comp_cor_03'],
-                                     confounds['t_comp_cor_04'],
-                                     confounds['t_comp_cor_05'],
-                                     confounds['cosine00'],
-                                     confounds['cosine01'],
-                                     confounds['cosine02'],
-                                     confounds['cosine03'],
-                                     confounds['cosine04'],
-                                     confounds['cosine05'],
-        ])
+        default_confounds_keys = [
+            'global_signal',
+            'white_matter',
+            'csf',
+            'dvars',
+            'std_dvars',
+            'framewise_displacement',
+            'a_comp_cor',
+            'a_comp_cor_00',
+            'a_comp_cor_01',
+            'a_comp_cor_02',
+            'a_comp_cor_03',
+            'a_comp_cor_04',
+            'a_comp_cor_05',
+            't_comp_cor',
+            't_comp_cor_00',
+            't_comp_cor_01',
+            't_comp_cor_02',
+            't_comp_cor_03',
+            't_comp_cor_04',
+            't_comp_cor_05',
+            'cosine',
+            'cosine00',
+            'cosine01',
+            'cosine02',
+            'cosine03',
+            'cosine04',
+            'cosine05',
+        ]
+        confounds_key_desc = {
+            'global_signal':          {'key': 'GlobalSignal',          'desc': 'Confounds: Average signal in brain mask'},
+            'white_matter':           {'key': 'WhiteMatterSignal',     'desc': 'Confounds: Average signal in white matter'},
+            'csf':                    {'key': 'CSFSignal',             'desc': 'Confounds: Average signal in CSF'},
+            'dvars':                  {'key': 'DVARS',                 'desc': 'Confounds: Original DVARS'},
+            'std_dvars':              {'key': 'STD_DVARS',             'desc': 'Confounds: Standardized DVARS'},
+            'framewise_displacement': {'key': 'FramewiseDisplacement', 'desc': 'Confounds: Framewise displacement (bulk-head motion)'},
+            'a_comp_cor':             {'key': 'aCompCor',              'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_00':          {'key': 'aCompCor_0',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_01':          {'key': 'aCompCor_1',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_02':          {'key': 'aCompCor_2',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_03':          {'key': 'aCompCor_3',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_04':          {'key': 'aCompCor_4',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_05':          {'key': 'aCompCor_5',            'desc': 'Confounds: Anatomical CompCor'},
+            't_comp_cor':             {'key': 'tCompCor',              'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_00':          {'key': 'tCompCor_0',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_01':          {'key': 'tCompCor_1',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_02':          {'key': 'tCompCor_2',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_03':          {'key': 'tCompCor_3',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_04':          {'key': 'tCompCor_4',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_05':          {'key': 'tCompCor_5',            'desc': 'Confounds: Temporal CompCor'},
+            'cosine':                 {'key': 'Cosine',                'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine00':               {'key': 'Cosine_0',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine01':               {'key': 'Cosine_1',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine02':               {'key': 'Cosine_2',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine03':               {'key': 'Cosine_3',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine04':               {'key': 'Cosine_4',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine05':               {'key': 'Cosine_5',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+        }
+        confounds_array = np.hstack([
+            confounds[dck]
+            for dck in default_confounds_keys if dck in confounds
+            ])
+
         bdata.add(confounds_array, 'Confounds')
-        bdata.add_metadata('GlobalSignal',          [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in brain mask', where='Confounds')
-        bdata.add_metadata('WhiteMatterSignal',     [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in white matter', where='Confounds')
-        bdata.add_metadata('CSFSignal',             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Average signal in CSF', where='Confounds')
-        bdata.add_metadata('DVARS',                 [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Original DVARS', where='Confounds')
-        bdata.add_metadata('STD_DVARS',             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Standardized DVARS', where='Confounds')
-        bdata.add_metadata('FramewiseDisplacement', [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Framewise displacement (bulk-head motion)', where='Confounds')
-        bdata.add_metadata('aCompCor',              [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_0',            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_1',            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('aCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Anatomical CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_0',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_1',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_2',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_3',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_4',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('tCompCor_5',            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0], 'Confounds: Temporal CompCor', where='Confounds')
-        bdata.add_metadata('Cosine',                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
-        bdata.add_metadata('Cosine_0',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
-        bdata.add_metadata('Cosine_1',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
-        bdata.add_metadata('Cosine_2',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
-        bdata.add_metadata('Cosine_3',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
-        bdata.add_metadata('Cosine_4',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
-        bdata.add_metadata('Cosine_5',              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 'Confounds: Discrete cosine-basis regressors', where='Confounds')
+
+        cnf_p = 0
+        for cnf in default_confounds_keys:
+            if (not cnf in ['a_comp_cor', 't_comp_cor', 'cosine']) and (not cnf in confounds):
+                continue
+
+            cnf_colidx = np.zeros(confounds_array.shape[1])
+
+            if cnf in ['a_comp_cor', 't_comp_cor', 'cosine']:
+                ncol = sum([1 for k in confounds.keys() if cnf in k])
+                for k in range(ncol):
+                    cnf_colidx[cnf_p + k] = 1
+            else:
+                cnf_colidx[cnf_p] = 1
+                cnf_p += 1
+
+            print(confounds_key_desc[cnf]['key'])
+            print(confounds_key_desc[cnf]['desc'])
+            print(cnf_colidx)
+
+            bdata.add_metadata(confounds_key_desc[cnf]['key'],
+                               cnf_colidx,
+                               confounds_key_desc[cnf]['desc'],
+                               where='Confounds')
 
     for i, col in enumerate(cols):
         metadata_vec = np.empty((len(cols),))
