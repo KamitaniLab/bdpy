@@ -793,10 +793,6 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                 cnf_colidx[cnf_p] = 1
                 cnf_p += 1
 
-            print(confounds_key_desc[cnf]['key'])
-            print(confounds_key_desc[cnf]['desc'])
-            print(cnf_colidx)
-
             bdata.add_metadata(confounds_key_desc[cnf]['key'],
                                cnf_colidx,
                                confounds_key_desc[cnf]['desc'],
