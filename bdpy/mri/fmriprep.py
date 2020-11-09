@@ -699,8 +699,6 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
         if len(set([c.shape for c in confounds.values()])) != 1:
             raise RuntimeError('Invalid confounds.')
 
-    import pdb; pdb.set_trace()
-
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
 
