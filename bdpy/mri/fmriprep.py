@@ -546,11 +546,14 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
     act_label_map = LabelMapper(label_mapper)
 
+    run_idx = 0
+    
     for i, (ses, sesdata) in enumerate(subject_data.items()):
         print('Session: %d (%s)' % (i + 1, ses))
         print('Data: %s\n' % data_mode)
 
         for j, run in enumerate(sesdata):
+            run_idx += 1
             print('Run %d' % (j + 1))
             epi = run[data_mode]
             event_file = run['task_event_file']
@@ -592,9 +595,9 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                 for c in confounds_keys:
                     x = np.c_[conf_pd[c]]
                     if c in confounds:
-                        confounds[c].append(x)
+                        confounds[c].update({run_idx: x})
                     else:
-                        confounds.update({c: [x]})
+                        confounds.update({c: {run_idx: x}})
 
             # Load task event file
             event_file = os.path.join(data_path, run['task_event_file'])
@@ -682,10 +685,21 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
     if with_confounds:
         for c in confounds:
-            confounds.update({c: np.vstack(confounds[c])})
+            conf_val_list = []
+            for k in range(run_idx):
+                if (k + 1) in confounds[c]:
+                    conf_val_list.append(confounds[c][k + 1])
+                else:
+                    run_length = braindata_list[k].shape[0]
+                    nan_array = np.zeros([run_length, 1])
+                    nan_array[:, :] = np.nan
+                    conf_val_list.append(nan_array)
+            confounds.update({c: np.vstack(conf_val_list)})
 
         if len(set([c.shape for c in confounds.values()])) != 1:
             raise RuntimeError('Invalid confounds.')
+
+    import pdb; pdb.set_trace()
 
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
