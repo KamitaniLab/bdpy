@@ -1,0 +1,17 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+numpy = "*"
+scipy = "*"
+scikit-learn = "*"
+h5py = "*"
+hdf5storage = "*"
+pyyaml = "*"
+
+[requires]
+python_version = "3.8"
