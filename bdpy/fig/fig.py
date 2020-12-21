@@ -13,7 +13,12 @@ draw_footnote
 '''
 
 
-__all__ = ['makefigure', 'box_off', 'draw_footnote']
+__all__ = [
+    'box_off',
+    'draw_footnote',
+    'make_violinplots',
+    'makefigure',
+]
 
 
 
