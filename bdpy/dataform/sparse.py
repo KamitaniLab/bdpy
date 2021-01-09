@@ -99,8 +99,28 @@ class SparseArray(object):
 
     def __load(self, fname, key='data'):
         data = hdf5storage.loadmat(fname)[key]
-        self.__index = data[u'index']
-        self.__value = data[u'value']
-        self.__shape = data[u'shape']
+
+        index = data[u'index']
+        if isinstance(index, tuple):
+            self.__index = index
+        elif isinstance(index, np.ndarray):
+            self.__index = tuple(index[0])
+        else:
+            raise TypeError('Unsupported data type ("index").')
+
+        value = data[u'value']
+        if value.ndim == 1:
+            self.__value = value
+        else:
+            self.__value = value.flatten()
+
+        array_shape = data[u'shape']
+        if isinstance(array_shape, tuple):
+            self.__shape = array_shape
+        elif isinstance(array_shape, np.ndarray):
+            self.__shape = array_shape.flatten()
+        else:
+            raise TypeError('Unsupported data type ("shape").')
+
         self.__background = data[u'background']
         return None
