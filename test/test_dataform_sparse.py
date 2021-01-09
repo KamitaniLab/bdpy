@@ -62,6 +62,17 @@ class TestUtil(TestCase):
 
         np.testing.assert_array_equal(data, testdata)
 
+    def test_load_array_jl(self):
+        data = np.array([[1, 0, 0, 0],
+                         [2, 2, 0, 0],
+                         [3, 3, 3, 0]])
+
+        testdata = load_array('data/array_jl_dense_v1.mat', key='a')
+        np.testing.assert_array_equal(data, testdata)
+
+        testdata = load_array('data/array_jl_sparse_v1.mat', key='a')
+        np.testing.assert_array_equal(data, testdata)
+
 
 if __name__ == '__main__':
     suite = TestLoader().loadTestsFromTestCase(TestUtil)
