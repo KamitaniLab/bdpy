@@ -871,17 +871,20 @@ class BData(object):
         if 'header' in dat:
             for k, v in dat['header'].items():
                 k = self.__to_unicode(k)
-                if isinstance(v.value, np.ndarray):
-                    v = [self.__to_unicode(x) for x in v.value]
+                if isinstance(v[()], np.ndarray):
+                    v = [self.__to_unicode(x) for x in v[()]]
                 else:
-                    v = self.__to_unicode(v.value)
+                    v = self.__to_unicode(v[()])
                 self.__header.update({k: v})
 
         if 'vmap' in dat:
             for mk in dat['vmap'].keys():
                 vmap = {}
                 for k in dat['vmap'][mk].keys():
-                    vmap.update({float(k): self.__to_unicode(dat['vmap'][mk][k].value)})
+                    vmap.update({float(k): self.__to_unicode(dat['vmap'][mk][k][()])})
+                # TODO: fix this dirty solution
+                if sys.version_info.major == 2:
+                    mk = mk.encode('utf-8')
                 self.__vmap.update({mk: vmap})
 
         self.__metadata.key = md_keys
