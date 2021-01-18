@@ -621,7 +621,7 @@ class BData(object):
 
     # Value-label map --------------------------------------------------------
 
-    def get_label(self, key):
+    def get_labels(self, key):
         '''Get `key` as labels.'''
         if not key in self.__vmap:
             raise ValueError('Key not found in vmap: %s' % key)
@@ -634,6 +634,10 @@ class BData(object):
                 v = self.__vmap[key][x]
             label.append(v)
         return label
+
+    def get_label(self, key):
+        '''Get `key` as labels.'''
+        return self.get_labels(key)
 
     def get_vmap(self, key):
         '''Returns vmap of `key`.'''
