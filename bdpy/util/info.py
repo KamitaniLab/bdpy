@@ -1,4 +1,5 @@
 import os
+import sys
 import uuid
 import datetime
 import time
@@ -14,7 +15,10 @@ def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
         script_path = os.path.abspath(script)
         with open(script_path, 'r') as f:
             script_txt = f.read()
-        script_md5 = hashlib.md5(script_txt).hexdigest()
+        if sys.version_info.major == 2:
+            script_md5 = hashlib.md5(script_txt).hexdigest()
+        else:
+            script_md5 = hashlib.md5(script_txt.encode()).hexdigest()
     else:
         script_path = None
         script_txt = None
