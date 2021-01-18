@@ -852,7 +852,7 @@ class BData(object):
     def __load_h5(self, load_filename):
         '''Load dataset and metadata from HDF5 file'''
 
-        dat = h5py.File(load_filename)
+        dat = h5py.File(load_filename, 'r')
 
         if 'metaData' in dat:
             md_keys = [self.__to_unicode(x) for x in dat["metaData"]['key'][:].tolist()]
