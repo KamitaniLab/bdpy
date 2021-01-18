@@ -1,11 +1,11 @@
+import datetime
+import hashlib
 import os
 import sys
-import uuid
-import datetime
 import time
-import yaml
-import hashlib
+import uuid
 import warnings
+import yaml
 
 
 def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
