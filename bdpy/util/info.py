@@ -41,7 +41,12 @@ def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
         }
 
     if parameters is not None:
-        run_info.update({'parameters': parameters})
+        parameters_fixed = {}
+        for k, v in parameters.items():
+            if isinstance(v, type({}.keys())):
+                v = list(v)
+            parameters_fixed.update({k: v})
+        run_info.update({'parameters': parameters_fixed})
 
     run_info_file = os.path.join(output_dir, info_file)
 
