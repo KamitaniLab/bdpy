@@ -3,14 +3,14 @@
 This file is a part of BdPy
 
 
-API lits
+API list
 --------
 
 - Data modification
     - add
     - update
     - add_metadata
-    - rename_meatadata
+    - rename_metadata
     - set_metadatadescription
 - Data access
     - select
@@ -27,17 +27,19 @@ __all__ = ['BData']
 
 
 import os
+import sys
 import warnings
 import time
 import datetime
 import inspect
+import re
 
 import h5py
 import numpy as np
 import scipy.io as sio
 
-from metadata import MetaData
-from featureselector import FeatureSelector
+from .metadata import MetaData
+from .featureselector import FeatureSelector
 
 
 # BData class ##########################################################
@@ -71,6 +73,7 @@ class BData(object):
         self.__dataset = np.ndarray((0, 0), dtype=float)
         self.__metadata = MetaData()
         self.__header = {}
+        self.__vmap = {}
 
         if file_name is not None:
             self.load(file_name, file_type)
@@ -86,10 +89,6 @@ class BData(object):
     def dataset(self, value):
         self.__dataset = value
 
-    @dataset.deleter
-    def dataset(self):
-        del self.__dataset
-
     # metadata
     @property
     def metadata(self):
@@ -98,10 +97,6 @@ class BData(object):
     @metadata.setter
     def metadata(self, value):
         self.__metadata = value
-
-    @metadata.deleter
-    def metadata(self):
-        del self.__metadata
 
     # header
     @property
@@ -117,10 +112,6 @@ class BData(object):
     def dataSet(self, value):
         self.__dataset = value
 
-    @dataSet.deleter
-    def dataSet(self):
-        del self.__dataset
-
     # metaData
     @property
     def metaData(self):
@@ -129,10 +120,6 @@ class BData(object):
     @metaData.setter
     def metaData(self, value):
         self.__metadata = value
-
-    @metaData.deleter
-    def metaData(self):
-        del self.__metadata
 
     # Misc -------------------------------------------------------------
 
@@ -182,7 +169,7 @@ class BData(object):
 
         # Add new metadata
         column_description = '1 = %s' % name
-        column_value = [np.nan for _ in xrange(colnum_has)] + [1 for _ in xrange(colnum_add)]
+        column_value = [np.nan for _ in range(colnum_has)] + [1 for _ in range(colnum_add)]
 
         self.metadata.set(name, column_value, column_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
@@ -257,7 +244,7 @@ class BData(object):
 
         if where is not None:
             attr_ind = self.metadata.get(where, 'value') == 1
-            add_value = np.array([np.nan for _ in xrange(self.metadata.get_value_len())])
+            add_value = np.array([np.nan for _ in range(self.metadata.get_value_len())])
             add_value[attr_ind] = value
         else:
             add_value = value
@@ -275,13 +262,13 @@ class BData(object):
             raise ValueError('You need to specify `where`.')
 
         mdv_lst = [self.get_metadata(s, where=where) for s in sources]
-        mdv_new = np.sum(np.vstack(mdv_lst), axis=0)
+        mdv_new = np.nansum(np.vstack(mdv_lst), axis=0)
         mdv_new[mdv_new > 1] = 1
 
         self.add_metadata(key, mdv_new, description, where=where)
 
 
-    def rename_meatadata(self, key_old, key_new):
+    def rename_metadata(self, key_old, key_new):
         '''Rename meta-data key
 
         Parameters
@@ -293,8 +280,8 @@ class BData(object):
         -------
         None
         '''
-        self.metadata[key_new] = self.metadata[key_old]
-        del self.metadata[key_old]
+        self.metadata.key[self.metadata.key.index(key_old)] = key_new
+        return None
 
 
     def set_metadatadescription(self, key, description):
@@ -332,6 +319,10 @@ class BData(object):
         None
         '''
         self.set_metadatadescription(metakey, description)
+
+    def update_header(self, header):
+        '''Update header.'''
+        self.__header.update(header)
 
     def applyfunc(self, func, where=None, **kargs):
         '''Apply `func` to the dataset.'''
@@ -432,7 +423,7 @@ class BData(object):
                 stack.append(order)
                 buf_sel.append(n)
 
-            elif i == '|' or i == '&':
+            elif i in ['|', '&', '-']:
                 r = stack.pop()
                 l = stack.pop()
 
@@ -452,6 +443,8 @@ class BData(object):
                     result = np.logical_or(l, r)
                 elif i == '&':
                     result = np.logical_and(l, r)
+                elif i == '-':
+                    result = np.logical_and(l, np.logical_not(r))
 
                 stack.append(result)
 
@@ -476,7 +469,7 @@ class BData(object):
                         i = float(i)
                     else:
                         # 'i' should be a meta-data key
-                        i = np.array(self.get_metadata(i))
+                        i = self.__metadata_key_to_bool_vector(i)
 
                 stack.append(i)
 
@@ -626,6 +619,84 @@ class BData(object):
         for k, d in zip(self.metadata.key, self.metadata. description):
             print('| ' + k + ' ' * (max_key - len(k)) + ' | ' + d + ' ' * (max_desc - len(d)) + ' |')
 
+    # Value-label map --------------------------------------------------------
+
+    def get_labels(self, key):
+        '''Get `key` as labels.'''
+        if not key in self.__vmap:
+            raise ValueError('Key not found in vmap: %s' % key)
+        value = self.select(key).flatten()
+        label = []
+        for x in value:
+            if np.isnan(x):
+                v = 'n/a'
+            else:
+                v = self.__vmap[key][x]
+            label.append(v)
+        return label
+
+    def get_label(self, key):
+        '''Get `key` as labels.'''
+        return self.get_labels(key)
+
+    def get_vmap(self, key):
+        '''Returns vmap of `key`.'''
+        if key in self.__vmap:
+            return self.__vmap[key]
+        else:
+            raise ValueError('%s not found in vmap' % key)
+
+    def get_vmap_keys(self):
+        return self.__vmap.keys()
+
+    def add_vmap(self, key, vmap):
+        '''Add vmap.'''
+        if not key in self.__metadata.key:
+            raise ValueError('%s not found in metadata.' % key)
+
+        if type(vmap) is not dict:
+            raise TypeError('`vmap` should be a dictionary.')
+        for k in vmap.keys():
+            if type(k) is str:
+                raise TypeError('Keys of `vmap` should be numerical.')
+
+        if key in self.__vmap:
+            # Check vmap consistency
+            if self.__check_vmap_consistency(vmap, self.__vmap[key]):
+                vmap.update(self.__vmap[key])
+                vmap_add = self.__get_act_vmap(key, vmap)
+                self.__vmap[key].update(vmap_add)
+            else:
+                raise ValueError('Invalid vmap: labels are inconsistent between old and new vmaps.')
+        else:
+            vmap_add = self.__get_act_vmap(key, vmap)
+            self.__vmap.update({key: vmap_add})
+
+        return None
+
+    def __get_act_vmap(self, key, vmap):
+        values = np.unique(self.get(key))
+        try:
+            vmap_add = {}
+            for val in values:
+                if np.isnan(val):
+                    continue
+                vmap_add.update({val: vmap[val]})
+        except KeyError:
+            raise ValueError('Invalid vmap: label for %f not found.' % val)
+        return vmap_add
+
+    def __check_vmap_consistency(self, vmap_new, vmap_old):
+        for key in vmap_new.keys():
+            if not key in vmap_old:
+                continue
+            if vmap_old[key] != vmap_new[key]:
+                print('Inconsistent label:')
+                print('    Key: %f' % key)
+                print('    Old label: %s' % vmap_old[key])
+                print('    New label: %s' % vmap_new[key])
+                return False
+        return True
 
     # File I/O---------------------------------------------------------
 
@@ -666,39 +737,37 @@ class BData(object):
                 fcode = ''
             callstack_code.append(fcode)
 
-        header = {'ctime': t_now_str,
-                  'ctime_epoch': t_now,
-                  'callstack': callstack,
-                  'callstack_code': callstack_code}
+        self.__header.update({'ctime': t_now_str,
+                              'ctime_epoch': t_now,
+                              'callstack': callstack,
+                              'callstack_code': callstack_code})
 
         if file_type is None:
             file_type = self.__get_filetype(file_name)
 
         if file_type == "Matlab":
-            md_key = []
-            md_desc = []
-            md_value = []
-
-            md_keys = self.metadata.key
-            md_desc = self.metadata.description
-            md_vals = self.metadata.value
-
-            # 'key' and 'description' are saved as cell arrays
-            # For compatibility with Matlab, save `dataset` and `metadata` as `dataSet` and `metaData`
-            sio.savemat(file_name, {"dataSet" : self.dataset,
-                                    "metaData" : {"key" : md_keys,
-                                                  "description" : md_desc,
-                                                  "value" : md_vals},
-                                    'header' : header})
-
+            raise RuntimeError('Saving BData as a mat file is no longer supported. Please save the data as HDF5 (.h5).')
         elif file_type == "HDF5":
-            self.__save_h5(file_name, header=header)
+            self.__save_h5(file_name, header=self.__header)
 
         else:
             raise ValueError("Unknown file type: %s" % (file_type))
 
 
     # Private methods --------------------------------------------------
+
+    def __metadata_key_to_bool_vector(self, key):
+        '''Convert meta-dat key(s) to boolean vector.'''
+        key_esc = re.escape(key).replace('\*', '.*')
+        keys = [k for k in self.metadata.key if re.match(key_esc, k)]
+        if len(keys) == 0:
+            raise RuntimeError('Meta-data %s not found' % key)
+        vals = np.vstack([
+            self.get_metadata(k)
+            for k in keys])
+        vals = (vals == 1)
+        vec = np.sum(vals, axis=0).astype(bool)
+        return vec
 
     def __get_order(self, v, sort_order='descend'):
 
@@ -707,7 +776,7 @@ class BData(object):
         v[np.isnan(v)] = -np.inf
 
         sorted_index = np.argsort(v)[::-1] # Decending order
-        order = range(len(v))
+        order = np.arange(len(v))
         for i, x in enumerate(sorted_index):
             order[x] = i
 
@@ -737,15 +806,25 @@ class BData(object):
             md_vals = self.metadata.value
 
             h5file.create_group('/metadata')
-            h5file.create_dataset('/metadata/key', data=md_keys)
-            h5file.create_dataset('/metadata/description', data=md_desc)
+            h5file.create_dataset('/metadata/key', data=[self.__to_bytes(x) for x in md_keys])
+            h5file.create_dataset('/metadata/description', data=[self.__to_bytes(x) for x in md_desc])
             h5file.create_dataset('/metadata/value', data=md_vals)
 
             # header
             if header is not None:
                 h5file.create_group('/header')
                 for k, v in header.items():
-                    h5file.create_dataset('/header/' + k, data=v)
+                    if isinstance(v, list):
+                        h5file.create_dataset('/header/' + k, data=[self.__to_bytes(x) for x in v])
+                    else:
+                        h5file.create_dataset('/header/' + k, data=self.__to_bytes(v)) # FIXME: save unicode str as is
+
+            # vmap
+            h5file.create_group('/vmap')
+            for mk, vm in self.__vmap.items():
+                h5file.create_group('/vmap/' + mk)
+                for k, v in vm.items():
+                    h5file.create_dataset('/vmap/' + mk + '/' + str(k), data=self.__to_bytes(v)) # FIXME: save unicode str as is
 
     def __load_mat(self, load_filename):
         '''Load dataset and metadata from Matlab file'''
@@ -766,6 +845,9 @@ class BData(object):
         else:
             self.dataset = np.asarray(dat["dataset"])
 
+        if 'header' in dat:
+            self.__header = dat['header']
+
         self.__metadata.key = md_keys
         self.__metadata.value = md_values
         self.__metadata.description = md_descs
@@ -774,15 +856,15 @@ class BData(object):
     def __load_h5(self, load_filename):
         '''Load dataset and metadata from HDF5 file'''
 
-        dat = h5py.File(load_filename)
+        dat = h5py.File(load_filename, 'r')
 
         if 'metaData' in dat:
-            md_keys = dat["metaData"]['key'][:].tolist()
-            md_descs = dat["metaData"]['description'][:].tolist()
+            md_keys = [self.__to_unicode(x) for x in dat["metaData"]['key'][:].tolist()]
+            md_descs = [self.__to_unicode(x) for x in dat["metaData"]['description'][:].tolist()]
             md_values = np.asarray(dat["metaData"]['value'], dtype=np.float)
         else:
-            md_keys = dat["metadata"]['key'][:].tolist()
-            md_descs = dat["metadata"]['description'][:].tolist()
+            md_keys = [self.__to_unicode(x) for x in dat["metadata"]['key'][:].tolist()]
+            md_descs = [self.__to_unicode(x) for x in dat["metadata"]['description'][:].tolist()]
             md_values = np.asarray(dat["metadata"]['value'], dtype=np.float)
 
         if 'dataSet' in dat:
@@ -790,10 +872,42 @@ class BData(object):
         else:
             self.dataset = np.asarray(dat["dataset"], dtype=np.float)
 
+        if 'header' in dat:
+            for k, v in dat['header'].items():
+                k = self.__to_unicode(k)
+                if isinstance(v[()], np.ndarray):
+                    v = [self.__to_unicode(x) for x in v[()]]
+                else:
+                    v = self.__to_unicode(v[()])
+                self.__header.update({k: v})
+
+        if 'vmap' in dat:
+            for mk in dat['vmap'].keys():
+                vmap = {}
+                for k in dat['vmap'][mk].keys():
+                    vmap.update({float(k): self.__to_unicode(dat['vmap'][mk][k][()])})
+                # TODO: fix this dirty solution
+                if sys.version_info.major == 2:
+                    mk = mk.encode('utf-8')
+                self.__vmap.update({mk: vmap})
+
         self.__metadata.key = md_keys
         self.__metadata.value = md_values
         self.__metadata.description = md_descs
 
+    def __to_unicode(self, s):
+        '''Convert s (bytes) to unicode str.'''
+        if sys.version_info.major == 3:
+            if isinstance(s, bytes):
+                return s.decode('utf-8')
+        return s
+
+    def __to_bytes(self, s):
+        '''Convert s (unicode str) to bytes.'''
+        if sys.version_info.major == 3:
+            if isinstance(s, str):
+                return s.encode('utf-8')
+        return s
 
     def __get_filetype(self, file_name):
         '''Return the type of `file_name` based on the file extension'''

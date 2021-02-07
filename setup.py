@@ -8,31 +8,38 @@ This file is a part of BdPy.
 from setuptools import setup
 
 
-VERSION_FILE = 'version'
-
+VERSION = '0.14rc6'
 
 if __name__ == '__main__':
 
-    # Get version num
-    with open(VERSION_FILE, 'r') as f:
-        version_num = f.readline().strip()
+    # Long description
+    with open('./README.md') as f:
+        long_description = f.read()
 
     # Setup
     setup(name='bdpy',
-          version=version_num,
-          description='Brain decoder toolbox',
-          author='Shuntaro Aoki',
-          author_email='kamitanilab.contact@gmail.com',
+          version=VERSION,
+          description='Brain decoder toolbox for Python',
+          long_description=long_description,
+          long_description_content_type='text/markdown',
+          author='Shuntaro C. Aoki',
+          author_email='brainliner-admin@atr.jp',
+          maintainer='Shuntaro C. Aoki',
+          maintainer_email='brainliner-admin@atr.jp',
           url='https://github.com/KamitaniLab/bdpy',
           license='MIT',
+          keywords='neuroscience, neuroimaging, brain decoding, fmri, machine learning',
           packages=['bdpy',
                     'bdpy.bdata',
                     'bdpy.dataform',
                     'bdpy.distcomp',
+                    'bdpy.dl',
+                    'bdpy.feature',
                     'bdpy.fig',
                     'bdpy.ml',
                     'bdpy.mri',
+                    'bdpy.opendata',
                     'bdpy.preproc',
                     'bdpy.stats',
                     'bdpy.util'],
-          install_requires=['numpy', 'scipy', 'scikit-learn', 'h5py'])
+          install_requires=['numpy', 'scipy', 'scikit-learn', 'h5py', 'pyyaml'])

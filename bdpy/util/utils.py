@@ -15,6 +15,7 @@ __all__ = ['create_groupvector',
 
 
 import os
+import warnings
 
 import numpy as np
 
@@ -49,7 +50,7 @@ def create_groupvector(group_label, group_size):
     if isinstance(group_size, int):
         # When 'group_size' is integer, create array in which each group label
         # is repeated for 'group_size'
-        group_size_list = [group_size for _ in xrange(len(group_label))]
+        group_size_list = [group_size for _ in range(len(group_label))]
     elif isinstance(group_size, list) | isinstance(group_size, np.ndarray):
         if len(group_label) != len(group_size):
             raise ValueError("Length of 'group_label' and 'group_size' "
@@ -135,7 +136,11 @@ def makedir_ifnot(dir_path):
         True if the directory was created.
     '''
     if not os.path.isdir(dir_path):
-        os.makedirs(dir_path)
+        try:
+            os.makedirs(dir_path)
+        except OSError:
+            warnings.warn('Failed to create directory %s.' % dir_path)
+            return False
         return True
     else:
         return False

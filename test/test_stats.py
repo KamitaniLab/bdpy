@@ -1,23 +1,16 @@
-'''
-Tests for bdpy.stats
-
-Tested functions:
-
-- corrcoef
-- corrmat
-'''
+'''Tests for bdpy.stats'''
 
 
-import unittest
+from unittest import TestCase, TestLoader, TextTestRunner
+
 import numpy as np
 
 import bdpy.stats as bdst
 
 
-class TestStats(unittest.TestCase):
+class TestStats(TestCase):
     '''Tests for bdpy.stats'''
 
-    
     def test_corrcoef_matrix_matrix_default(self):
         '''Test for corrcoef (matrix and matrix, default, var=row)'''
 
@@ -30,19 +23,18 @@ class TestStats(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
-
     def test_corrcoef_matrix_matrix_varcol(self):
         '''Test for corrcoef (matrix and matrix, var=col)'''
 
         x = np.random.rand(100, 10)
         y = np.random.rand(100, 10)
 
-        exp_output = np.diag(np.corrcoef(x, y, rowvar=0)[:x.shape[1], x.shape[1]:])
+        exp_output = np.diag(np.corrcoef(x, y, rowvar=0)[:x.shape[1],
+                                                         x.shape[1]:])
 
         test_output = bdst.corrcoef(x, y, var='col')
 
         np.testing.assert_array_equal(test_output, exp_output)
-
 
     def test_corrcoef_vector_vector(self):
         '''Test for corrcoef (vector and vector)'''
@@ -56,7 +48,6 @@ class TestStats(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
-
     def test_corrcoef_hvector_hvector(self):
         '''Test for corrcoef (horizontal vector and horizontal vector)'''
 
@@ -68,7 +59,6 @@ class TestStats(unittest.TestCase):
         test_output = bdst.corrcoef(x, y)
 
         np.testing.assert_array_equal(test_output, exp_output)
-
 
     def test_corrcoef_vvector_vvector(self):
         '''Test for corrcoef (vertical vector and vertical vector)'''
@@ -82,7 +72,6 @@ class TestStats(unittest.TestCase):
 
         np.testing.assert_array_equal(test_output, exp_output)
 
-
     def test_corrcoef_matrix_vector_varrow(self):
         '''Test for corrcoef (matrix and vector, var=row)'''
 
@@ -94,7 +83,6 @@ class TestStats(unittest.TestCase):
         test_output = bdst.corrcoef(x, y)
 
         np.testing.assert_array_almost_equal(test_output, exp_output)
-
 
     def test_corrcoef_matrix_vector_varcol(self):
         '''Test for corrcoef (matrix and vector, var=col)'''
@@ -108,7 +96,6 @@ class TestStats(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(test_output, exp_output)
 
-
     def test_corrcoef_vector_matrix_varrow(self):
         '''Test for corrcoef (vector and matrix, var=row)'''
 
@@ -120,7 +107,6 @@ class TestStats(unittest.TestCase):
         test_output = bdst.corrcoef(x, y)
 
         np.testing.assert_array_almost_equal(test_output, exp_output)
-
 
     def test_corrcoef_vector_matrix_varcol(self):
         '''Test for corrcoef (vector and matrix, var=col)'''
@@ -134,7 +120,6 @@ class TestStats(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(test_output, exp_output)
 
-
     def test_corrmat_default(self):
         '''Test for corrmat (default, var=row)'''
 
@@ -146,7 +131,6 @@ class TestStats(unittest.TestCase):
         test_output = bdst.corrmat(x, y)
 
         np.testing.assert_array_almost_equal(test_output, exp_output)
-
 
     def test_corrmat_varcol(self):
         '''Test for corrmat (var=col)'''
@@ -162,5 +146,5 @@ class TestStats(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestStats)
-    unittest.TextTestRunner(verbosity = 2).run(suite)
+    suite = TestLoader().loadTestsFromTestCase(TestStats)
+    TextTestRunner(verbosity=2).run(suite)

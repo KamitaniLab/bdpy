@@ -11,4 +11,4 @@ Functions:
 """
 
 
-from corr import *
+from .corr import *

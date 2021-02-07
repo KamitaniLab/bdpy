@@ -1,12 +1,12 @@
-"""
+'''
 Feature selector class
 
 This file is a part of BdPy
-"""
+'''
 
 
 class FeatureSelector(object):
-    """
+    '''
     Feature selector class
 
     Parameters
@@ -22,22 +22,22 @@ class FeatureSelector(object):
         Tokens
     rpn : tuple
         Tokens in reversed polish notation
-    """
+    '''
 
-    ## Class variables #####################
+    # Class variables ##################
     signs = ('(', ')')
-    operators = ('=', '|', '&', '@', 'top')
+    operators = ('=', '|', '&', '+', '-', '@')
 
-    __op_order = {'='   : 10,
-                  'top' : 10,
-                  '|'   : 5,
-                  '&'   : 5,
-                  '@'   : 3,
-                  '('   : -1,
-                  ')'   : -1}
+    __op_order = {'=': 10,
+                  '|': 5,
+                  '&': 5,
+                  '+': 5,
+                  '-': 5,
+                  '@': 3,
+                  '(': -1,
+                  ')': -1}
 
-
-    ## Methods #############################
+    # Methods ##########################
 
     def __init__(self, expression):
         self.expression = expression
@@ -46,42 +46,54 @@ class FeatureSelector(object):
 
         self.index = None
 
-
     def lexical_analysis(self, expression):
-        """Lexical analyser"""
+        '''Lexical analyser'''
 
         str_buf = ''
         output_buf = []
 
-        for i in expression:
-            if i == ' ':
+        i = 0
+        while i < len(expression):
+            if expression[i] == ' ':
                 # Ignore a white-space
+                i += 1
                 continue
-            elif self.signs.count(i) or self.operators.count(i):
+            elif expression[i] == '"':
+                i += 1
+                while expression[i] != '"':
+                    str_buf += expression[i]
+                    i += 1
+                i += 1
+                continue
+            elif expression[i] == "'":
+                i += 1
+                while expression[i] != "'":
+                    str_buf += expression[i]
+                    i += 1
+                i += 1
+                continue
+            elif self.signs.count(expression[i]) or self.operators.count(expression[i]):
                 if len(str_buf) > 0:
                     output_buf.append(str_buf)
                     str_buf = ''
 
-                output_buf.append(i)
+                output_buf.append(expression[i])
             else:
-                str_buf += i
+                str_buf += expression[i]
 
-            # Detect 'top' operator
-            if len(str_buf) >= 3 and str_buf[-3:] == 'top':
-                if len(str_buf) != 3:
-                    output_buf.append(str_buf[:-3])
-                output_buf.append('top')
-                str_buf = ''
+            i += 1
 
         if len(str_buf) > 0:
             output_buf.append(str_buf)
             str_buf = ''
 
+        # Convert '+' to '|'
+        output_buf = ['|' if a == '+' else a for a in output_buf]
+
         return tuple(output_buf)
 
-
     def parse(self, token_list):
-        """Parser for selection command"""
+        '''Parser for selection command'''
 
         out_que = []
         op_stack = []

@@ -7,6 +7,7 @@ import itertools
 import os
 import re
 import json
+import warnings
 from collections import OrderedDict
 
 import numpy as np
@@ -198,6 +199,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
                           fmriprep_dir='derivatives/fmriprep',
                           label_mapper=None, exclude={},
                           split_task_label=False,
+                          with_confounds=False,
                           return_data_labels=False,
                           return_list=False):
     '''Create BData from FMRIPREP outputs.
@@ -257,7 +259,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
             else:
                 raise ValueError('Unsuppored label mapper file: %s' % lbmp_file)
 
-            lbmp_dict.update({'n/a': np.nan})
+            #lbmp_dict.update({'n/a': np.nan})
             label_mapper_dict.update({lbmp: lbmp_dict})
 
     # Load fmriprep outputs
@@ -333,7 +335,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
                 print('----------------------------------------')
                 print('Subject: %s\n' % sbj)
                 print('Task:    %s'   % tsk)
-                bdata = __create_bdata_fmriprep_subject(tskdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
+                bdata = __create_bdata_fmriprep_subject(tskdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict, with_confounds=with_confounds)
                 bdata_list.append(bdata)
                 data_labels.append('%s_%s' % (sbj, tsk))
     else:
@@ -342,7 +344,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
             print('----------------------------------------')
             print('Subject: %s\n' % sbj)
 
-            bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict)
+            bdata = __create_bdata_fmriprep_subject(sbjdata, data_mode, data_path=dpath, label_mapper=label_mapper_dict, with_confounds=with_confounds)
             bdata_list.append(bdata)
             data_labels.append(sbj)
 
@@ -462,7 +464,41 @@ class BrainData(object):
         return data_matrix
 
 
-def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}):
+class LabelMapper(object):
+    '''Label mapper class.'''
+
+    def __init__(self, l2v_map):
+        self.__l2v_map = l2v_map
+        self.__v2l_map = {}
+
+    def get_value(self, mkey, label):
+        if not mkey in self.__l2v_map:
+            raise RuntimeError('%s not found in label mapper' % mkey)
+
+        if label == 'n/a':
+            return np.nan
+
+        val = self.__l2v_map[mkey][label]
+        if not mkey in self.__v2l_map:
+            self.__v2l_map.update({mkey: {val: label}})
+        else:
+            if label in self.__v2l_map[mkey].values():
+                label_exist = self.__v2l_map[mkey][val]
+                if label != label_exist:
+                    raise RuntimeError('Invalid label-value mapping (possibly non-unique values in label mapper)')
+            self.__v2l_map[mkey].update({val: label})
+
+        return val
+
+    def dump(self):
+        return self.__v2l_map
+
+
+def create_bdata_singlesubject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False, cut_run=False):
+    return __create_bdata_fmriprep_subject(subject_data, data_mode, data_path=data_path, label_mapper=label_mapper, with_confounds=with_confounds, cut_run=cut_run)
+
+
+def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', label_mapper={}, with_confounds=False, cut_run=False):
     if data_mode in ['surface_standard', 'surface_standard_41k', 'surface_standard_10k', 'surface_native']:
         is_surf = True
     else:
@@ -473,6 +509,32 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     ijk = np.array([])
 
     motionparam_list = []
+    # confounds = {'global_signal':          [],
+    #              'white_matter':           [],
+    #              'csf':                    [],
+    #              'dvars':                  [],
+    #              'std_dvars':              [],
+    #              'framewise_displacement': [],
+    #              'a_comp_cor_00':          [],
+    #              'a_comp_cor_01':          [],
+    #              'a_comp_cor_02':          [],
+    #              'a_comp_cor_03':          [],
+    #              'a_comp_cor_04':          [],
+    #              'a_comp_cor_05':          [],
+    #              't_comp_cor_00':          [],
+    #              't_comp_cor_01':          [],
+    #              't_comp_cor_02':          [],
+    #              't_comp_cor_03':          [],
+    #              't_comp_cor_04':          [],
+    #              't_comp_cor_05':          [],
+    #              'cosine00':               [],
+    #              'cosine01':               [],
+    #              'cosine02':               [],
+    #              'cosine03':               [],
+    #              'cosine04':               [],
+    #              'cosine05':               [],
+    # }
+    confounds = {}
 
     ses_label_list = []
     run_label_list = []
@@ -482,11 +544,16 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     last_run = 0
     last_block = 0
 
+    act_label_map = LabelMapper(label_mapper)
+
+    run_idx = 0
+    
     for i, (ses, sesdata) in enumerate(subject_data.items()):
         print('Session: %d (%s)' % (i + 1, ses))
         print('Data: %s\n' % data_mode)
 
         for j, run in enumerate(sesdata):
+            run_idx += 1
             print('Run %d' % (j + 1))
             epi = run[data_mode]
             event_file = run['task_event_file']
@@ -523,6 +590,15 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             mp = np.hstack([np.c_[conf_pd[a]] for a in mp_label])
             motionparam_list.append(mp)
 
+            if with_confounds:
+                confounds_keys = [k for k in list(conf_pd.columns) if not k in mp_label_col]
+                for c in confounds_keys:
+                    x = np.c_[conf_pd[c]]
+                    if c in confounds:
+                        confounds[c].update({run_idx: x})
+                    else:
+                        confounds.update({c: {run_idx: x}})
+
             # Load task event file
             event_file = os.path.join(data_path, run['task_event_file'])
             events = pd.read_csv(event_file, delimiter='\t', keep_default_na=False)
@@ -534,12 +610,21 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             with open(os.path.join(data_path, run['bold_json']), 'r') as f:
                 bold_metainfo = json.load(f)
             tr = bold_metainfo['RepetitionTime']
+            tr_ms = tr * 1000 # To avoid numerical error
 
-            if tlen_event != n_sample * tr:
-                raise ValueError('The number of volumes in the EPI file (%s) '
-                                 'and time duration in the corresponding task '
-                                 'event file mismatch!'
-                                 % (epi, run['task_event_file']))
+            if int(tlen_event * 1000) != int(n_sample * tr_ms):
+                if cut_run:
+                    cut_duration = (tlen_event * 1000 - (n_sample * tr_ms)) / 1000
+                    warnings.warn('The number of volumes in the EPI file (%s) '
+                                  'and time duration in the corresponding task (%s) '
+                                  'event file mismatch! The first %f sec in the task '
+                                  'event file will be cropped.'
+                                  % (epi, run['task_event_file'], cut_duration))
+                else:
+                    raise ValueError('The number of volumes in the EPI file (%s) '
+                                     'and time duration in the corresponding task (%s) '
+                                     'event file mismatch!'
+                                     % (epi, run['task_event_file']))
 
             # Make block and labels
             blocks = []
@@ -552,7 +637,17 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             for k, row in events.iterrows():
                 onset = row['onset']
                 duration = row['duration']
-                nsmp = int(duration / tr) # TODO: fix for float
+
+                if cut_run:
+                    if cut_duration > 0:
+                        onset = onset - cut_duration
+                        if onset < 0:
+                            onset = 0
+                            duration = duration - cut_duration
+                    elif cut_duration < 0:
+                        raise NotImplementedError
+
+                nsmp = int(np.round(duration / tr))
 
                 # Block
                 blocks.append(np.ones((nsmp, 1)) * (k + 1))
@@ -561,7 +656,8 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                 label_vals = []
                 for p in cols:
                     if p in label_mapper:
-                        label_vals.append(label_mapper[p][row[p]])
+                        v = act_label_map.get_value(p, row[p])
+                        label_vals.append(v)
                     else:
                         label_vals.append(row[p])
                 label_vals = np.array([np.nan if x == 'n/a' else np.float(x)
@@ -586,6 +682,22 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     run_label = np.vstack(run_label_list)
     block_label = np.vstack(block_label_list)
     labels_label = np.vstack(labels_list)
+
+    if with_confounds:
+        for c in confounds:
+            conf_val_list = []
+            for k in range(run_idx):
+                if (k + 1) in confounds[c]:
+                    conf_val_list.append(confounds[c][k + 1])
+                else:
+                    run_length = braindata_list[k].shape[0]
+                    nan_array = np.zeros([run_length, 1])
+                    nan_array[:, :] = np.nan
+                    conf_val_list.append(nan_array)
+            confounds.update({c: np.vstack(conf_val_list)})
+
+        if len(set([c.shape for c in confounds.values()])) != 1:
+            raise RuntimeError('Invalid confounds.')
 
     # Create BData (one subject, one file)
     bdata = bdpy.BData()
@@ -612,6 +724,92 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     bdata.add_metadata('MotionParameter_rot_y', [0, 0, 0, 0, 1, 0], 'Motion parameter: y rotation', where='MotionParameter')
     bdata.add_metadata('MotionParameter_rot_z', [0, 0, 0, 0, 0, 1], 'Motion parameter: z rotation', where='MotionParameter')
 
+    if with_confounds:
+        default_confounds_keys = [
+            'global_signal',
+            'white_matter',
+            'csf',
+            'dvars',
+            'std_dvars',
+            'framewise_displacement',
+            'a_comp_cor',
+            'a_comp_cor_00',
+            'a_comp_cor_01',
+            'a_comp_cor_02',
+            'a_comp_cor_03',
+            'a_comp_cor_04',
+            'a_comp_cor_05',
+            't_comp_cor',
+            't_comp_cor_00',
+            't_comp_cor_01',
+            't_comp_cor_02',
+            't_comp_cor_03',
+            't_comp_cor_04',
+            't_comp_cor_05',
+            'cosine',
+            'cosine00',
+            'cosine01',
+            'cosine02',
+            'cosine03',
+            'cosine04',
+            'cosine05',
+        ]
+        confounds_key_desc = {
+            'global_signal':          {'key': 'GlobalSignal',          'desc': 'Confounds: Average signal in brain mask'},
+            'white_matter':           {'key': 'WhiteMatterSignal',     'desc': 'Confounds: Average signal in white matter'},
+            'csf':                    {'key': 'CSFSignal',             'desc': 'Confounds: Average signal in CSF'},
+            'dvars':                  {'key': 'DVARS',                 'desc': 'Confounds: Original DVARS'},
+            'std_dvars':              {'key': 'STD_DVARS',             'desc': 'Confounds: Standardized DVARS'},
+            'framewise_displacement': {'key': 'FramewiseDisplacement', 'desc': 'Confounds: Framewise displacement (bulk-head motion)'},
+            'a_comp_cor':             {'key': 'aCompCor',              'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_00':          {'key': 'aCompCor_0',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_01':          {'key': 'aCompCor_1',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_02':          {'key': 'aCompCor_2',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_03':          {'key': 'aCompCor_3',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_04':          {'key': 'aCompCor_4',            'desc': 'Confounds: Anatomical CompCor'},
+            'a_comp_cor_05':          {'key': 'aCompCor_5',            'desc': 'Confounds: Anatomical CompCor'},
+            't_comp_cor':             {'key': 'tCompCor',              'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_00':          {'key': 'tCompCor_0',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_01':          {'key': 'tCompCor_1',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_02':          {'key': 'tCompCor_2',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_03':          {'key': 'tCompCor_3',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_04':          {'key': 'tCompCor_4',            'desc': 'Confounds: Temporal CompCor'},
+            't_comp_cor_05':          {'key': 'tCompCor_5',            'desc': 'Confounds: Temporal CompCor'},
+            'cosine':                 {'key': 'Cosine',                'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine00':               {'key': 'Cosine_0',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine01':               {'key': 'Cosine_1',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine02':               {'key': 'Cosine_2',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine03':               {'key': 'Cosine_3',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine04':               {'key': 'Cosine_4',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+            'cosine05':               {'key': 'Cosine_5',              'desc': 'Confounds: Discrete cosine-basis regressors'},
+        }
+        confounds_array = np.hstack([
+            confounds[dck]
+            for dck in default_confounds_keys if dck in confounds
+            ])
+
+        bdata.add(confounds_array, 'Confounds')
+
+        cnf_p = 0
+        for cnf in default_confounds_keys:
+            if (not cnf in ['a_comp_cor', 't_comp_cor', 'cosine']) and (not cnf in confounds):
+                continue
+
+            cnf_colidx = np.zeros(confounds_array.shape[1])
+
+            if cnf in ['a_comp_cor', 't_comp_cor', 'cosine']:
+                ncol = sum([1 for k in confounds.keys() if cnf in k])
+                for k in range(ncol):
+                    cnf_colidx[cnf_p + k] = 1
+            else:
+                cnf_colidx[cnf_p] = 1
+                cnf_p += 1
+
+            bdata.add_metadata(confounds_key_desc[cnf]['key'],
+                               cnf_colidx,
+                               confounds_key_desc[cnf]['desc'],
+                               where='Confounds')
+
     for i, col in enumerate(cols):
         metadata_vec = np.empty((len(cols),))
         metadata_vec[:] = np.nan
@@ -630,6 +828,11 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
         bdata.add_metadata('voxel_i', ijk[0, :], 'Voxel i index', where='VoxelData')
         bdata.add_metadata('voxel_j', ijk[1, :], 'Voxel j index', where='VoxelData')
         bdata.add_metadata('voxel_k', ijk[2, :], 'Voxel k index', where='VoxelData')
+
+    # Value-label mapper
+    vmap = act_label_map.dump()
+    for k in vmap:
+        bdata.add_vmap(k, vmap[k])
 
     return bdata
 

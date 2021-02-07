@@ -1,18 +1,18 @@
-"""Tests for bdpy.util"""
+'''Tests for bdpy.util'''
 
 
-import unittest
+from unittest import TestCase, TestLoader, TextTestRunner
 
 import numpy as np
 
 import bdpy
 
 
-class TestUtil(unittest.TestCase):
-    """Tests for 'util' module"""
+class TestUtil(TestCase):
+    '''Tests for 'util' module'''
 
     def test_create_groupvector_pass0001(self):
-        """Test for create_groupvector (list and scalar inputs)."""
+        '''Test for create_groupvector (list and scalar inputs).'''
 
         x = [1, 2, 3]
         y = 2
@@ -24,7 +24,7 @@ class TestUtil(unittest.TestCase):
         self.assertTrue((test_output == exp_output).all())
 
     def test_create_groupvector_pass0002(self):
-        """Test for create_groupvector (list and list inputs)."""
+        '''Test for create_groupvector (list and list inputs).'''
 
         x = [1, 2, 3]
         y = [2, 4, 2]
@@ -36,7 +36,7 @@ class TestUtil(unittest.TestCase):
         self.assertTrue((test_output == exp_output).all())
 
     def test_create_groupvector_pass0003(self):
-        """Test for create_groupvector (Numpy array and scalar inputs)."""
+        '''Test for create_groupvector (Numpy array and scalar inputs).'''
 
         x = np.array([1, 2, 3])
         y = 2
@@ -48,7 +48,7 @@ class TestUtil(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_create_groupvector_pass0005(self):
-        """Test for create_groupvector (Numpy arrays inputs)."""
+        '''Test for create_groupvector (Numpy arrays inputs).'''
 
         x = np.array([1, 2, 3])
         y = np.array([2, 4, 2])
@@ -60,7 +60,7 @@ class TestUtil(unittest.TestCase):
         np.testing.assert_array_equal(test_output, exp_output)
 
     def test_create_groupvector_error(self):
-        """Test for create_groupvector (ValueError)."""
+        '''Test for create_groupvector (ValueError).'''
 
         x = [1, 2, 3]
         y = [0]
@@ -86,6 +86,6 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(actual, expected)
 
 
-if __name__ == "__main__":
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestUtil)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+if __name__ == '__main__':
+    suite = TestLoader().loadTestsFromTestCase(TestUtil)
+    TextTestRunner(verbosity=2).run(suite)

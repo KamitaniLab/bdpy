@@ -13,9 +13,10 @@ import re
 import numpy as np
 import scipy.io as sio
 import h5py
+import hdf5storage
 
 
-__all__ = ['DataStore']
+__all__ = ['DataStore', 'DirStore', 'DecodedFeatures']
 
 
 class DataStore(object):
@@ -155,3 +156,103 @@ class DataStore(object):
                 key_list = [m.group(i) for i in range(1, self.n_keys + 1)]
                 key = self.__key_sep.join(key_list)
                 self.file_dict.update({key: f})
+
+
+class DirStore(object):
+    '''Directory-based data store class.
+
+    Parameters
+    ----------
+    dpath : str
+        Path to data directory.
+    dirs_pattern : list
+        Directory structure definition.
+        For example, dirs_pattern = ['layer', 'subject', 'roi'] defines
+        following data structure:
+
+            <dpath>/<layer>/<subject>/<roi>
+
+    file_pattern : str
+        File name pattern definition (e.g., <image>.mat).
+    variable : str
+        Variable name in the data file.
+    squeeze : bool
+        Squeeze the data if True.
+
+
+    '''
+
+    def __init__(self, dpath,
+                 dirs_pattern=[],
+                 file_pattern=None,
+                 variable=None,
+                 squeeze=False):
+        self.__dpath = dpath
+        self.__dirs_pattern = dirs_pattern
+        self.__file_pattern = file_pattern
+        self.__variable = variable
+        self.__squeeze = squeeze
+
+    def get(self, **kargs):
+        '''Returns data specified by kargs.
+
+        Example
+        -------
+
+        Files are organized as below:
+
+            <dpath>/<layer>/<subject>/<roi>/<image>.mat
+
+        Then,
+
+            ds = DirStore('./data/dir',
+                          dirs_pattern=['layer', 'subject', 'roi'],
+                          file_pattern='<image>.mat',
+                          variable='feat')
+            data = ds.get(layer='conv1', subject='TH', roi='VC', image='Image_001')
+
+        the above code reads ./data/dir/conv1/subject/TH/VC/Image_001.mat and
+        returns variable 'feat' in the file.
+        '''
+
+        # Sub-directories
+        subdir_path = os.path.join(*[kargs[p] for p in self.__dirs_pattern])
+
+        # File name
+        file_name = self.__file_pattern
+        match = re.findall('<(.*?)>', file_name)
+        replace_dict = {'<' + m + '>': kargs[m] for m in match}
+        for k, v in replace_dict.items():
+            file_name = file_name.replace(k, v)
+
+        # Get files
+        file_path = os.path.join(self.__dpath, subdir_path, file_name)
+        files = sorted(glob.glob(file_path))
+
+        if len(files) == 0:
+            raise RuntimeError('File not found: %s' % file_path)
+        elif len(files) >= 2:
+            raise RuntimeError('%d files were found but multiple files are not supported yet.' % len(files))
+        else:
+            dat = self.__load_feature(files[0])
+
+        return dat
+
+    def __load_feature(self, fpath):
+        r = hdf5storage.loadmat(fpath)[self.__variable]
+        if self.__squeeze:
+            r = np.squeeze(r)
+        return r
+
+
+##############################################################################
+# Interfaces
+##############################################################################
+
+class DecodedFeatures(DirStore):
+    def __init__(self, dpath, squeeze=False):
+        DirStore.__init__(self, dpath,
+                          dirs_pattern=['layer', 'subject', 'roi'],
+                          file_pattern='<image>.mat',
+                          variable='feat',
+                          squeeze=squeeze)

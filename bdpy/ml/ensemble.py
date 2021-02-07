@@ -37,7 +37,9 @@ def get_majority(data, axis=0):
 
     for i in range(data.shape[0]):
         target = data[i].tolist()
-        c = Counter(target)
+        # Change KS for returning first element if the same numbers
+        #c = Counter(target)
+        c = Counter(np.sort(target))
         majority = c.most_common(1)
         majority_list.append(majority[0][0])
 
