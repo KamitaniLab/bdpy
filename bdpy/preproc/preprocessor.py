@@ -99,9 +99,16 @@ class Normalize(Preprocessor):
     def proc(self, x, ind, opt):
 
         mode = opt['mode']
+        baseline = opt['baseline']
 
-        x_mean = np.mean(x, axis = 0)
-        x_std = np.std(x, axis = 0)
+        if baseline == 'All':
+            x_mean = np.mean(x, axis=0)
+            x_std = np.std(x, axis=0)
+        else:
+            # Baseline contains 'True' and 'False' with a length of runs.size
+            ind_baseline = baseline[ind]
+            x_mean = np.mean(x[ind_baseline, :], axis=0)
+            x_std = np.std(x[ind_baseline, :], axis=0)
 
         if mode == "PercentSignalChange":
             # zero division outputs nan
