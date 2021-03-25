@@ -40,6 +40,8 @@ if __name__ == '__main__':
                     'bdpy.mri',
                     'bdpy.opendata',
                     'bdpy.preproc',
+                    'bdpy.recon',
+                    'bdpy.recon.torch',
                     'bdpy.stats',
                     'bdpy.util'],
           install_requires=['numpy', 'scipy', 'scikit-learn', 'h5py', 'pyyaml'])
