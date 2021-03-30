@@ -8,6 +8,56 @@ from PIL import Image
 import torch
 
 
+class FeatureExtractor(object):
+    def __init__(self, encoder, layers=None, layer_mapping=None, detach=True):
+        self._encoder = encoder
+        self.__layers = layers
+        self.__layer_map = layer_mapping
+        self.__detach = detach
+
+        self._extractor = FeatureExtractorHandle()
+
+        for layer in self.__layers:
+            if self.__layer_map is not None:
+                layer = self.__layer_map[layer]
+            eval('self._encoder.{}.register_forward_hook(self._extractor)'.format(layer))
+
+    def __call__(self, x) -> dict:
+        return self.run(x)
+
+    def run(self, x) -> dict:
+        self._extractor.clear()
+        if not isinstance(x, torch.Tensor):
+            xt = torch.tensor(x[np.newaxis])
+        else:
+            xt = x
+
+        self._encoder.forward(xt)
+
+        features = {
+            layer: self._extractor.outputs[i]
+            for i, layer in enumerate(self.__layers)
+        }
+        if self.__detach:
+            features = {
+                k: v.cpu().detach().numpy()
+                for k, v in features.items()
+            }
+
+        return features
+
+
+class FeatureExtractorHandle(object):
+    def __init__(self):
+        self.outputs = []
+
+    def __call__(self, module, module_in, module_out):
+        self.outputs.append(module_out)
+
+    def clear(self):
+        self.outputs = []
+
+
 class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
