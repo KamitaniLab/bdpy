@@ -34,6 +34,7 @@ if __name__ == '__main__':
                     'bdpy.dataform',
                     'bdpy.distcomp',
                     'bdpy.dl',
+                    'bdpy.dl.torch',
                     'bdpy.feature',
                     'bdpy.fig',
                     'bdpy.ml',
