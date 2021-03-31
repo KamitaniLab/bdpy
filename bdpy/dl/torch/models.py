@@ -98,7 +98,7 @@ class AlexNetGenerator(nn.Module):
 
     def __init__(self, input_size=4096, n_out_channel=3, device=None):
 
-        super(AlexNetRelu7Generator, self).__init__()
+        super(AlexNetGenerator, self).__init__()
 
         if device is None:
             self.__device0 = 'cpu'
