@@ -9,13 +9,16 @@ import torch
 
 
 class FeatureExtractor(object):
-    def __init__(self, encoder, layers=None, layer_mapping=None, detach=True):
+    def __init__(self, encoder, layers=None, layer_mapping=None, device='cpu', detach=True):
         self._encoder = encoder
         self.__layers = layers
         self.__layer_map = layer_mapping
         self.__detach = detach
+        self.__device = device
 
         self._extractor = FeatureExtractorHandle()
+
+        self._encoder.to(self.__device)
 
         for layer in self.__layers:
             if self.__layer_map is not None:
@@ -28,7 +31,7 @@ class FeatureExtractor(object):
     def run(self, x) -> dict:
         self._extractor.clear()
         if not isinstance(x, torch.Tensor):
-            xt = torch.tensor(x[np.newaxis])
+            xt = torch.tensor(x[np.newaxis], device=self.__device)
         else:
             xt = x
 
