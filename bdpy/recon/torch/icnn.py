@@ -38,6 +38,7 @@ def reconstruct(features,
                 layer_weights=None,
                 masks=None, channels=None,
                 image_size=(224, 224, 3),
+                crop_generator_output=False,
                 initial_image=None,
                 feature_size=(4096,),
                 initial_feature=None,
@@ -113,6 +114,9 @@ def reconstruct(features,
 
     image_size : tuple, optional
       Size of the image (h x w x c).
+
+    crop_generator_output=False, : book, optional (default: False)
+      If True, outputs of the generator are cropped.
 
     initial_image : numpy.ndarar, optionaly
 
@@ -297,19 +301,20 @@ def reconstruct(features,
             # xt.retain_grad()
 
             # Crop the generated image
-            gen_image_size = (xt.shape[2], xt.shape[3])
-            top_left = ((gen_image_size[0] - image_size[0]) // 2,
-                        (gen_image_size[1] - image_size[1]) // 2)
+            if crop_generator_output:
+                gen_image_size = (xt.shape[2], xt.shape[3])
+                top_left = ((gen_image_size[0] - image_size[0]) // 2,
+                            (gen_image_size[1] - image_size[1]) // 2)
 
-            image_mask = np.zeros(xt.shape)
-            image_mask[:, :,
-                       top_left[0]:top_left[0] + image_size[0],
-                       top_left[1]:top_left[1] + image_size[1]] = 1
-            image_mask_t = torch.FloatTensor(image_mask).to(device)
+                image_mask = np.zeros(xt.shape)
+                image_mask[:, :,
+                           top_left[0]:top_left[0] + image_size[0],
+                           top_left[1]:top_left[1] + image_size[1]] = 1
+                image_mask_t = torch.FloatTensor(image_mask).to(device)
 
-            xt = torch.masked_select(xt, image_mask_t.bool()).view(
-                (1, image_size[2], image_size[0], image_size[1])
-            )
+                xt = torch.masked_select(xt, image_mask_t.bool()).view(
+                    (1, image_size[2], image_size[0], image_size[1])
+                )
         else:
             # Convert x to torch.tensor
             xt.data = torch.tensor(x[np.newaxis], device=device)
