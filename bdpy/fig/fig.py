@@ -79,6 +79,8 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
 
     print('Subplot in {} x {}'.format(row_num, col_num))
 
+    figs = []
+
     # Figure loop
     for fig_label in figure_list:
         print('Creating figure for {}'.format(fig_label))
@@ -155,4 +157,9 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
             ax.patch.set_alpha(0.0)
             ax.set_axis_off()
 
-    return fig
+        figs.append(fig)
+
+    if len(figs) == 1:
+        return figs[0]
+    else:
+        return figs
