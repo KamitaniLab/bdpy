@@ -758,7 +758,7 @@ class BData(object):
 
     def __metadata_key_to_bool_vector(self, key):
         '''Convert meta-dat key(s) to boolean vector.'''
-        key_esc = re.escape(key).replace('\*', '.*')
+        key_esc = re.escape(key).replace('\*', '.*') + '$'  # `fullmatch` is available in Python >= 3.4
         keys = [k for k in self.metadata.key if re.match(key_esc, k)]
         if len(keys) == 0:
             raise RuntimeError('Meta-data %s not found' % key)
