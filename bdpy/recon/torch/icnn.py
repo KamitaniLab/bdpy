@@ -57,6 +57,7 @@ def reconstruct(features,
                 snapshot_interval=1,
                 snapshot_postprocess=None,
                 disp_interval=1,
+                return_final_feat=False,
                 device='cpu'):
     '''
     Reconstruction an image.
@@ -408,6 +409,12 @@ def reconstruct(features,
 
     # Returns
     if return_loss:
-        return x, loss_history
+        if return_final_feat:
+            return x, loss_history, f
+        else:
+            return x, loss_history
     else:
-        return x
+        if return_final_feat:
+            return x, f
+        else:
+            return x
