@@ -13,6 +13,7 @@ Developed and tested on Python 3.8 + PyTorch 1.7.1.
 
 
 import os
+import warnings
 
 import numpy as np
 from PIL import Image
@@ -57,6 +58,7 @@ def reconstruct(features,
                 snapshot_interval=1,
                 snapshot_postprocess=None,
                 disp_interval=1,
+                return_generator_feature=False,
                 return_final_feat=False,
                 device='cpu'):
     '''
@@ -177,7 +179,8 @@ def reconstruct(features,
       A reconstructed image.
     list, optional
       Loss history.
-
+    numpy.ndarray, optional
+      The final input features to the generator.
 
     Note
     ----
@@ -189,6 +192,11 @@ def reconstruct(features,
     Shen et al. (2019) Deep image reconstruction from human brain activity.
       PLOS Computational Biology. https://doi.org/10.1371/journal.pcbi.1006633
     '''
+
+    if return_final_feat:
+        warnings.warn('`return_final_feat` is deprecated and will be removed in future release. Please use `return_generator_feature` instead.', UserWarning)
+
+    return_generator_feature = return_generator_feature or return_final_feat
 
     use_generator = generator is not None
 
@@ -294,6 +302,9 @@ def reconstruct(features,
         if use_generator:
             # Generate an image
             ft.data = torch.tensor(f[np.newaxis], device=device)
+
+            last_f = ft.cpu().detach().numpy()[0]  # Keep features generateing the latest image
+
             xt = generator.forward(ft)
             # xt.retain_grad()
 
@@ -409,12 +420,12 @@ def reconstruct(features,
 
     # Returns
     if return_loss:
-        if return_final_feat:
-            return x, loss_history, f
+        if use_generator and return_generator_feature:
+            return x, loss_history, last_f
         else:
             return x, loss_history
     else:
-        if return_final_feat:
-            return x, f
+        if use_generator and return_generator_feature:
+            return x, last_f
         else:
             return x
