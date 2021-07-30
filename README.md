@@ -12,11 +12,12 @@ Python package for brain decoding analysis
 - scipy
 - scikit-learn
 - h5py
+- hdf5storage
+- pyyaml
 
 ### Optional requirements
 
 - `dataform` module
-    - hdf5storage
     - pandas
 - `dl.caffe` module
     - Caffe

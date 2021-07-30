@@ -45,4 +45,11 @@ if __name__ == '__main__':
                     'bdpy.recon.torch',
                     'bdpy.stats',
                     'bdpy.util'],
-          install_requires=['numpy', 'scipy', 'scikit-learn', 'h5py', 'pyyaml'])
+          install_requires=[
+              'numpy',
+              'scipy',
+              'scikit-learn',
+              'h5py',
+              'hdf5storage',
+              'pyyaml'
+          ])
