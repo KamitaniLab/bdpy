@@ -36,6 +36,8 @@ Python package for brain decoding analysis
 
 ## Installation
 
+Latest stable release:
+
 ``` shell
 $ pip install bdpy
 ```
