@@ -40,7 +40,7 @@ Python package for brain decoding analysis
 $ pip install bdpy
 ```
 
-If the installation failed with Python 3, please try below.
+To install the latest development version ("master" branch of the repository), please run the following command.
 
 ```shell
 $ pip install git+https://github.com/KamitaniLab/bdpy.git
