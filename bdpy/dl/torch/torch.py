@@ -64,7 +64,7 @@ class FeatureExtractorHandle(object):
 class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
-    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None, preload=False, preload_limit=np.inf):
+    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None, scale=1, preload=False, preload_limit=np.inf):
         '''
         Parameters
         ----------
@@ -80,6 +80,8 @@ class ImageDataset(torch.utils.data.Dataset):
             Specify array shape (channel, hieght, and width).
         transform : optional
             Transformers (applied after resizing, reshaping, ans scaling to [0, 1])
+        scale : optional
+            Image intensity is scaled to [0, scale] (default: 1).
         preload : bool, optional
             Pre-load images (default: False).
         preload_limit : int
@@ -94,6 +96,7 @@ class ImageDataset(torch.utils.data.Dataset):
         # Custom transforms
         self.__shape = shape
         self.__resize = resize
+        self.__scale = scale
 
         self.__data = {}
         preload_size = 0
@@ -165,7 +168,7 @@ class ImageDataset(torch.utils.data.Dataset):
                                s2d[self.__shape[1]],
                                s2d[self.__shape[2]]))
 
-        # Scaling to [0, 1]
-        data = data / 255.
+        # Scaling to [0, scale]
+        data = (data / 255.) * self.__scale
 
         return data
