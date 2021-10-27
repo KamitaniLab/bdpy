@@ -278,9 +278,9 @@ def reconstruct(features,
         xt = torch.tensor(x[np.newaxis], device=device, requires_grad=True)
         op = optimizer([xt], lr=lr[0])
 
-    op.zero_grad()
-
     for it in range(n_iter):
+
+        op.zero_grad()
 
         if use_generator:
             encoder.zero_grad()
