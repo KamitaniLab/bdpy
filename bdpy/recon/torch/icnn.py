@@ -59,6 +59,7 @@ def reconstruct(features,
                 snapshot_interval=1,
                 snapshot_postprocess=None,
                 disp_interval=1,
+                return_z=False,
                 return_generator_feature=False,
                 return_final_feat=False,
                 device='cpu'):
@@ -199,8 +200,10 @@ def reconstruct(features,
 
     if return_final_feat:
         warnings.warn('`return_final_feat` is deprecated and will be removed in future release. Please use `return_generator_feature` instead.', UserWarning)
+    if return_generator_feature:
+        warnings.warn('`return_generator_feature` is deprecated and will be removed in future release. Please use `return_generator_feature` instead.', UserWarning)
 
-    return_generator_feature = return_generator_feature or return_final_feat
+    return_z = return_z or return_generator_feature or return_final_feat
 
     use_generator = generator is not None
 
@@ -278,6 +281,8 @@ def reconstruct(features,
         xt = torch.tensor(x[np.newaxis], device=device, requires_grad=True)
         op = optimizer([xt], lr=lr[0])
 
+    final_f = None
+
     for it in range(n_iter):
 
         op.zero_grad()
@@ -307,7 +312,7 @@ def reconstruct(features,
             # Generate an image
             ft.data = torch.tensor(f[np.newaxis], device=device)
 
-            last_f = ft.cpu().detach().numpy()[0]  # Keep features generateing the latest image
+            final_f = ft.cpu().detach().numpy()[0]  # Keep features generateing the latest image
 
             xt = generator.forward(ft)
             # xt.retain_grad()
@@ -424,13 +429,17 @@ def reconstruct(features,
         x = postproc(x)
 
     # Returns
-    if return_loss:
-        if use_generator and return_generator_feature:
-            return x, loss_history, last_f
-        else:
+    if use_generator:
+        if return_loss and return_z:
+            return x, loss_history, final_f
+        elif return_loss and not return_z:
             return x, loss_history
+        elif not return_loss and return_z:
+            return x, final_f
+        else:
+            return x
     else:
-        if use_generator and return_generator_feature:
-            return x, last_f
+        if return_loss:
+            return x, loss_history
         else:
             return x
