@@ -21,18 +21,21 @@ Python package for brain decoding analysis
     - pandas
 - `dl.caffe` module
     - Caffe
-    - PIL
+    - Pillow
     - tqdm
 - `dl.torch` module
     - PyTorch
-    - PIL
+    - Pillow
 - `fig` module
     - matplotlib
-    - PIL
+    - Pillow
 - `mri` module
     - nipy
     - nibabel
     - pandas
+- `recon.torch` module
+    - PyTorch
+    - Pillow
 
 ## Installation
 
@@ -60,6 +63,7 @@ $ pip install git+https://github.com/KamitaniLab/bdpy.git
 - mri: MRI utilities
 - opendata: Open data utilities
 - preproc: Utilities for preprocessing
+- recon: Reconstruction methods
 - stats: Utilities for statistics
 - util: Miscellaneous utilities
 
