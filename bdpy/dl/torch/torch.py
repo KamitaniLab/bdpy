@@ -133,7 +133,7 @@ class ImageDataset(torch.utils.data.Dataset):
             data = self.__load_image(self.data_path[idx])
 
         if not self.transform is None:
-            date = self.transform(data)
+            data = self.transform(data)
         else:
             data = torch.Tensor(data)
 
