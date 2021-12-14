@@ -22,11 +22,11 @@ def load_array(fname, key='data'):
             # SparseArray
             s_ary = SparseArray(fname, key=key)
             return s_ary.dense
-        elif type(f[key].value) == np.ndarray:
+        elif type(f[key][()]) == np.ndarray:
             # Dense array
             return hdf5storage.loadmat(fname)[key]
         else:
-            raise RuntimeError('Unsupported data type: %s' % type(f[key].value))
+            raise RuntimeError('Unsupported data type: %s' % type(f[key][()]))
 
 
 def save_array(fname, array, key='data', dtype=np.float64, sparse=False):

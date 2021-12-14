@@ -52,12 +52,12 @@ def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
 
     if os.path.isfile(run_info_file):
         with open(run_info_file, 'r') as f:
-            info_yaml = yaml.load(f)
+            info_yaml = yaml.load(f, Loader=yaml.SafeLoader)
         while info_yaml is None:
             warnings.warn('Failed to load info from %s. Retrying...'
                           % run_info_file)
             with open(run_info_file, 'r') as f:
-                info_yaml = yaml.load(f)
+                info_yaml = yaml.load(f, Loader=yaml.SafeLoader)
 
     else:
         info_yaml = {}
