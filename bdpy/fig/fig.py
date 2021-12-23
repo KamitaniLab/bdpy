@@ -119,16 +119,16 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
             ax.violinplot(data, xpos, showmeans=True, showextrema=False, showmedians=False, points=points)
 
             ax.text(-0.5, 0.85, sp_label, horizontalalignment='left', fontsize=fontsize)
-
+            
             ax.set_xlim([-1, len(x_list)])
             ax.set_xticks(range(len(x_list)))
             if row == 0:
-                ax.set_xticklabels(x_list, rotation=-45)
+                ax.set_xticklabels(x_list, rotation=-45, fontsize=fontsize)
             else:
                 ax.set_xticklabels([])
 
             ax.set_ylim([-0.4, 1.0])  # FXIME: auto-scaling
-
+            ax.tick_params(axis='y', labelsize=fontsize)
             box_off(ax)
 
             plt.tight_layout()
