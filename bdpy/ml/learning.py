@@ -216,6 +216,8 @@ class ModelTraining(object):
         Parameters of the models. This will be passed to model.fit().
     X_normalize, Y_normalize : dict
         Normalization parameters for X and Y.
+    X_sort : dict
+        Sorting parameters for X.
     Y_sort : dict
         Sorting parameters for Y.
     dtype
@@ -238,6 +240,7 @@ class ModelTraining(object):
         # X and Y preprocessing parameters
         self.X_normalize = None
         self.Y_normalize = None
+        self.X_sort = None
         self.Y_sort = None
 
         # Optional properties
@@ -286,6 +289,10 @@ class ModelTraining(object):
             print('Normalizing X')
             self.X = (self.X - self.X_normalize['mean']) / self.X_normalize['std']
             self.X[np.isinf(self.X)] = 0
+
+        if not self.X_sort is None:
+            print('Sorting X')
+            self.X = self.X[self.X_sort['index'], :]
 
         # Model training loop
         time_elapsed = []
