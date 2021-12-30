@@ -59,7 +59,7 @@ def draw_footnote(fig, string, fontsize=9):
     return ax
 
 
-def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None, subplot_list=None, figure_list=None, title=None, x_label=None, y_label=None, points=100):
+def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None, subplot_list=None, figure_list=None, title=None, x_label=None, y_label=None, fontsize=16, points=100):
 
     x_keys = sorted(df[x].unique())
     subplot_keys = sorted(df[subplot].unique())
@@ -118,17 +118,17 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
 
             ax.violinplot(data, xpos, showmeans=True, showextrema=False, showmedians=False, points=points)
 
-            ax.text(-0.5, 0.85, sp_label, horizontalalignment='left', fontsize=16)
-
+            ax.text(-0.5, 0.85, sp_label, horizontalalignment='left', fontsize=fontsize)
+            
             ax.set_xlim([-1, len(x_list)])
             ax.set_xticks(range(len(x_list)))
             if row == 0:
-                ax.set_xticklabels(x_list, rotation=-45)
+                ax.set_xticklabels(x_list, rotation=-45, fontsize=fontsize)
             else:
                 ax.set_xticklabels([])
 
             ax.set_ylim([-0.4, 1.0])  # FXIME: auto-scaling
-
+            ax.tick_params(axis='y', labelsize=fontsize)
             box_off(ax)
 
             plt.tight_layout()
@@ -137,7 +137,7 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
         if x_label is not None:
             ax = fig.add_axes([0, 0, 1, 1])
             ax.text(0.5, 0, x_label,
-                    verticalalignment='center', horizontalalignment='center', fontsize=16)
+                    verticalalignment='center', horizontalalignment='center', fontsize=fontsize)
             ax.patch.set_alpha(0.0)
             ax.set_axis_off()
 
@@ -145,7 +145,7 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
         if y_label is not None:
             ax = fig.add_axes([0, 0, 1, 1])
             ax.text(0, 0.5, y_label,
-                    verticalalignment='center', horizontalalignment='center', fontsize=16, rotation=90)
+                    verticalalignment='center', horizontalalignment='center', fontsize=fontsize, rotation=90)
             ax.patch.set_alpha(0.0)
             ax.set_axis_off()
 
@@ -153,7 +153,7 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
         if title is not None:
             ax = fig.add_axes([0, 0, 1, 1])
             ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label),
-                    horizontalalignment='center', fontsize=16)
+                    horizontalalignment='center', fontsize=fontsize)
             ax.patch.set_alpha(0.0)
             ax.set_axis_off()
 

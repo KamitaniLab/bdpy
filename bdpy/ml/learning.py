@@ -193,7 +193,7 @@ class CrossValidation(BaseLearning):
 
             self.prediction_accuracy.append(cls.prediction_accuracy)
 
-        if self.verbose is 'info':
+        if self.verbose == 'info':
             print('Prediction accuracy: %f' % np.mean(self.prediction_accuracy))
 
 
