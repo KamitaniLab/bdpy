@@ -35,6 +35,8 @@ if __name__ == '__main__':
                     'bdpy.distcomp',
                     'bdpy.dl',
                     'bdpy.dl.torch',
+                    'bdpy.evals',
+                    'bdpy.evals.metrics',
                     'bdpy.feature',
                     'bdpy.fig',
                     'bdpy.ml',
