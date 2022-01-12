@@ -45,6 +45,8 @@ def reconstruct(features,
                 initial_feature=None,
                 preproc=None,
                 postproc=None,
+                generator_preproc=None,
+                generator_postproc=None,
                 gradient_normalization=True,
                 jittering=False, jitter_size=4,
                 blurring=False,
@@ -119,13 +121,16 @@ def reconstruct(features,
     image_size : tuple, optional
       Size of the image (h x w x c).
 
-    crop_generator_output=False, : book, optional (default: False)
-      If True, outputs of the generator are cropped.
+    crop_generator_output=True, : bool, optional (default: True)
+      If True, outputs of the generator are cropped into `image_size`.
 
     initial_image : numpy.ndarar, optionaly
 
-    preprocm, postproc : func, optional
+    preproc, postproc : func, optional
       Pre- and post-processing functions on images.
+
+    generator_preproc, generator_postproc : func, optional
+      Pre- and post-processing functions on generator's input and output.
 
     gradient_normalization : bool, optional
 
@@ -314,8 +319,14 @@ def reconstruct(features,
 
             final_f = ft.cpu().detach().numpy()[0]  # Keep features generateing the latest image
 
+            if generator_preproc is not None:
+                ft = generator_preproc(ft)
+
             xt = generator.forward(ft)
             # xt.retain_grad()
+
+            if generator_postproc is not None:
+                xt = generator.postproc(xt)
 
             # Crop the generated image
             if crop_generator_output:
