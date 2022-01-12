@@ -45,6 +45,7 @@ def reconstruct(features,
                 initial_feature=None,
                 preproc=None,
                 postproc=None,
+                encoder_preproc=None,
                 generator_preproc=None,
                 generator_postproc=None,
                 gradient_normalization=True,
@@ -127,10 +128,19 @@ def reconstruct(features,
     initial_image : numpy.ndarar, optionaly
 
     preproc, postproc : func, optional
-      Pre- and post-processing functions on images.
+      Pre- and post-processing functions on reconstructed data. Note that the
+      preprocessing is applied only once before starting reconstruction iteration.
+      The post-processing is applied after the completion of reconstruction iterations
+      (before returning the reconstructed data) as well as before saving snapshots
+      during the iterations.
+
+    encoder_preproc : func, optional
+      Preprocessing function on encoder's input. Note that the preprocessings
+      are applied in every iterations.
 
     generator_preproc, generator_postproc : func, optional
-      Pre- and post-processing functions on generator's input and output.
+      Pre- and post-processing functions on generator's input and output. Note
+      that the pre- and post-processings are applied in every iterations.
 
     gradient_normalization : bool, optional
 
@@ -348,6 +358,9 @@ def reconstruct(features,
             xt.data = torch.tensor(x[np.newaxis], device=device)
 
         # Forward (calculate features)
+        if encoder_preproc is not None:
+            xt = encoder_preproc(xt)
+
         activations = feature_extractor.run(xt)
 
         # Backward
