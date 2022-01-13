@@ -46,6 +46,7 @@ def reconstruct(features,
                 preproc=None,
                 postproc=None,
                 encoder_preproc=None,
+                encoder_postproc=None,
                 generator_preproc=None,
                 generator_postproc=None,
                 gradient_normalization=True,
@@ -362,6 +363,9 @@ def reconstruct(features,
             xt = encoder_preproc(xt)
 
         activations = feature_extractor.run(xt)
+
+        if encoder_postproc is not None:
+            activations = encoder_postproc(activations)
 
         # Backward
         err = 0.
