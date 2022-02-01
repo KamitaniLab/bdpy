@@ -210,8 +210,13 @@ def makeplots(
                 ax.tick_params(axis='x', labelsize=tick_fontsize)
 
             # Inset title
-            tpos = (plt.gca().get_xlim()[0] * 0.85, plt.gca().get_ylim()[1] * 0.85)
-            ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
+            x_range = plt.gca().get_xlim()[1] - plt.gca().get_xlim()[0]
+            y_range = plt.gca().get_ylim()[1] - plt.gca().get_ylim()[0]
+            tpos = (
+                plt.gca().get_xlim()[0] + 0.03 * x_range,
+                plt.gca().get_ylim()[1] - 0.03 * y_range
+            )
+            ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', verticalalignment='top', fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
 
             # Inset legend
             if grouping:
