@@ -77,6 +77,22 @@ class Features(object):
     def feature_index(self):
         return self.__feature_index
 
+    def get(self, layer):
+        '''Return features in `layer`.
+
+        Parameters
+        ----------
+        layer: str
+            DNN layer
+
+        Returns
+        -------
+        numpy.ndarray, shape=(n_samples, shape_layers)
+            DNN features
+        '''
+
+        return self.get_features(layer)
+
     def get_features(self, layer):
         '''Return features in `layer`.
 
