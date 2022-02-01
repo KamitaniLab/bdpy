@@ -211,7 +211,7 @@ def makeplots(
 
             # Inset title
             tpos = (plt.gca().get_xlim()[0] * 0.85, plt.gca().get_ylim()[1] * 0.85)
-            ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', fontsize=fontsize)
+            ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
 
             # Inset legend
             if grouping:
