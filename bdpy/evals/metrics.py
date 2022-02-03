@@ -33,7 +33,7 @@ def profile_correlation(x, y):
     return r
 
 
-def pattern_correlation(x, y, mean=None, std=None):
+def pattern_correlation(x, y, mean=None, std=None, remove_nan=False):
     '''Pattern correlation.'''
 
     sample_axis = 0
@@ -50,6 +50,11 @@ def pattern_correlation(x, y, mean=None, std=None):
 
         _x = (_x - m) / s
         _y = (_y - m) / s
+
+    if remove_nan:
+        #remove nan columns based on the decoded features 
+        _x, nan_flag = remove_nan_value(_x, return_nan_flag=True)
+        _y = remove_nan_value(_y, nan_flag)
     
     r = np.array(
         [
@@ -64,14 +69,42 @@ def pattern_correlation(x, y, mean=None, std=None):
     return r
 
 
-def pairwise_identification(pred, true, metric='correlation'):
+def pairwise_identification(pred, true, metric='correlation', remove_nan=False):
     '''Pair-wise identification.'''
 
     p = pred.reshape(pred.shape[0], -1)
     t = true.reshape(true.shape[0], -1)
+
+    if remove_nan:
+        #remove nan columns based on the decoded features 
+        p, nan_flag = remove_nan_value(p, return_nan_flag=True)
+        t = remove_nan_value(t, nan_flag)
 
     d = 1 - cdist(p, t, metric=metric)
 
     cr = np.sum(d - np.diag(d)[:, np.newaxis] < 0, axis=1) / (d.shape[1] - 1)
 
     return cr
+
+
+def remove_nan_value(array, nan_flag=None, return_nan_flag=False):
+    
+    '''
+    Helper function:
+    Remove columns (units) which contain nan values
+
+    array (numpy.array) ... shape should be [sample x units]
+    nan_flag (numpy.array or list) ... if exist, remove columns according to the nan_flag
+    return_nan_flag (bool) ... if True, return nan_flag to remove columns of the array.
+
+    '''
+    
+    if nan_flag is None:
+        nan_flag = np.isnan(array).any(axis=0)
+    nan_removed_array =  array[:,~nan_flag]
+    
+    if return_nan_flag:
+        return nan_removed_array, nan_flag
+    else:
+        return nan_removed_array
+        
