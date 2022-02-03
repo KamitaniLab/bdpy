@@ -143,7 +143,7 @@ def create_frame_condition_list(movie_condition_list, fr):
     for j, condition_dict in enumerate(movie_condition_list):
         video_array = condition_dict['image_filepath_list']
         #extract 'fr' th frame for each movie
-        frame_array = [video_array[i][fr] for i in range(len(video_array))]
+        frame_array = [video_array[i][fr].astype(np.uint8) for i in range(len(video_array))]
         return_list[j]['image_filepath_list'] = frame_array
 
     return return_list
