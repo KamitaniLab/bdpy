@@ -247,7 +247,7 @@ def makeplots(
 
         figs.append(fig)
 
-    if len(figs) == 1:
+    if figure is None:
         return figs[0]
     else:
         return figs
