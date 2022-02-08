@@ -19,6 +19,7 @@ def makeplots(
         y_lim=None, y_ticks=None,
         title=None, x_label=None, y_label=None, fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
+        removenan=True,
         verbose=False
     ):
     '''Make plots.
@@ -117,12 +118,16 @@ def makeplots(
                         else:
                             df_t = df.query('{} == "{}" & {} == "{}" & {} == "{}" & {} == "{}"'.format(subplot, sp_label, group, group_label, figure, fig_label, x, x_lbl))
                         data_tt = df_t[y].values
+                        if removenan:
+                            data_tt[0] = np.delete(data_tt[0], np.isnan(data_tt[0]))  # FXIME
                         data_tt = np.array([np.nan, np.nan]) if len(data_tt) == 0 else np.concatenate(data_tt)
                         data_t.append(data_tt)
                     # violinplot requires at least two elements in the dataset
                 else:
                     df_t = df.query('{} == "{}" & {} == "{}" & {} == "{}"'.format(subplot, sp_label, figure, fig_label, x, x_lbl))
                     data_t = df_t[y].values
+                    if removenan:
+                        data_t[0] = np.delete(data_t[0], np.isnan(data_t[0]))  # FXIME
                     data_t = np.array([np.nan, np.nan]) if len(data_t) == 0 else np.concatenate(data_t)
                     # violinplot requires at least two elements in the dataset
 
