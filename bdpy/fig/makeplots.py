@@ -15,6 +15,7 @@ def makeplots(
         group=None, group_list=None,
         bar_group_width=0.8,
         plot_type='bar', horizontal=False, ebar=None,
+        plot_size=(3, 2),
         y_lim=None, y_ticks=None,
         title=None, x_label=None, y_label=None, fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
@@ -34,6 +35,7 @@ def makeplots(
     figure_list : list
     plot_type : {'bar', 'violin'}
     horizontal: bool
+    plot_size : (width, height)
     y_lim : (y_min, y_max)
     y_ticks : array_like
     title, x_label, y_label : str
@@ -74,7 +76,7 @@ def makeplots(
     row_num = int(np.ceil(len(subplot_list) / col_num))
     col_num = int(col_num)
 
-    figsize = (col_num * 3, row_num * 2)  # (width, height)
+    figsize = (col_num * plot_size[0], row_num * plot_size[1])  # (width, height)
 
     if verbose:
         print('Subplot in {} x {}'.format(row_num, col_num))
@@ -247,7 +249,7 @@ def makeplots(
 
         figs.append(fig)
 
-    if len(figs) == 1:
+    if figure is None:
         return figs[0]
     else:
         return figs
