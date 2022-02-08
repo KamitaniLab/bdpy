@@ -54,7 +54,7 @@ def save_video(vid, save_name, save_intermidiate_path, bgr=False, fr_rate = 30, 
 
 FONT_PATH ="/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_dir=None, insert_first_num=5, insert_last_num=0, fr_rate=16, background_color = (255, 255, 255), 
-                    image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 20, 0), max_column_size = 13, 
+                    image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 120, 0), max_column_size = 13, 
                     title_fontsize = 20, title_top_padding = 70, title_left_padding = 15, font_family_path = FONT_PATH,
                     id_show = False, id_fontcolor = "black", id_fontsize = 18, image_id_list = []):
 
@@ -97,6 +97,22 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
         This list is required when `id_show` is True.
     """
 
+    image_pram_dict = {
+        "background_color": background_color,
+        "image_size": image_size,
+        "image_margin": image_margin,
+        "group_margin": group_margin,
+        "max_column_size": max_column_size,
+        "title_fontsize": title_fontsize,
+        "title_top_padding": title_top_padding,
+        "title_left_padding": title_left_padding,
+        "font_family_path": font_family_path,
+        "id_show": id_show,
+        "id_fontcolor": id_fontcolor,
+        "id_fontsize": id_fontsize,
+        "image_id_list": image_id_list
+    }
+
 
 
     num_fr = len(movie_condition_list[0]['image_filepath_list'][0]) + insert_first_num + insert_last_num
@@ -118,7 +134,7 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
 
 
         #create image 
-        frame = draw_group_image_set(show_frame_list, id_show=id_show, image_id_list=image_id_list, font_family_path=font_family_path)
+        frame = draw_group_image_set(show_frame_list, **image_pram_dict)
         #save image
         frame.save(os.path.join(save_frame_dir,save_frame_name))
     #save video from their frame
