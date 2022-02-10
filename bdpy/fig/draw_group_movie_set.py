@@ -51,12 +51,22 @@ def save_video(vid, save_name, save_intermidiate_path, bgr=False, fr_rate = 30, 
         writer.write(frame.astype(np.uint8))
     writer.release()
 
+def save_gif(vid, save_name, save_intermidiate_path, bgr='False', fr_rate= 30):
+    gif_list = []
+    for frame in vid:
+        if bgr == True:
+            gif_list.append(Image.fromarray(frame[...,[2,1,0]].astype(np.uint8)))
+        else:
+            gif_list.append(Image.fromarray(frame.astype(np.uint8)))
+    gif_list[0].save(os.path.join(save_intermidiate_path, save_name), save_all=True,
+                     append_images=gif_list[1:], loop=0, duration=fr_rate)
+
 
 FONT_PATH ="/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_dir=None, insert_first_num=5, insert_last_num=0, fr_rate=16, background_color = (255, 255, 255), 
                     image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 120, 0), max_column_size = 13, 
                     title_fontsize = 20, title_top_padding = 70, title_left_padding = 15, font_family_path = FONT_PATH,
-                    id_show = False, id_fontcolor = "black", id_fontsize = 18, image_id_list = []):
+                    id_show = False, id_fontcolor = "black", id_fontsize = 18, image_id_list = [], saving_gif=True):
 
     """
     condition_list : list
@@ -149,6 +159,8 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
 
 
     save_video(merge_list,save_name, save_dir, bgr=False, fr_rate=fr_rate)
+    if saving_gif:
+        save_gif(merge_list,save_name.split('.')[0] + '.gif', save_dir, bgr=False, fr_rate=fr_rate)
     print(save_name +'done')
 
 
