@@ -215,9 +215,9 @@ def reconstruct(features,
     '''
 
     if return_final_feat:
-        warnings.warn('`return_final_feat` is deprecated and will be removed in future release. Please use `return_generator_feature` instead.', UserWarning)
+        warnings.warn('`return_final_feat` is deprecated and will be removed in future release. Please use `return_z` instead.', UserWarning)
     if return_generator_feature:
-        warnings.warn('`return_generator_feature` is deprecated and will be removed in future release. Please use `return_generator_feature` instead.', UserWarning)
+        warnings.warn('`return_generator_feature` is deprecated and will be removed in future release. Please use `return_z` instead.', UserWarning)
 
     return_z = return_z or return_generator_feature or return_final_feat
 
