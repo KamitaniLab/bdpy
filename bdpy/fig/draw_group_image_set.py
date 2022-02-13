@@ -6,12 +6,9 @@ import PIL.ImageDraw
 import PIL.ImageFont
 import matplotlib
 
-FONT_PATH ="/usr/share/fonts/truetype/freefont/FreeSans.ttf"
-
-
 def draw_group_image_set(condition_list, background_color = (255, 255, 255), 
                          image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 20, 0), max_column_size = 13, 
-                         title_fontsize = 20, title_top_padding = 70, title_left_padding = 15, font_family_path = FONT_PATH,
+                         title_fontsize = 20, title_top_padding = 70, title_left_padding = 15, font_family_path = None,
                          id_show = False, id_fontcolor = "black", id_fontsize = 18, image_id_list = []):
     """
     condition_list : list
@@ -80,11 +77,7 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
             image_filepath = image_filepath_list[tind]
             if image_filepath is None:
                 continue;
-            if type(image_filepath).__module__ == "numpy":
-                # convert PIL module from numpy
-                image_obj = PIL.Image.fromarray(image_filepath)
-            else:
-                image_obj = PIL.Image.open(image_filepath)
+            image_obj = PIL.Image.open(image_filepath)
             image_obj = image_obj.resize((image_size[0], image_size[1]), PIL.Image.LANCZOS)
 
             # Calc image position
@@ -110,8 +103,8 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
         draw.font = PIL.ImageFont.truetype(font=system_fonts[0], size=title_fontsize)
     else:
         draw.font = PIL.ImageFont.truetype(font=font_family_path, size=title_fontsize)
-    
-    #--------- ---------------------------
+
+    #------------------------------------
     # Draw title name 
     #------------------------------------
     for cind, condition in enumerate(condition_list):
