@@ -52,10 +52,10 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=False):
         _y = (_y - m) / s
 
     if remove_nan:
-        #remove nan columns based on the decoded features 
+        # remove nan columns based on the decoded features
         _x, nan_flag = remove_nan_value(_x, return_nan_flag=True)
         _y = remove_nan_value(_y, nan_flag)
-    
+
     r = np.array(
         [
             np.corrcoef(
@@ -76,7 +76,7 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=False):
     t = true.reshape(true.shape[0], -1)
 
     if remove_nan:
-        #remove nan columns based on the decoded features 
+        # remove nan columns based on the decoded features
         p, nan_flag = remove_nan_value(p, return_nan_flag=True)
         t = remove_nan_value(t, nan_flag)
 
@@ -88,9 +88,7 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=False):
 
 
 def remove_nan_value(array, nan_flag=None, return_nan_flag=False):
-    
-    '''
-    Helper function:
+    '''Helper function:
     Remove columns (units) which contain nan values
 
     array (numpy.array) ... shape should be [sample x units]
@@ -98,13 +96,12 @@ def remove_nan_value(array, nan_flag=None, return_nan_flag=False):
     return_nan_flag (bool) ... if True, return nan_flag to remove columns of the array.
 
     '''
-    
+
     if nan_flag is None:
         nan_flag = np.isnan(array).any(axis=0)
-    nan_removed_array =  array[:,~nan_flag]
-    
+    nan_removed_array = array[:, ~nan_flag]
+
     if return_nan_flag:
         return nan_removed_array, nan_flag
     else:
         return nan_removed_array
-        
