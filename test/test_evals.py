@@ -1,6 +1,7 @@
-from bdpy.evals.metrics import profile_correlation, pattern_correlation
+from bdpy.evals.metrics import profile_correlation, pattern_correlation, pairwise_identification
 
 
+import pickle
 import unittest
 
 import numpy as np
@@ -67,6 +68,37 @@ class TestEval(unittest.TestCase):
         ))
         self.assertEqual(pattern_correlation(x, y).shape, (10,))
 
+    def test_2d(self):
+        with open('data/testdata-2d.pkl.gz', 'rb') as f:
+            d = pickle.load(f)
+        self.assertTrue(np.array_equal(
+            profile_correlation(d['x'], d['y']),
+            d['r_prof']
+        ))
+        self.assertTrue(np.array_equal(
+            pattern_correlation(d['x'], d['y']),
+            d['r_patt']
+        ))
+        self.assertTrue(np.array_equal(
+            pairwise_identification(d['x'], d['y']),
+            d['ident_acc']
+        ))
+
+    def test_2d_nan(self):
+        with open('data/testdata-2d-nan.pkl.gz', 'rb') as f:
+            d = pickle.load(f)
+        # self.assertTrue(np.array_equal(
+        #     profile_correlation(d['x'], d['y']),
+        #     d['r_prof']
+        # ))
+        self.assertTrue(np.array_equal(
+            pattern_correlation(d['x'], d['y'], remove_nan=True),
+            d['r_patt'],
+        ))
+        self.assertTrue(np.array_equal(
+            pairwise_identification(d['x'], d['y'], remove_nan=True),
+            d['ident_acc'],
+        ))
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestEval)
