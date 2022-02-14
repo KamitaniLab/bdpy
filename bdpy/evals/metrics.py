@@ -33,7 +33,7 @@ def profile_correlation(x, y):
     return r
 
 
-def pattern_correlation(x, y, mean=None, std=None, remove_nan=False):
+def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
     '''Pattern correlation.'''
 
     sample_axis = 0
@@ -70,7 +70,7 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=False):
     return r
 
 
-def pairwise_identification(pred, true, metric='correlation', remove_nan=False):
+def pairwise_identification(pred, true, metric='correlation', remove_nan=True):
     '''Pair-wise identification.'''
 
     p = pred.reshape(pred.shape[0], -1)
