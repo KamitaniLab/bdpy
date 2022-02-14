@@ -52,9 +52,10 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=False):
         _y = (_y - m) / s
 
     if remove_nan:
-        # remove nan columns based on the decoded features
-        _x, nan_flag = remove_nan_value(_x, return_nan_flag=True)
-        _y = remove_nan_value(_y, nan_flag)
+        # Remove nan columns based on the decoded features
+        nan_cols = np.isnan(_x).any(axis=0) | np.isnan(_y).any(axis=0)
+        _x = _x[:, ~nan_cols]
+        _y = _y[:, ~nan_cols]
 
     r = np.array(
         [
@@ -76,9 +77,10 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=False):
     t = true.reshape(true.shape[0], -1)
 
     if remove_nan:
-        # remove nan columns based on the decoded features
-        p, nan_flag = remove_nan_value(p, return_nan_flag=True)
-        t = remove_nan_value(t, nan_flag)
+        # Remove nan columns based on the decoded features
+        nan_cols = np.isnan(p).any(axis=0) | np.isnan(t).any(axis=0)
+        p = p[:, ~nan_cols]
+        t = t[:, ~nan_cols]
 
     d = 1 - cdist(p, t, metric=metric)
 
