@@ -85,6 +85,7 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
                 image_obj = PIL.Image.fromarray(image_filepath)
             else:
                 image_obj = PIL.Image.open(image_filepath)
+            image_obj = image_obj.convert("RGB")
             image_obj = image_obj.resize((image_size[0], image_size[1]), PIL.Image.LANCZOS)
 
             # Calc image position
