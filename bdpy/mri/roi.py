@@ -234,7 +234,7 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
     return bdata
 
 
-def add_rois(bdata, roi_files, data_type='volume', prefix_map={}):
+def add_rois(bdata, roi_files, data_type='volume', prefix_map={}, remove_voxel=True):
     '''Add ROIs in bdata from files.'''
 
     roi_prefix_from_annot = {'lh.aparc.a2009s.annot': 'freesurfer_destrieux',
@@ -266,14 +266,15 @@ def add_rois(bdata, roi_files, data_type='volume', prefix_map={}):
         print('')
 
         # Remove voxels out of ROIs
-        roi_flag_all = np.vstack(roi_flag_all)
-        remove_voxel_ind = np.sum(roi_flag_all, axis=0) == 0
-        _, voxel_ind = bdata.select('VoxelData = 1', return_index=True)
-        remove_column_ind = np.where(voxel_ind)[0][remove_voxel_ind]
+        if remove_voxel:
+            roi_flag_all = np.vstack(roi_flag_all)
+            remove_voxel_ind = np.sum(roi_flag_all, axis=0) == 0
+            _, voxel_ind = bdata.select('VoxelData = 1', return_index=True)
+            remove_column_ind = np.where(voxel_ind)[0][remove_voxel_ind]
 
-        bdata.dataset = np.delete(bdata.dataset, remove_column_ind, 1)
-        bdata.metadata.value = np.delete(bdata.metadata.value, remove_column_ind, 1)
-        # FIXME: needs cleaning
+            bdata.dataset = np.delete(bdata.dataset, remove_column_ind, 1)
+            bdata.metadata.value = np.delete(bdata.metadata.value, remove_column_ind, 1)
+            # FIXME: needs cleaning
 
     elif data_type == 'surface':
         # List all ROI labels files
