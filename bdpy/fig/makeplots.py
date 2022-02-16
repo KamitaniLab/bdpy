@@ -19,6 +19,7 @@ def makeplots(
         y_lim=None, y_ticks=None,
         title=None, x_label=None, y_label=None, fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
+        chance_level=None, chance_level_style={'color': 'k', 'linewidth': 1},
         removenan=True,
         verbose=False
     ):
@@ -114,9 +115,9 @@ def makeplots(
                     data_t = []
                     for group_label in group_list:
                         if fig_label is None:
-                            df_t = df.query('{} == "{}" & {} == "{}" & {} == "{}"'.format(subplot, sp_label, group, group_label, x, x_lbl))
+                            df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, group, group_label, x, x_lbl))
                         else:
-                            df_t = df.query('{} == "{}" & {} == "{}" & {} == "{}" & {} == "{}"'.format(subplot, sp_label, group, group_label, figure, fig_label, x, x_lbl))
+                            df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, group, group_label, figure, fig_label, x, x_lbl))
                         data_tt = df_t[y].values
                         if removenan:
                             data_tt[0] = np.delete(data_tt[0], np.isnan(data_tt[0]))  # FXIME
@@ -124,7 +125,7 @@ def makeplots(
                         data_t.append(data_tt)
                     # violinplot requires at least two elements in the dataset
                 else:
-                    df_t = df.query('{} == "{}" & {} == "{}" & {} == "{}"'.format(subplot, sp_label, figure, fig_label, x, x_lbl))
+                    df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, figure, fig_label, x, x_lbl))
                     data_t = df_t[y].values
                     if removenan:
                         data_t[0] = np.delete(data_t[0], np.isnan(data_t[0]))  # FXIME
@@ -196,9 +197,14 @@ def makeplots(
                     pass
                 else:
                     ax.set_ylim(y_lim)
-                    if y_ticks is not None:
-                        ax.set_yticks(y_ticks)
-                ax.tick_params(axis='y', labelsize=tick_fontsize)
+
+                if y_ticks is not None:
+                    ax.set_yticks(y_ticks)
+
+                ax.tick_params(axis='y', labelsize=tick_fontsize, grid_color='gray', grid_linestyle='--', grid_linewidth=0.8)
+
+                if chance_level is not None:
+                    plt.hlines(chance_level, xmin=plt.gca().get_xlim()[0], xmax=plt.gca().get_xlim()[1], **chance_level_style)
             else:
                 # Horizontal plot
                 ax.set_ylim([-1, len(x_list)])
@@ -212,9 +218,14 @@ def makeplots(
                     pass
                 else:
                     ax.set_xlim(y_lim)
-                    if y_ticks is not None:
-                        ax.set_xticks(y_ticks)
-                ax.tick_params(axis='x', labelsize=tick_fontsize)
+
+                if y_ticks is not None:
+                    ax.set_xticks(y_ticks)
+
+                ax.tick_params(axis='x', labelsize=tick_fontsize, grid_color='gray', grid_linestyle='--', grid_linewidth=0.8)
+
+                if chance_level is not None:
+                    plt.vlines(chance_level, ymin=plt.gca().get_ylim()[0], ymax=plt.gca().get_ylim()[1], **chance_level_style)
 
             # Inset title
             x_range = plt.gca().get_xlim()[1] - plt.gca().get_xlim()[0]
