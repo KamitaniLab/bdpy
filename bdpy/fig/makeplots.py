@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 import numpy as np
+import pandas as pd
+import seaborn as sns
 
 from bdpy.fig import makefigure, box_off
 
@@ -190,6 +192,36 @@ def makeplots(
                         group_label_list.append((mpatches.Patch(color=color), group_list[grpi]))
                 else:
                     ax.violinplot(data, xpos, vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points)
+
+            elif plot_type == 'swarm':
+                if grouping:
+                    raise NameError("The function of grouping on `swarm` plot has not implemeted yet.")
+                else:
+                    df_list = []
+                    for xi, x_lbl in enumerate(x_list):
+                        a_df =  pd.DataFrame.from_dict({y: data[xi]})
+                        a_df[x] = x_lbl
+                        df_list.append(a_df)
+                    tmp_df = pd.concat(df_list)
+                    mean_df = tmp_df.groupby(x, as_index = False).mean()
+                    mean_list = [mean_df[mean_df[x] == x_lbl][y].values[0] for x_lbl in x_list]
+                    if horizontal:
+                        plotx = y; ploty = x
+                        scatterx = mean_list; scattery = np.arange(len(x_list))
+                        scattermark = "|"
+                    else:
+                        plotx = x; ploty = y
+                        scatterx = np.arange(len(x_list)); scattery = mean_list
+                        scattermark = "_"
+                    ax = sns.violinplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v", 
+                                                 data=tmp_df, ax=ax, color="blue", linewidth=0)
+                    for violin in ax.collections[::2]:
+                        violin.set_alpha(0.6)
+                    sns.swarmplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v", 
+                                              data=tmp_df, ax=ax, color="white", alpha=0.8, size=3)
+                    ax.scatter(x=scatterx, y=scattery, marker=scattermark, c="red", linewidths=2, zorder=10)
+                    ax.set(xlabel=None, ylabel=None)
+
             else:
                 raise ValueError('Unknown plot_type: {}'.format(plot_type))
 
