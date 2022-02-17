@@ -1,6 +1,8 @@
 import warnings
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
 import numpy as np
 
 from bdpy.fig import makefigure, box_off
@@ -154,16 +156,16 @@ def makeplots(
             # Plot data
             if plot_type == 'bar':
                 if grouping:
-                        ydata = np.array(data_mean)
-                        n_grp = ydata.shape[1]
-                        w = bar_group_width / n_grp
+                    ydata = np.array(data_mean)
+                    n_grp = ydata.shape[1]
+                    w = bar_group_width / n_grp
 
-                        for i in range(n_grp):
-                            offset = i * w
-                            if horizontal:
-                                plt.barh(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, i], height=w, label=group_list[i])
-                            else:
-                                plt.bar(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, i], width=w, label=group_list[i])
+                    for grpi in range(n_grp):
+                        offset = grpi * w
+                        if horizontal:
+                            plt.barh(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, grpi], height=w, label=group_list[grpi])
+                        else:
+                            plt.bar(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, grpi], width=w, label=group_list[grpi])
                 else:
                     if horizontal:
                         ax.barh(xpos, data_mean, color='gray')
@@ -171,14 +173,21 @@ def makeplots(
                         ax.bar(xpos, data_mean, color='gray')
 
             elif plot_type == 'violin':
+                print("Violine Test")
                 if grouping:
-                    n_grp = len(data[0])
-                    #w = bar_group_width / n_grp
+                    n_grp = len(group_list)
+                    w = bar_group_width / (n_grp + 1)
 
-                    for i in range(n_grp):
-                        #offset = i * w
-                        #x = np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset
-                        ax.violinplot(data[i], xpos, vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points)
+                    group_label_list = []
+                    for grpi in range(n_grp):
+                        offset = grpi * w - (n_grp // 2) * w 
+                        xpos_grp = np.array(xpos) + offset #- bar_group_width / 2 + (bar_group_width / 2) * w + offset
+                        ydata_grp =  [a_data[grpi] for a_data in data]
+                        violinobj = ax.violinplot(ydata_grp, xpos_grp, 
+                                             vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points,
+                                             widths = w * 0.8)
+                        color = violinobj["bodies"][0].get_facecolor().flatten()
+                        group_label_list.append((mpatches.Patch(color=color), group_list[grpi]))
                 else:
                     ax.violinplot(data, xpos, vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points)
             else:
@@ -238,7 +247,12 @@ def makeplots(
 
             # Inset legend
             if grouping:
-                plt.legend()
+                if plot_type == 'violin':
+                    if i == len(subplot_list) - 1:
+                        group_label_list = group_label_list[::-1]
+                        ax.legend(*zip(*group_label_list), loc='upper left', bbox_to_anchor=(1, 1))
+                else:
+                    plt.legend()
 
             box_off(ax)
 
