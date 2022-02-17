@@ -64,7 +64,7 @@ class FeatureExtractorHandle(object):
 class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
-    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None, scale=1, preload=False, preload_limit=np.inf):
+    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None, scale=1, rgb_mean=None, preload=False, preload_limit=np.inf):
         '''
         Parameters
         ----------
@@ -82,6 +82,8 @@ class ImageDataset(torch.utils.data.Dataset):
             Transformers (applied after resizing, reshaping, ans scaling to [0, 1])
         scale : optional
             Image intensity is scaled to [0, scale] (default: 1).
+        rgb_mean : list([r, g, b]), optional
+            Image values are centered by the specified mean (after scaling) (default: None).
         preload : bool, optional
             Pre-load images (default: False).
         preload_limit : int
@@ -170,5 +172,11 @@ class ImageDataset(torch.utils.data.Dataset):
 
         # Scaling to [0, scale]
         data = (data / 255.) * self.__scale
+
+        # Centering
+        if not self.__rgb_mean is None:
+            data[0] -= self.__rgb_mean[0]
+            data[1] -= self.__rgb_mean[1]
+            data[2] -= self.__rgb_mean[2]
 
         return data
