@@ -195,7 +195,7 @@ def makeplots(
 
             elif plot_type == 'swarm':
                 if grouping:
-                    raise NameError("The function of grouping on `swarm` plot has not implemeted yet.")
+                    raise RunTimeError("The function of grouping on `swarm` plot has not implemeted yet.")
                 else:
                     df_list = []
                     for xi, x_lbl in enumerate(x_list):
