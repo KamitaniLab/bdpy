@@ -9,9 +9,11 @@ import seaborn as sns
 
 from bdpy.fig import makefigure, box_off
 
+
 def split_list(l, n):
     for idx in range(0, len(l), n):
         yield l[idx:idx + n]
+
 
 def get_data(df, subplot, sp_label,
              x, x_list, figure, fig_label, y,
@@ -42,6 +44,7 @@ def get_data(df, subplot, sp_label,
         data.append(data_t)
 
     return data
+
 
 def draw_half_violin(ax, data, points, positions, color=None, left=True, vert=True):
     v = ax.violinplot(data, points=points, positions=positions, vert=vert,
@@ -104,7 +107,6 @@ def plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, label_in
                 ax.bar(xpos, data_mean, color='gray')
 
     elif plot_type == 'violin':
-        print("Violine Test")
         if grouping:
             n_grp = len(group_list)
             w = bar_group_width / (n_grp + 1)
@@ -239,6 +241,7 @@ def plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, label_in
 
     plt.tight_layout()
 
+
 def makeplots(
         df,
         x=None, y=None,
@@ -293,7 +296,6 @@ def makeplots(
     subplot_list = subplot_keys if subplot_list is None else subplot_list
     figure_list  = figure_keys  if figure_list  is None else figure_list
     group_list   = group_keys   if group_list   is None else group_list
-
 
     grouping = group is not None
 
@@ -436,7 +438,6 @@ def makeplots(
                         style, horizontal, plot_type,
                         grouping, group_list, bar_group_width, points,
                         chance_level, chance_level_style, fontsize, colors=colors)
-
 
             # Draw X/Y labels and title ------------------------------------------
             ax = fig.add_axes([0, 0, 1, 1])
