@@ -253,7 +253,7 @@ def makeplots(
         title=None, x_label=None, y_label=None, fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
         chance_level=None, chance_level_style={'color': 'k', 'linewidth': 1},
-        removenan=True, comparison_pairs=None,
+        removenan=True,
         verbose=False, colors=None,
     ):
     '''Make plots.
