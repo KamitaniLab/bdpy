@@ -327,6 +327,9 @@ def merge_rois(bdata, roi_name, merge_expr):
         if tkn == '+' or tkn == '-':
             tokens.append(tkn)
         else:
+            # FIXME: dirty solution
+            tkn = tkn.replace('"', '')
+            tkn = tkn.replace("'", '')
             tkn_e = re.escape(tkn)
             tkn_e = tkn_e.replace('\*', '.*')
 
