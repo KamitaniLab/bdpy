@@ -1,5 +1,6 @@
 '''bdpy.evals.metrics'''
 
+import warnings
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -87,8 +88,10 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True, r
     if remove_nan_dist:
         cr = []
         for d_ind in range(d.shape[0]):
-            pef = d[d_ind, :] - d[d_ind, d_ind] 
-            pef = pef[~np.isnan(pef)] # Remove nan value from the comparison for identification
+            pef = d[d_ind, :] - d[d_ind, d_ind]
+            if np.isnan(a).any():
+                warnings.warn('NaN value detected in the distance matrix ({}).'.format(np.sum(np.isnan(a))))
+                pef = pef[~np.isnan(pef)] # Remove nan value from the comparison for identification
             pef = np.sum(pef < 0) / (len(pef) - 1)
             cr.append(pef)
         cr = np.asarray(cr)
