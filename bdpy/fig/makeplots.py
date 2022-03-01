@@ -251,7 +251,8 @@ def makeplots(
         group=None, group_list=None,
         bar_group_width=0.8,
         plot_type='bar', horizontal=False, ebar=None,
-        plot_size=(3, 2),
+        plot_size_auto=False, plot_size=(3, 2),
+        max_col=None,
         y_lim=None, y_ticks=None,
         title=None, x_label=None, y_label=None, fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
@@ -317,9 +318,20 @@ def makeplots(
 
     col_num = np.ceil(np.sqrt(len(subplot_list)))
     row_num = int(np.ceil(len(subplot_list) / col_num))
-
     col_num = int(col_num)
 
+    if max_col is not None and col_num > max_col:
+        col_num = max_col
+        row_num = int(np.ceil(len(subplot_list) / col_num))
+
+    # Plot size
+    if plot_size_auto:
+        if horizontal:
+            plot_size = (plot_size[0], plot_size[1] * len(x_list))
+        else:
+            plot_size = (plot_size[0] * len(x_list), plot_size[1])
+
+    # Figure size
     figsize = (col_num * plot_size[0], row_num * plot_size[1])  # (width, height)
 
     if verbose:
