@@ -70,7 +70,7 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
     return r
 
 
-def pairwise_identification(pred, true, metric='correlation', remove_nan=True):
+def pairwise_identification(pred, true, metric='correlation', remove_nan=True, remove_nan_dist=True):
     '''Pair-wise identification.'''
 
     p = pred.reshape(pred.shape[0], -1)
@@ -84,7 +84,16 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True):
 
     d = 1 - cdist(p, t, metric=metric)
 
-    cr = np.sum(d - np.diag(d)[:, np.newaxis] < 0, axis=1) / (d.shape[1] - 1)
+    if remove_nan_dist:
+        cr = []
+        for d_ind in range(d.shape[0]):
+            pef = d[d_ind, :] - d[d_ind, d_ind] 
+            pef = pef[~np.isnan(pef)] # Remove nan value from the comparison for identification
+            pef = np.sum(pef < 0) / (len(pef) - 1)
+            cr.append(pef)
+        cr = np.asarray(cr)
+    else:
+        cr = np.sum(d - np.diag(d)[:, np.newaxis] < 0, axis=1) / (d.shape[1] - 1)
 
     return cr
 
