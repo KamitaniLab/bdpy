@@ -80,7 +80,7 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
             image_filepath = image_filepath_list[tind]
             if image_filepath is None:
                 continue;
-            if type(image_filepath).__module__ == "numpy":
+            if isinstance(image_filepath, np.ndarray):
                 # convert PIL module from numpy
                 image_obj = PIL.Image.fromarray(image_filepath)
             else:

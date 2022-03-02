@@ -3,8 +3,8 @@ import numpy as np
 import cv2
 import copy
 from PIL import Image
-#from .draw_group_image_set import draw_group_image_set
 from . import draw_group_image_set
+
 
 def load_video(file_path,ret_type='float32', bgr=False, height=224,width=224, interpolation=cv2.INTER_LINEAR):
     """
@@ -13,29 +13,30 @@ def load_video(file_path,ret_type='float32', bgr=False, height=224,width=224, in
     """
     cap = cv2.VideoCapture(file_path)
     vid = []
-  
+
     while True:
-        
+
         ret, img = cap.read()
-        
+
         if not ret:
             break
-        
-        # torchvision model allow RGB image , range of [0,1] and normalised 
+
+        # torchvision model allow RGB image , range of [0,1] and normalised
         if bgr:
             img = cv2.resize(img, (height, width), interpolation=interpolation)
         else:
             img = cv2.resize(cv2.cvtColor(img , cv2.COLOR_BGR2RGB), (height, width), interpolation=interpolation)
-       
+
 
         if ret_type == 'float32':
             img = img.astype(np.float32)
         elif ret_type== 'float':
             img = img.astype(np.float)
-            
+
         vid.append(img)
 
     return np.array(vid)
+
 
 def save_video(vid, save_name, save_intermidiate_path, bgr=False, fr_rate = 30, codec=None):
     fr, height, width, ch = vid.shape
@@ -63,8 +64,8 @@ def save_gif(vid, save_name, save_intermidiate_path, bgr='False', fr_rate= 30):
 
 
 FONT_PATH ="/usr/share/fonts/truetype/freefont/FreeSans.ttf"
-def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_dir=None, insert_first_num=5, insert_last_num=0, fr_rate=16, background_color = (255, 255, 255), 
-                    image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 120, 0), max_column_size = 13, 
+def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_dir=None, insert_first_num=5, insert_last_num=0, fr_rate=16, background_color = (255, 255, 255),
+                    image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 120, 0), max_column_size = 13,
                     title_fontsize = 20, title_top_padding = 70, title_left_padding = 15, font_family_path = FONT_PATH,
                     id_show = False, id_fontcolor = "black", id_fontsize = 18, image_id_list = [], saving_gif=True):
 
@@ -74,7 +75,7 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
         ```
             condition = {
                 "title" : string, # Title name
-                "title_fontcolor" :  string or list,   # HTML color name or RGB value list 
+                "title_fontcolor" :  string or list,   # HTML color name or RGB value list
                 "image_filepath_list": array, # movie array list : [Note]movie filepath (e.g. .avi) is not supported yet
             }
         ```
@@ -90,9 +91,9 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
         Maximum number of images arranged horizontally.
     title_fontsize : int
         The font size of titles.
-    title_top_padding : 
+    title_top_padding :
         Top margin of the title letter.
-    title_left_padding : 
+    title_left_padding :
         Left margin of the title letter.
     font_family_path : string or None
         Font file path.
@@ -123,12 +124,10 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
         "image_id_list": image_id_list
     }
 
-
-
     num_fr = len(movie_condition_list[0]['image_filepath_list'][0]) + insert_first_num + insert_last_num
 
     for fr in range(num_fr):
-            
+
         save_frame_name = f'{fr}.jpg'
         if save_frame_dir == None:
             save_frame_dir = os.path.join(save_dir, 'frame')
@@ -142,13 +141,12 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
         else:
             show_frame_list = create_frame_condition_list(movie_condition_list, fr - insert_first_num)
 
-
-        #create image 
+        #create image
         frame = draw_group_image_set(show_frame_list, **image_pram_dict)
         #save image
         frame.save(os.path.join(save_frame_dir,save_frame_name))
     #save video from their frame
-    
+
     merge_list = []
     for t in range(num_fr):
         file_path = str(t)+ '.jpg'
@@ -162,8 +160,6 @@ def draw_group_movie_set(movie_condition_list, save_name, save_dir, save_frame_d
     if saving_gif:
         save_gif(merge_list,save_name.split('.')[0] + '.gif', save_dir, bgr=False, fr_rate=fr_rate)
     print(save_name +'done')
-
-
 
 
 def create_frame_condition_list(movie_condition_list, fr):
