@@ -188,6 +188,7 @@ class DirStore(object):
                  variable=None,
                  squeeze=False):
         self.__dpath = dpath
+        self._dpath = dpath
         self.__dirs_pattern = dirs_pattern
         self.__file_pattern = file_pattern
         self.__variable = variable
@@ -278,4 +279,9 @@ class DecodedFeatures(DirStore):
 
     @property
     def labels(self):
-        return self._file_names
+        # FIXME: super dirty solution
+        labels = sorted(np.unique([
+            os.path.splitext(os.path.basename(f))[0]
+            for f in glob.glob(os.path.join(self._dpath, '*/*/*', '*.mat'))
+        ]))
+        return labels
