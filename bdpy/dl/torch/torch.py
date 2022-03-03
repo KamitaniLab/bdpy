@@ -99,7 +99,7 @@ class ImageDataset(torch.utils.data.Dataset):
         self.__shape = shape
         self.__resize = resize
         self.__scale = scale
-        self.rgb_mean = rgb_mean
+        self.__rgb_mean = rgb_mean
 
         self.__data = {}
         preload_size = 0
