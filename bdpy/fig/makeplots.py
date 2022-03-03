@@ -142,7 +142,6 @@ def plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, label_in
         for color, label in zip(colors, group_list):
             group_label_list.append((mpatches.Patch(color=color), label))
 
-
     elif plot_type == 'swarm':
         if grouping:
             raise RunTimeError("The function of grouping on `swarm` plot has not implemeted yet.")
@@ -170,6 +169,29 @@ def plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, label_in
             sns.swarmplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
                                         data=tmp_df, ax=ax, color="white", alpha=0.8, size=3)
             ax.scatter(x=scatterx, y=scattery, marker=scattermark, c="red", linewidths=2, zorder=10)
+            ax.set(xlabel=None, ylabel=None)
+
+    elif plot_type == 'swarm+box':
+        if grouping:
+            raise RunTimeError("The function of grouping on `box+swarm` plot has not implemeted yet.")
+        else:
+            df_list = []
+            for xi, x_lbl in enumerate(x_list):
+                a_df =  pd.DataFrame.from_dict({y: data[xi]})
+                a_df[x] = x_lbl
+                df_list.append(a_df)
+            tmp_df = pd.concat(df_list)
+            if horizontal:
+                plotx = y; ploty = x
+            else:
+                plotx = x; ploty = y
+            sns.swarmplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
+                          data=tmp_df, ax=ax, color="#595959", size=3.5, alpha=0.7)
+            ax = sns.boxplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",  
+                            data=tmp_df, ax=ax, color="blue", width=0.5, fliersize=3, 
+                            showmeans=True, meanline=True, meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
+                            medianprops=dict(linestyle='-', linewidth=1.5, color='darkgreen'),
+                            boxprops=dict(alpha=.3))
             ax.set(xlabel=None, ylabel=None)
 
     else:
@@ -272,7 +294,7 @@ def makeplots(
     subplot : list
     figure : str
     figure_list : list
-    plot_type : {'bar', 'violin'}
+    plot_type : {'bar', 'violin', 'paired violin', 'swarm', 'swarm+box'}
     horizontal: bool
     plot_size : (width, height)
     y_lim : (y_min, y_max)
