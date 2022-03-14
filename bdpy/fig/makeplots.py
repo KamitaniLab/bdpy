@@ -77,7 +77,11 @@ def plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, label_in
              row, col, y_lim, y_ticks, tick_fontsize,
              style, horizontal, plot_type,
              grouping, group_list, bar_group_width, points,
-             chance_level, chance_level_style, fontsize, colors=None):
+             chance_level, chance_level_style, fontsize, colors=None,
+             box_color='blue',
+             box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
+             box_medianprops=dict(linestyle='-', linewidth=1.5, color='darkgreen'),
+             ):
     # Lines
     if not style == 'ggplot':
         if horizontal:
@@ -187,10 +191,10 @@ def plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, label_in
                 plotx = x; ploty = y
             sns.swarmplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
                           data=tmp_df, ax=ax, color="#595959", size=3.5, alpha=0.7)
-            ax = sns.boxplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",  
-                            data=tmp_df, ax=ax, color="blue", width=0.5, fliersize=3, 
-                            showmeans=True, meanline=True, meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
-                            medianprops=dict(linestyle='-', linewidth=1.5, color='darkgreen'),
+            ax = sns.boxplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
+                            data=tmp_df, ax=ax, color=box_color, width=0.5, fliersize=3,
+                            showmeans=True, meanline=True, meanprops=box_meanprops,
+                            medianprops=box_medianprops,
                             boxprops=dict(alpha=.3))
             ax.set(xlabel=None, ylabel=None)
 
@@ -279,6 +283,9 @@ def makeplots(
         title=None, x_label=None, y_label=None, fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
         chance_level=None, chance_level_style={'color': 'k', 'linewidth': 1},
+        box_color='blue',
+        box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
+        box_medianprops={},
         removenan=True,
         verbose=False, colors=None,
     ):
@@ -406,8 +413,10 @@ def makeplots(
                              row, col, y_lim, y_ticks, tick_fontsize,
                              style, horizontal, plot_type,
                              grouping, comparison_pair, bar_group_width, points,
-                             chance_level, chance_level_style, fontsize, colors=colors)
-
+                             chance_level, chance_level_style, fontsize, colors=colors,
+                             box_color=box_color,
+                             box_meanprops=box_meanprops, box_medianprops=box_medianprops
+                             )
 
                 # Draw X/Y labels and title ------------------------------------------
                 ax = fig.add_axes([0, 0, 1, 1])
@@ -471,7 +480,11 @@ def makeplots(
                         row, col, y_lim, y_ticks, tick_fontsize,
                         style, horizontal, plot_type,
                         grouping, group_list, bar_group_width, points,
-                        chance_level, chance_level_style, fontsize, colors=colors)
+                        chance_level, chance_level_style, fontsize, colors=colors,
+                        box_color=box_color,
+                        box_meanprops=box_meanprops, box_medianprops=box_medianprops
+                         )
+
 
             # Draw X/Y labels and title ------------------------------------------
             ax = fig.add_axes([0, 0, 1, 1])
