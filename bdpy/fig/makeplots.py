@@ -7,265 +7,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from bdpy.fig import makefigure, box_off
-
-
-def split_list(l, n):
-    for idx in range(0, len(l), n):
-        yield l[idx:idx + n]
-
-
-def get_data(df, subplot, sp_label,
-             x, x_list, figure, fig_label, y,
-             group, group_list, grouping, removenan):
-    data = []
-    for j, x_lbl in enumerate(x_list):
-        if grouping:
-            data_t = []
-            for group_label in group_list:
-                if fig_label is None:
-                    df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, group, group_label, x, x_lbl))
-                else:
-                    df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, group, group_label, figure, fig_label, x, x_lbl))
-                data_tt = df_t[y].values
-                if removenan:
-                    data_tt[0] = np.delete(data_tt[0], np.isnan(data_tt[0]))  # FXIME
-                data_tt = np.array([np.nan, np.nan]) if len(data_tt) == 0 else np.concatenate(data_tt)
-                data_t.append(data_tt)
-            # violinplot requires at least two elements in the dataset
-        else:
-            df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, figure, fig_label, x, x_lbl))
-            data_t = df_t[y].values
-            if removenan:
-                data_t[0] = np.delete(data_t[0], np.isnan(data_t[0]))  # FXIME
-            data_t = np.array([np.nan, np.nan]) if len(data_t) == 0 else np.concatenate(data_t)
-            # violinplot requires at least two elements in the dataset
-
-        data.append(data_t)
-
-    return data
-
-
-def draw_half_violin(ax, data, points, positions, color=None, left=True, vert=True):
-    v = ax.violinplot(data, points=points, positions=positions, vert=vert,
-                      showmeans=True, showextrema=False, showmedians=False)
-    for i, b in enumerate(v['bodies']):
-        if i == 0 and color is None:
-            color = b.get_facecolor().flatten()
-        if vert:
-            # get the center
-            m = np.mean(b.get_paths()[0].vertices[:, 0])
-            if left:
-                # modify the paths to not go further right than the center
-                b.get_paths()[0].vertices[:, 0] = np.clip(b.get_paths()[0].vertices[:, 0], -np.inf, m)
-            else: # right
-                b.get_paths()[0].vertices[:, 0] = np.clip(b.get_paths()[0].vertices[:, 0], m, np.inf)
-        else:
-            # get the center
-            m = np.mean(b.get_paths()[0].vertices[:, 1])
-            if left:
-                b.get_paths()[0].vertices[:, 1] = np.clip(b.get_paths()[0].vertices[:, 1], -np.inf, m)
-            else: # right
-                b.get_paths()[0].vertices[:, 1] = np.clip(b.get_paths()[0].vertices[:, 1], m, np.inf)
-        if color is not None:
-            # TODO: error handling
-            b.set_color(color)
-    return color
-
-
-def plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, label_index,
-             row, col, y_lim, y_ticks, tick_fontsize,
-             style, horizontal, plot_type,
-             grouping, group_list, bar_group_width, points,
-             chance_level, chance_level_style, fontsize, colors=None,
-             box_color='blue',
-             box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
-             box_medianprops=dict(linestyle='-', linewidth=1.5, color='darkgreen'),
-             ):
-    # Lines
-    if not style == 'ggplot':
-        if horizontal:
-            ax.grid(axis='x', color='k', linestyle='-', linewidth=0.5)
-        else:
-            ax.grid(axis='y', color='k', linestyle='-', linewidth=0.5)
-
-    xpos = range(len(x_list))
-
-    # Plot data
-    if plot_type == 'bar':
-        if grouping:
-            ydata = np.array(data_mean)
-            n_grp = ydata.shape[1]
-            w = bar_group_width / n_grp
-
-            for grpi in range(n_grp):
-                offset = grpi * w
-                if horizontal:
-                    plt.barh(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, grpi], height=w, label=group_list[grpi])
-                else:
-                    plt.bar(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, grpi], width=w, label=group_list[grpi])
-        else:
-            if horizontal:
-                ax.barh(xpos, data_mean, color='gray')
-            else:
-                ax.bar(xpos, data_mean, color='gray')
-
-    elif plot_type == 'violin':
-        if grouping:
-            n_grp = len(group_list)
-            w = bar_group_width / (n_grp + 1)
-
-            group_label_list = []
-            for grpi in range(n_grp):
-                offset = grpi * w - (n_grp // 2) * w
-                xpos_grp = np.array(xpos) + offset #- bar_group_width / 2 + (bar_group_width / 2) * w + offset
-                ydata_grp =  [a_data[grpi] for a_data in data]
-                violinobj = ax.violinplot(ydata_grp, xpos_grp,
-                                        vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points,
-                                        widths = w * 0.8)
-                color = violinobj["bodies"][0].get_facecolor().flatten()
-                group_label_list.append((mpatches.Patch(color=color), group_list[grpi]))
-        else:
-            ax.violinplot(data, xpos, vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points)
-
-    elif plot_type == 'paired violin':
-        assert grouping
-        n_grp = len(group_list)
-        assert n_grp == 2
-
-        group_label_list = []
-        if colors is not None and len(colors) >= 2:
-            draw_half_violin(ax, [a_data[0] for a_data in data], points, xpos, color=colors[0], left=True, vert=not horizontal)
-            draw_half_violin(ax, [a_data[1] for a_data in data], points, xpos, color=colors[1], left=False, vert=not horizontal)
-        else:
-            colors = []
-            color = draw_half_violin(ax, [a_data[0] for a_data in data], points, xpos, color=None, left=True, vert=not horizontal)
-            colors.append(color)
-            color = draw_half_violin(ax, [a_data[1] for a_data in data], points, xpos, color=None, left=False, vert=not horizontal)
-            colors.append(color)
-        for color, label in zip(colors, group_list):
-            group_label_list.append((mpatches.Patch(color=color), label))
-
-    elif plot_type == 'swarm':
-        if grouping:
-            raise RunTimeError("The function of grouping on `swarm` plot has not implemeted yet.")
-        else:
-            df_list = []
-            for xi, x_lbl in enumerate(x_list):
-                a_df =  pd.DataFrame.from_dict({y: data[xi]})
-                a_df[x] = x_lbl
-                df_list.append(a_df)
-            tmp_df = pd.concat(df_list)
-            mean_df = tmp_df.groupby(x, as_index = False).mean()
-            mean_list = [mean_df[mean_df[x] == x_lbl][y].values[0] for x_lbl in x_list]
-            if horizontal:
-                plotx = y; ploty = x
-                scatterx = mean_list; scattery = np.arange(len(x_list))
-                scattermark = "|"
-            else:
-                plotx = x; ploty = y
-                scatterx = np.arange(len(x_list)); scattery = mean_list
-                scattermark = "_"
-            ax = sns.violinplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-                                            data=tmp_df, ax=ax, color="blue", linewidth=0)
-            for violin in ax.collections[::2]:
-                violin.set_alpha(0.6)
-            sns.swarmplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-                                        data=tmp_df, ax=ax, color="white", alpha=0.8, size=3)
-            ax.scatter(x=scatterx, y=scattery, marker=scattermark, c="red", linewidths=2, zorder=10)
-            ax.set(xlabel=None, ylabel=None)
-
-    elif plot_type == 'swarm+box':
-        if grouping:
-            raise RunTimeError("The function of grouping on `box+swarm` plot has not implemeted yet.")
-        else:
-            df_list = []
-            for xi, x_lbl in enumerate(x_list):
-                a_df =  pd.DataFrame.from_dict({y: data[xi]})
-                a_df[x] = x_lbl
-                df_list.append(a_df)
-            tmp_df = pd.concat(df_list)
-            if horizontal:
-                plotx = y; ploty = x
-            else:
-                plotx = x; ploty = y
-            sns.swarmplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-                          data=tmp_df, ax=ax, color="#595959", size=3.5, alpha=0.7)
-            ax = sns.boxplot(x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-                            data=tmp_df, ax=ax, color=box_color, width=0.5, fliersize=3,
-                            showmeans=True, meanline=True, meanprops=box_meanprops,
-                            medianprops=box_medianprops,
-                            boxprops=dict(alpha=.3))
-            ax.set(xlabel=None, ylabel=None)
-
-    else:
-        raise ValueError('Unknown plot_type: {}'.format(plot_type))
-
-    if not horizontal:
-        # Vertical plot
-        ax.set_xlim([-1, len(x_list)])
-        ax.set_xticks(range(len(x_list)))
-        if row == 0:
-            ax.set_xticklabels(x_list, rotation=-45, ha='left', fontsize=tick_fontsize)
-        else:
-            ax.set_xticklabels([])
-
-        if y_lim is None:
-            pass
-        else:
-            ax.set_ylim(y_lim)
-
-        if y_ticks is not None:
-            ax.set_yticks(y_ticks)
-
-        ax.tick_params(axis='y', labelsize=tick_fontsize, grid_color='gray', grid_linestyle='--', grid_linewidth=0.8)
-
-        if chance_level is not None:
-            plt.hlines(chance_level, xmin=plt.gca().get_xlim()[0], xmax=plt.gca().get_xlim()[1], **chance_level_style)
-    else:
-        # Horizontal plot
-        ax.set_ylim([-1, len(x_list)])
-        ax.set_yticks(range(len(x_list)))
-        if col == 0:
-            ax.set_yticklabels(x_list, fontsize=tick_fontsize)
-        else:
-            ax.set_yticklabels([])
-
-        if y_lim is None:
-            pass
-        else:
-            ax.set_xlim(y_lim)
-
-        if y_ticks is not None:
-            ax.set_xticks(y_ticks)
-
-        ax.tick_params(axis='x', labelsize=tick_fontsize, grid_color='gray', grid_linestyle='--', grid_linewidth=0.8)
-
-        if chance_level is not None:
-            plt.vlines(chance_level, ymin=plt.gca().get_ylim()[0], ymax=plt.gca().get_ylim()[1], **chance_level_style)
-
-    # Inset title
-    x_range = plt.gca().get_xlim()[1] - plt.gca().get_xlim()[0]
-    y_range = plt.gca().get_ylim()[1] - plt.gca().get_ylim()[0]
-    tpos = (
-        plt.gca().get_xlim()[0] + 0.03 * x_range,
-        plt.gca().get_ylim()[1] - 0.03 * y_range
-    )
-
-    ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', verticalalignment='top', fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
-
-    # Inset legend
-    if grouping:
-        if 'violin' in plot_type:
-            if label_index == len(subplot_list) - 1:
-                group_label_list = group_label_list[::-1]
-                ax.legend(*zip(*group_label_list), loc='upper left', bbox_to_anchor=(1, 1))
-        else:
-            plt.legend()
-
-    box_off(ax)
-
-    plt.tight_layout()
+from bdpy.fig import box_off
 
 
 def makeplots(
@@ -280,7 +22,8 @@ def makeplots(
         plot_size_auto=True, plot_size=(3, 0.25),
         max_col=None,
         y_lim=None, y_ticks=None,
-        title=None, x_label=None, y_label=None, fontsize=12, tick_fontsize=9, points=100,
+        title=None, x_label=None, y_label=None,
+        fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
         chance_level=None, chance_level_style={'color': 'k', 'linewidth': 1},
         box_color='blue',
@@ -288,7 +31,7 @@ def makeplots(
         box_medianprops={},
         removenan=True,
         verbose=False, colors=None,
-    ):
+):
     '''Make plots.
 
     Parameters
@@ -332,7 +75,7 @@ def makeplots(
     if plot_type == 'paired violin':
         if not grouping:
             RuntimeError('plot type "paired violin" can be used only when grouping is enabled')
-        comparison_pairs = list(split_list(group_list, 2))
+        comparison_pairs = list(__split_list(group_list, 2))
 
     if grouping:
         warnings.warn('"grouping mode" is still experimental and will not work correctly yet!')
@@ -366,148 +109,420 @@ def makeplots(
     if verbose:
         print('Subplot in {} x {}'.format(row_num, col_num))
 
+    #
+    if plot_type == 'paired violin':
+        figure_instances = [
+            {
+                'label': f,
+                'comparison pair': p
+             }
+            for f in figure_list
+            for p in comparison_pairs
+        ]
+    else:
+        figure_instances = [
+            {
+                'label': f
+             }
+            for f in figure_list
+        ]
+
     figs = []
 
     # Figure loop
-    for fig_label in figure_list:
-        if plot_type == 'paired violin':
-            for comparison_pair in comparison_pairs:
-                if verbose:
-                    if fig_label is None:
-                        print('Creating a figure')
-                    else:
-                        print('Creating figure for {}, {}'.format(fig_label, comparison_pair))
+    for figure_instance in figure_instances:
+        fig_label = figure_instance['label']
+        if verbose:
+            if fig_label is None:
+                print('Creating a figure')
+            else:
+                print('Creating figure for {}'.format(fig_label))
 
-                if len(comparison_pair) == 1:
-                    plot_type = 'violin'
+        plt.style.use(style)
 
-                plt.style.use(style)
+        fig = plt.figure(figsize=figsize)
 
-                #fig = makefigure('a4landscape')
-                fig = plt.figure(figsize=figsize)
-
-                # Subplot loop
-                for i, sp_label in enumerate(subplot_list):
-                    if verbose:
-                        print('Creating subplot for {}'.format(sp_label))
-
-                    # Set subplot position
-                    col = int(i / row_num)
-                    row = i - col * row_num
-                    sbpos = (row_num - row - 1) * col_num + col + 1
-
-                    # Get data
-                    data = get_data(df, subplot, sp_label,
-                                    x, x_list, figure, fig_label, y,
-                                    group, comparison_pair, grouping, removenan)
-
-                    if grouping:
-                        data_mean = [[np.nanmean(d) for d in data_t] for data_t in data]
-                    else:
-                        data_mean = [np.nanmean(d) for d in data]
-
-                    # Plot
-                    ax = plt.subplot(row_num, col_num, sbpos)
-
-                    plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, i,
-                             row, col, y_lim, y_ticks, tick_fontsize,
-                             style, horizontal, plot_type,
-                             grouping, comparison_pair, bar_group_width, points,
-                             chance_level, chance_level_style, fontsize, colors=colors,
-                             box_color=box_color,
-                             box_meanprops=box_meanprops, box_medianprops=box_medianprops
-                             )
-
-                # Draw X/Y labels and title ------------------------------------------
-                ax = fig.add_axes([0, 0, 1, 1])
-                ax.patch.set_alpha(0.0)
-                ax.set_axis_off()
-
-                # X Label
-                if x_label is not None:
-                    txt = y_label if horizontal else x_label
-                    ax.text(0.5, 0, txt, verticalalignment='center', horizontalalignment='center', fontsize=fontsize)
-
-                # Y label
-                if y_label is not None:
-                    txt = x_label if horizontal else y_label
-                    ax.text(0, 0.5, txt, verticalalignment='center', horizontalalignment='center', fontsize=fontsize, rotation=90)
-
-                # Figure title
-                if title is not None:
-                    ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
-
-                figs.append(fig)
-        else:
+        # Subplot loop
+        for i, sp_label in enumerate(subplot_list):
             if verbose:
-                if fig_label is None:
-                    print('Creating a figure')
+                print('Creating subplot for {}'.format(sp_label))
+
+            # Set subplot position
+            col = int(i / row_num)
+            row = i - col * row_num
+            sbpos = (row_num - row - 1) * col_num + col + 1
+
+            # Get data
+            if plot_type == 'paired violin':
+                group_list = figure_instance['comparison pair']
+
+            data = __get_data(df, subplot, sp_label,
+                            x, x_list, figure, fig_label, y,
+                            group, group_list, grouping, removenan)
+
+            if not isinstance(sp_label, list):
+                if grouping:
+                    data_mean = [[np.nanmean(d) for d in data_t] for data_t in data]
                 else:
-                    print('Creating figure for {}'.format(fig_label))
+                    data_mean = [np.nanmean(d) for d in data]
+            else:
+                data_mean = None
 
-            plt.style.use(style)
+            # Plot
+            ax = plt.subplot(row_num, col_num, sbpos)
 
-            #fig = makefigure('a4landscape')
-            fig = plt.figure(figsize=figsize)
-
-            # Subplot loop
-            for i, sp_label in enumerate(subplot_list):
-                if verbose:
-                    print('Creating subplot for {}'.format(sp_label))
-
-                # Set subplot position
-                col = int(i / row_num)
-                row = i - col * row_num
-                sbpos = (row_num - row - 1) * col_num + col + 1
-
-                # Get data
-                data = get_data(df, subplot, sp_label,
-                                x, x_list, figure, fig_label, y,
-                                group, group_list, grouping, removenan)
-
-                if not isinstance(sp_label, list):
-                    if grouping:
-                        data_mean = [[np.nanmean(d) for d in data_t] for data_t in data]
-                    else:
-                        data_mean = [np.nanmean(d) for d in data]
+            if not style == 'ggplot':
+                if horizontal:
+                    ax.grid(axis='x', color='k', linestyle='-', linewidth=0.5)
                 else:
-                    data_mean = None
+                    ax.grid(axis='y', color='k', linestyle='-', linewidth=0.5)
 
-                # Plot
-                ax = plt.subplot(row_num, col_num, sbpos)
+            xpos = range(len(x_list))
 
-                plotting(ax, data, x, x_list, y, data_mean, sp_label, subplot_list, i,
-                        row, col, y_lim, y_ticks, tick_fontsize,
-                        style, horizontal, plot_type,
-                        grouping, group_list, bar_group_width, points,
-                        chance_level, chance_level_style, fontsize, colors=colors,
-                        box_color=box_color,
-                        box_meanprops=box_meanprops, box_medianprops=box_medianprops
-                         )
+            if plot_type == 'bar':
+                __plot_bar(
+                    ax, xpos, data_mean,
+                    horizontal=horizontal,
+                    grouping=grouping, group_list=group_list,
+                    bar_group_width=bar_group_width
+                )
+            elif plot_type == 'violin':
+                group_label_list = __plot_violin(
+                    ax, xpos, data,
+                    horizontal=horizontal,
+                    grouping=grouping, group_list=group_list,
+                    bar_group_width=bar_group_width, points=points
+                )
+            elif plot_type == 'paired violin':
+                group_label_list = __plot_violin_paired(
+                    ax, xpos, data,
+                    horizontal=horizontal,
+                    grouping=grouping, group_list=group_list,
+                    points=points, colors=colors
+                )
+            elif plot_type == 'swarm':
+                __plot_swarm(
+                    ax, x_list, data,
+                    horizontal=horizontal, grouping=grouping
+                )
+            elif plot_type == 'swarm+box':
+                __plot_swarmbox(
+                    ax, x_list, data,
+                    horizontal=horizontal,
+                    grouping=grouping,
+                    box_color=box_color,
+                    box_meanprops=box_meanprops,
+                    box_medianprops=box_medianprops
+                )
+            else:
+                raise ValueError('Unknown plot_type: {}'.format(plot_type))
 
+            if not horizontal:
+                # Vertical plot
+                ax.set_xlim([-1, len(x_list)])
+                ax.set_xticks(range(len(x_list)))
+                if row == 0:
+                    ax.set_xticklabels(x_list, rotation=-45, ha='left', fontsize=tick_fontsize)
+                else:
+                    ax.set_xticklabels([])
 
-            # Draw X/Y labels and title ------------------------------------------
-            ax = fig.add_axes([0, 0, 1, 1])
-            ax.patch.set_alpha(0.0)
-            ax.set_axis_off()
+                if y_lim is None:
+                    pass
+                else:
+                    ax.set_ylim(y_lim)
 
-            # X Label
-            if x_label is not None:
-                txt = y_label if horizontal else x_label
-                ax.text(0.5, 0, txt, verticalalignment='center', horizontalalignment='center', fontsize=fontsize)
+                if y_ticks is not None:
+                    ax.set_yticks(y_ticks)
 
-            # Y label
-            if y_label is not None:
-                txt = x_label if horizontal else y_label
-                ax.text(0, 0.5, txt, verticalalignment='center', horizontalalignment='center', fontsize=fontsize, rotation=90)
+                ax.tick_params(axis='y', labelsize=tick_fontsize, grid_color='gray', grid_linestyle='--', grid_linewidth=0.8)
 
-            # Figure title
-            if title is not None:
-                ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
+                if chance_level is not None:
+                    plt.hlines(chance_level, xmin=plt.gca().get_xlim()[0], xmax=plt.gca().get_xlim()[1], **chance_level_style)
+            else:
+                # Horizontal plot
+                ax.set_ylim([-1, len(x_list)])
+                ax.set_yticks(range(len(x_list)))
+                if col == 0:
+                    ax.set_yticklabels(x_list, fontsize=tick_fontsize)
+                else:
+                    ax.set_yticklabels([])
 
-            figs.append(fig)
+                if y_lim is None:
+                    pass
+                else:
+                    ax.set_xlim(y_lim)
+
+                if y_ticks is not None:
+                    ax.set_xticks(y_ticks)
+
+                ax.tick_params(axis='x', labelsize=tick_fontsize, grid_color='gray', grid_linestyle='--', grid_linewidth=0.8)
+
+                if chance_level is not None:
+                    plt.vlines(chance_level, ymin=plt.gca().get_ylim()[0], ymax=plt.gca().get_ylim()[1], **chance_level_style)
+
+            # Inset title
+            x_range = plt.gca().get_xlim()[1] - plt.gca().get_xlim()[0]
+            y_range = plt.gca().get_ylim()[1] - plt.gca().get_ylim()[0]
+            tpos = (
+                plt.gca().get_xlim()[0] + 0.03 * x_range,
+                plt.gca().get_ylim()[1] - 0.03 * y_range
+            )
+
+            ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', verticalalignment='top', fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
+
+            # Inset legend
+            if grouping:
+                if 'violin' in plot_type:
+                    if i == len(subplot_list) - 1:
+                        group_label_list = group_label_list[::-1]
+                        ax.legend(*zip(*group_label_list), loc='upper left', bbox_to_anchor=(1, 1))
+                else:
+                    plt.legend()
+
+            box_off(ax)
+
+            plt.tight_layout()
+
+        # Draw X/Y labels and title ------------------------------------------
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.patch.set_alpha(0.0)
+        ax.set_axis_off()
+
+        # X Label
+        if x_label is not None:
+            txt = y_label if horizontal else x_label
+            ax.text(0.5, 0, txt, verticalalignment='center', horizontalalignment='center', fontsize=fontsize)
+
+        # Y label
+        if y_label is not None:
+            txt = x_label if horizontal else y_label
+            ax.text(0, 0.5, txt, verticalalignment='center', horizontalalignment='center', fontsize=fontsize, rotation=90)
+
+        # Figure title
+        if title is not None:
+            ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
+
+        figs.append(fig)
 
     if figure is None:
         return figs[0]
     else:
         return figs
+
+
+def __plot_bar(
+        ax, xpos, data_mean,
+        horizontal=False,
+        grouping=False, group_list=[],
+        bar_group_width=0.8
+):
+    if grouping:
+        ydata = np.array(data_mean)
+        n_grp = ydata.shape[1]
+        w = bar_group_width / n_grp
+
+        for grpi in range(n_grp):
+            offset = grpi * w
+            if horizontal:
+                plt.barh(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, grpi], height=w, label=group_list[grpi])
+            else:
+                plt.bar(np.array(xpos) - bar_group_width / 2 + (bar_group_width / 2) * w + offset, ydata[:, grpi], width=w, label=group_list[grpi])
+    else:
+        if horizontal:
+            ax.barh(xpos, data_mean, color='gray')
+        else:
+            ax.bar(xpos, data_mean, color='gray')
+
+
+def __plot_violin(
+        ax, xpos, data,
+        horizontal=False,
+        grouping=False, group_list=[],
+        bar_group_width=0.8, points=100
+):
+    if grouping:
+        n_grp = len(group_list)
+        w = bar_group_width / (n_grp + 1)
+
+        group_label_list = []
+        for grpi in range(n_grp):
+            offset = grpi * w - (n_grp // 2) * w
+            xpos_grp = np.array(xpos) + offset #- bar_group_width / 2 + (bar_group_width / 2) * w + offset
+            ydata_grp =  [a_data[grpi] for a_data in data]
+            violinobj = ax.violinplot(ydata_grp, xpos_grp,
+                                    vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points,
+                                    widths = w * 0.8)
+            color = violinobj["bodies"][0].get_facecolor().flatten()
+            group_label_list.append((mpatches.Patch(color=color), group_list[grpi]))
+    else:
+        ax.violinplot(data, xpos, vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points)
+
+    return group_label_list
+
+
+def __plot_violin_paired(
+        ax, xpos, data,
+        horizontal=False,
+        grouping=False, group_list=[],
+        points=100, colors=None
+):
+    assert grouping
+    n_grp = len(group_list)
+    assert n_grp == 2
+
+    group_label_list = []
+    if colors is not None and len(colors) >= 2:
+        __draw_half_violin(ax, [a_data[0] for a_data in data], points, xpos, color=colors[0], left=True, vert=not horizontal)
+        __draw_half_violin(ax, [a_data[1] for a_data in data], points, xpos, color=colors[1], left=False, vert=not horizontal)
+    else:
+        colors = []
+        color = __draw_half_violin(ax, [a_data[0] for a_data in data], points, xpos, color=None, left=True, vert=not horizontal)
+        colors.append(color)
+        color = __draw_half_violin(ax, [a_data[1] for a_data in data], points, xpos, color=None, left=False, vert=not horizontal)
+        colors.append(color)
+    for color, label in zip(colors, group_list):
+        group_label_list.append((mpatches.Patch(color=color), label))
+
+    return group_label_list
+
+
+def __plot_swarm(
+        ax, x_list, data,
+        horizontal=False,
+        grouping=False,
+):
+    if grouping:
+        raise RuntimeError("The function of grouping on `swarm` plot is not implemeted yet.")
+    else:
+        df_list = []
+        for xi, x_lbl in enumerate(x_list):
+            a_df = pd.DataFrame.from_dict({'y': data[xi]})
+            a_df['x'] = x_lbl
+            df_list.append(a_df)
+        tmp_df = pd.concat(df_list)
+        mean_df = tmp_df.groupby('x', as_index=False).mean()
+        mean_list = [mean_df[mean_df['x'] == x_lbl]['y'].values[0] for x_lbl in x_list]
+        if horizontal:
+            plotx, ploty = 'y', 'x'
+            scatterx, scattery = mean_list, np.arange(len(x_list))
+            scattermark = "|"
+        else:
+            plotx, ploty = 'x', 'y'
+            scatterx, scattery = np.arange(len(x_list)), mean_list
+            scattermark = "_"
+        ax = sns.violinplot(
+            x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
+            data=tmp_df, ax=ax, color="blue", linewidth=0
+        )
+        for violin in ax.collections[::2]:
+            violin.set_alpha(0.6)
+        sns.swarmplot(
+            x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
+            data=tmp_df, ax=ax, color="white", alpha=0.8, size=3
+        )
+        ax.scatter(x=scatterx, y=scattery, marker=scattermark, c="red", linewidths=2, zorder=10)
+
+        ax.set(xlabel=None, ylabel=None)
+
+
+def __plot_swarmbox(
+        ax, x_list, data,
+        horizontal=False,
+        grouping=False,
+        box_color='blue',
+        box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
+        box_medianprops={}
+):
+    if grouping:
+        raise RuntimeError("The function of grouping on `box+swarm` plot is not implemeted yet.")
+    else:
+        df_list = []
+        for xi, x_lbl in enumerate(x_list):
+            a_df = pd.DataFrame.from_dict({'y': data[xi]})
+            a_df['x'] = x_lbl
+            df_list.append(a_df)
+        tmp_df = pd.concat(df_list)
+        if horizontal:
+            plotx, ploty = 'y', 'x'
+        else:
+            plotx, ploty = 'x', 'y'
+        sns.swarmplot(
+            x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
+            data=tmp_df, ax=ax, color="#595959", size=3.5, alpha=0.7
+        )
+        ax = sns.boxplot(
+            x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
+            data=tmp_df, ax=ax, color=box_color, width=0.5, fliersize=3,
+            showmeans=True, meanline=True, meanprops=box_meanprops,
+            medianprops=box_medianprops,
+            boxprops=dict(alpha=.3)
+        )
+        ax.set(xlabel=None, ylabel=None)
+
+
+def __split_list(l, n):
+    for idx in range(0, len(l), n):
+        yield l[idx:idx + n]
+
+
+def __get_data(
+        df, subplot, sp_label,
+        x, x_list, figure, fig_label, y,
+        group, group_list, grouping, removenan
+):
+    data = []
+    for j, x_lbl in enumerate(x_list):
+        if grouping:
+            data_t = []
+            for group_label in group_list:
+                if fig_label is None:
+                    df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, group, group_label, x, x_lbl))
+                else:
+                    df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, group, group_label, figure, fig_label, x, x_lbl))
+                data_tt = df_t[y].values
+                if removenan:
+                    data_tt[0] = np.delete(data_tt[0], np.isnan(data_tt[0]))  # FXIME
+                data_tt = np.array([np.nan, np.nan]) if len(data_tt) == 0 else np.concatenate(data_tt)
+                data_t.append(data_tt)
+            # violinplot requires at least two elements in the dataset
+        else:
+            df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, figure, fig_label, x, x_lbl))
+            data_t = df_t[y].values
+            if removenan:
+                data_t[0] = np.delete(data_t[0], np.isnan(data_t[0]))  # FXIME
+            data_t = np.array([np.nan, np.nan]) if len(data_t) == 0 else np.concatenate(data_t)
+            # violinplot requires at least two elements in the dataset
+
+        data.append(data_t)
+
+    return data
+
+
+def __draw_half_violin(
+        ax, data, points, positions,
+        color=None, left=True, vert=True
+):
+    v = ax.violinplot(data, points=points, positions=positions, vert=vert,
+                      showmeans=True, showextrema=False, showmedians=False)
+    for i, b in enumerate(v['bodies']):
+        if i == 0 and color is None:
+            color = b.get_facecolor().flatten()
+        if vert:
+            # get the center
+            m = np.mean(b.get_paths()[0].vertices[:, 0])
+            if left:
+                # modify the paths to not go further right than the center
+                b.get_paths()[0].vertices[:, 0] = np.clip(b.get_paths()[0].vertices[:, 0], -np.inf, m)
+            else: # right
+                b.get_paths()[0].vertices[:, 0] = np.clip(b.get_paths()[0].vertices[:, 0], m, np.inf)
+        else:
+            # get the center
+            m = np.mean(b.get_paths()[0].vertices[:, 1])
+            if left:
+                b.get_paths()[0].vertices[:, 1] = np.clip(b.get_paths()[0].vertices[:, 1], -np.inf, m)
+            else: # right
+                b.get_paths()[0].vertices[:, 1] = np.clip(b.get_paths()[0].vertices[:, 1], m, np.inf)
+        if color is not None:
+            # TODO: error handling
+            b.set_color(color)
+    return color
