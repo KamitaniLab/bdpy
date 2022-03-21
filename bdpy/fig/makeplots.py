@@ -109,7 +109,7 @@ def makeplots(
     if verbose:
         print('Subplot in {} x {}'.format(row_num, col_num))
 
-    #
+    # Figure instances
     if plot_type == 'paired violin':
         figure_instances = [
             {
@@ -348,10 +348,12 @@ def __plot_violin(
         for grpi in range(n_grp):
             offset = grpi * w - (n_grp // 2) * w
             xpos_grp = np.array(xpos) + offset #- bar_group_width / 2 + (bar_group_width / 2) * w + offset
-            ydata_grp =  [a_data[grpi] for a_data in data]
-            violinobj = ax.violinplot(ydata_grp, xpos_grp,
-                                    vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points,
-                                    widths = w * 0.8)
+            ydata_grp = [a_data[grpi] for a_data in data]
+            violinobj = ax.violinplot(
+                ydata_grp, xpos_grp,
+                vert=not horizontal,
+                showmeans=True, showextrema=False, showmedians=False, points=points,
+                widths=w * 0.8)
             color = violinobj["bodies"][0].get_facecolor().flatten()
             group_label_list.append((mpatches.Patch(color=color), group_list[grpi]))
     else:
