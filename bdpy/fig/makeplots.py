@@ -445,7 +445,7 @@ def __plot_swarmbox(
         horizontal=False,
         grouping=False,
         dot_color='#595959', dot_size=1.5, dot_alpha=0.8,
-        box_color='blue', box_width=0.5, box_linewidth=1, box_props={'alpha': .3}
+        box_color='blue', box_width=0.5, box_linewidth=1, box_props={'alpha': .3},
         box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
         box_medianprops={}
 ):
