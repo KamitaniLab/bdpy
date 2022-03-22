@@ -358,6 +358,7 @@ def __plot_violin(
             group_label_list.append((mpatches.Patch(color=color), group_list[grpi]))
     else:
         ax.violinplot(data, xpos, vert=not horizontal, showmeans=True, showextrema=False, showmedians=False, points=points)
+        group_label_list = None
 
     return group_label_list
 
