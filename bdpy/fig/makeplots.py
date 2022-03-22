@@ -26,7 +26,10 @@ def makeplots(
         fontsize=12, tick_fontsize=9, points=100,
         style='default', colorset=None,
         chance_level=None, chance_level_style={'color': 'k', 'linewidth': 1},
-        box_color='blue',
+        swarm_dot_color='gray',
+        swarm_dot_size=1.5, swarm_dot_alpha=0.8,
+        swarm_violin_color='blue',
+        box_color='blue', box_width=0.5, box_linewidth=1,
         box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
         box_medianprops={},
         removenan=True,
@@ -203,14 +206,21 @@ def makeplots(
             elif plot_type == 'swarm':
                 __plot_swarm(
                     ax, x_list, data,
-                    horizontal=horizontal, grouping=grouping
+                    horizontal=horizontal, grouping=grouping,
+                    dot_color=swarm_dot_color,
+                    dot_size=swarm_dot_size,
+                    dot_alpha=swarm_dot_alpha,
+                    violin_color=swarm_violin_color,
                 )
             elif plot_type == 'swarm+box':
                 __plot_swarmbox(
                     ax, x_list, data,
                     horizontal=horizontal,
                     grouping=grouping,
-                    box_color=box_color,
+                    dot_color=swarm_dot_color,
+                    dot_size=swarm_dot_size,
+                    dot_alpha=swarm_dot_alpha,
+                    box_color=box_color, box_width=box_width, box_linewidth=box_linewidth,
                     box_meanprops=box_meanprops,
                     box_medianprops=box_medianprops
                 )
@@ -393,6 +403,8 @@ def __plot_swarm(
         ax, x_list, data,
         horizontal=False,
         grouping=False,
+        dot_color='#595959', dot_size=1.5, dot_alpha=0.8,
+        violin_color='blue'
 ):
     if grouping:
         raise RuntimeError("The function of grouping on `swarm` plot is not implemeted yet.")
@@ -415,13 +427,13 @@ def __plot_swarm(
             scattermark = "_"
         ax = sns.violinplot(
             x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color="blue", linewidth=0
+            data=tmp_df, ax=ax, color=violin_color, linewidth=0
         )
         for violin in ax.collections[::2]:
             violin.set_alpha(0.6)
         sns.swarmplot(
             x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color="white", alpha=0.8, size=3
+            data=tmp_df, ax=ax, color=dot_color, alpha=dot_alpha, size=dot_size
         )
         ax.scatter(x=scatterx, y=scattery, marker=scattermark, c="red", linewidths=2, zorder=10)
 
@@ -432,7 +444,8 @@ def __plot_swarmbox(
         ax, x_list, data,
         horizontal=False,
         grouping=False,
-        box_color='blue',
+        dot_color='#595959', dot_size=1.5, dot_alpha=0.8,
+        box_color='blue', box_width=0.5, box_linewidth=1, box_props={'alpha': .3}
         box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
         box_medianprops={}
 ):
@@ -451,14 +464,14 @@ def __plot_swarmbox(
             plotx, ploty = 'x', 'y'
         sns.swarmplot(
             x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color="#595959", size=3.5, alpha=0.7
+            data=tmp_df, ax=ax, color=dot_color, size=dot_size, alpha=dot_alpha
         )
         ax = sns.boxplot(
             x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color=box_color, width=0.5, fliersize=3,
+            data=tmp_df, ax=ax, color=box_color, width=box_width, showfliers=False, linewidth=box_linewidth,
             showmeans=True, meanline=True, meanprops=box_meanprops,
             medianprops=box_medianprops,
-            boxprops=dict(alpha=.3)
+            boxprops=box_props
         )
         ax.set(xlabel=None, ylabel=None)
 
