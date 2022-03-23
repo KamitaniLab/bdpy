@@ -19,7 +19,7 @@ def makeplots(
         group=None, group_list=None,
         bar_group_width=0.8,
         plot_type='bar', horizontal=False, ebar=None,
-        plot_size_auto=True, plot_size=(3, 0.25),
+        plot_size_auto=True, plot_size=(4, 0.3),
         max_col=None,
         y_lim=None, y_ticks=None,
         title=None, x_label=None, y_label=None,
