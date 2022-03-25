@@ -310,7 +310,10 @@ def makeplots(
 
         # Figure title
         if title is not None:
-            ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
+            if fig_label is None:
+                ax.text(0.5, 0.99, title, horizontalalignment='center', fontsize=fontsize)
+            else:
+                ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
 
         figs.append(fig)
 
@@ -502,7 +505,10 @@ def __get_data(
                 data_t.append(data_tt)
             # violinplot requires at least two elements in the dataset
         else:
-            df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, figure, fig_label, x, x_lbl))
+            if fig_label is None:
+                df_t = df.query('`{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, x, x_lbl))
+            else:
+                df_t = df.query('`{}` == "{}" & `{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, figure, fig_label, x, x_lbl))
             data_t = df_t[y].values
             if removenan:
                 data_t[0] = np.delete(data_t[0], np.isnan(data_t[0]))  # FXIME
