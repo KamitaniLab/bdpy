@@ -65,6 +65,11 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
     for bi, bc in enumerate(background_color):
         image[:, :, bi] = bc
 
+    # font settings
+    if font_family_path is None:
+        font = font_manager.FontProperties(family='sans-serif', weight='normal')
+        font_family_path = font_manager.findfont(font)
+
     #------------------------------------
     # Draw image
     #------------------------------------
@@ -99,15 +104,11 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
     # convert ndarray to image object
     image_obj = PIL.Image.fromarray(image)
     draw = PIL.ImageDraw.Draw(image_obj)
-    if font_family_path is None:
-        system_fonts = matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
-        draw.font = PIL.ImageFont.truetype(font=system_fonts[0], size=title_fontsize)
-    else:
-        draw.font = PIL.ImageFont.truetype(font=font_family_path, size=title_fontsize)
 
     #------------------------------------
     # Draw title name 
     #------------------------------------
+    draw.font = PIL.ImageFont.truetype(font=font_family_path, size=title_fontsize)
     for cind, condition in enumerate(condition_list):
         for turn_index in range(turn_num):
             # Calc text position
@@ -130,12 +131,7 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
     #------------------------------------
 
     if id_show:
-        if font_family_path is None:
-            system_fonts = matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
-            draw.font = PIL.ImageFont.truetype(font=system_fonts[0], size=id_fontsize)
-        else:
-            draw.font = PIL.ImageFont.truetype(font=font_family_path, size=id_fontsize)
-
+        draw.font = PIL.ImageFont.truetype(font=font_family_path, size=id_fontsize)
         for tind in range(total_image_size):
             #  Calc text position
             row_index = (tind // column_size) * len(condition_list) 
