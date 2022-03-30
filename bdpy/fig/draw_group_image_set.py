@@ -5,6 +5,7 @@ import PIL
 import PIL.ImageDraw
 import PIL.ImageFont
 import matplotlib
+from matplotlib import font_manager
 
 def draw_group_image_set(condition_list, background_color = (255, 255, 255), 
                          image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 20, 0), max_column_size = 13, 
@@ -17,9 +18,10 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
             condition = {
                 "title" : string, # Title name
                 "title_fontcolor" :  string or list,   # HTML color name or RGB value list 
-                "image_filepath_list": list, # Loading image filepath list 
+                "image_list": list, # The list of image filepath, ndarray or PIL.Image object.  
             }
         ```
+        You can also use "image_filepath_list" instead of "image_list".
     background_color : list or tuple
         RGB value list like [Red, Green, Blue].
     image_size: list or tuple
@@ -52,7 +54,15 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
     #------------------------------------
     # Setting
     #------------------------------------
-    total_image_size = len(condition_list[0]["image_filepath_list"])
+
+    for condition in condition_list:
+        if not condition.get("image_filepath_list") and not condition.get("image_list"):
+            raise RuntimeError("The element of `condition_list` needs `image_filepath_list` or `image_list`.")
+            return;
+        elif condition.get("image_filepath_list") and not condition.get("image_list"):
+            condition["image_list"] = condition["image_filepath_list"]
+
+    total_image_size = len(condition_list[0]["image_list"])
     column_size = np.min([max_column_size, total_image_size]) 
 
     # create canvas
@@ -75,14 +85,23 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
     #------------------------------------
     for cind, condition in enumerate(condition_list):
         title = condition['title']
-        image_filepath_list = condition['image_filepath_list']
+        image_list = condition['image_list']
 
         for tind in range(total_image_size):
             # Load image
-            image_filepath = image_filepath_list[tind]
-            if image_filepath is None:
+            an_image = image_list[tind]
+            if an_image is None: # skip
                 continue;
-            image_obj = PIL.Image.open(image_filepath)
+            elif isinstance(an_image, str): # str: filepath
+                image_obj = PIL.Image.open(an_image)
+            elif isinstance(an_image, np.ndarray): # np.ndarray: array
+                image_obj = PIL.Image.fromarray(an_image)
+            elif hasattr(an_image, "im"): # im attribute: PIL.Image
+                image_obj = an_image
+            else:
+                raise RuntimeError("What can be treated as an element of `image_list` is only str, ndarray or PIL.Image type.")
+                return
+
             image_obj = image_obj.convert("RGB")
             image_obj = image_obj.resize((image_size[0], image_size[1]), PIL.Image.LANCZOS)
 
@@ -143,6 +162,5 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
             y = image_margin[3] + group_margin[3] + column_index * (image_size[1] + image_margin[1] + image_margin[3]) 
 
             draw.text([y, x], image_id_list[tind], id_fontcolor)
-    
             
     return image_obj
