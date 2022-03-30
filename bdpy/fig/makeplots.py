@@ -72,10 +72,11 @@ def makeplots(
     subplot_list = subplot_keys if subplot_list is None else subplot_list
     figure_list  = figure_keys  if figure_list  is None else figure_list
     group_list   = group_keys   if group_list   is None else group_list
-    if reverse_x and plot_type=='swarm+box':
+
+    if reverse_x:
         x_list = x_list[::-1]
         group_list = group_list[::-1]
-                        
+
     grouping = group is not None
 
     if plot_type == 'paired violin':
