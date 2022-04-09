@@ -7,10 +7,24 @@ import PIL.ImageFont
 import matplotlib
 from matplotlib import font_manager
 
+def expand2square(pil_img, background_color):
+    width, height = pil_img.size
+    if width == height:
+        return pil_img
+    elif width > height:
+        result = PIL.Image.new(pil_img.mode, (width, width), background_color)
+        result.paste(pil_img, (0, (width - height) // 2))
+        return result
+    else:
+        result = PIL.Image.new(pil_img.mode, (height, height), background_color)
+        result.paste(pil_img, ((height - width) // 2, 0))
+        return result
+
 def draw_group_image_set(condition_list, background_color = (255, 255, 255), 
                          image_size = (160, 160), image_margin = (1, 1, 0, 0), group_margin = (20, 0, 20, 0), max_column_size = 13, 
                          title_fontsize = 20, title_top_padding = 70, title_left_padding = 15, font_family_path = None,
-                         id_show = False, id_fontcolor = "black", id_fontsize = 18, image_id_list = []):
+                         id_show = False, id_fontcolor = "black", id_fontsize = 18, image_id_list = [], maintain_aspect_ratio=False,
+                         image_padding_color=(0, 0, 0)):
     """
     condition_list : list
         Each condition is a dictionary-type object that contains the following information:
@@ -103,6 +117,8 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
                 return
 
             image_obj = image_obj.convert("RGB")
+            if maintain_aspect_ratio:
+                image_obj = expand2square(image_obj, image_padding_color)
             image_obj = image_obj.resize((image_size[0], image_size[1]), PIL.Image.LANCZOS)
 
             # Calc image position
