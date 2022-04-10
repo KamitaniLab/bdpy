@@ -1,6 +1,5 @@
-"""
-Utilities for ROIs
-"""
+'''Utilities for ROIs'''
+
 
 import os
 import glob
@@ -13,19 +12,23 @@ import nibabel.freesurfer
 from bdpy.mri import load_mri
 
 
-def add_roimask(bdata, roi_mask, roi_prefix='',
-                brain_data='VoxelData', xyz=['voxel_x', 'voxel_y', 'voxel_z'],
-                return_roi_flag=False,
-                verbose=True,
-                round=None):
+def add_roimask(
+        bdata, roi_mask, roi_prefix='',
+        brain_data='VoxelData', xyz=['voxel_x', 'voxel_y', 'voxel_z'],
+        return_roi_flag=False,
+        verbose=True,
+        round=None
+):
     '''Add an ROI mask to `bdata`.
+
     Parameters
     ----------
     bdata : BData
     roi_mask : str or list
         ROI mask file(s).
-    round :  int
+    round : int
         Number of decimal places to round the voxel coordinate.
+
     Returns
     -------
     bdata : BData
@@ -97,10 +100,8 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
         return bdata
 
 
-
 def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
-    """
-    Get ROI flags
+    '''Get ROI flags.
 
     Parameters
     ----------
@@ -116,7 +117,7 @@ def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
     -------
     roi_flag : array, shape = (n_rois, n_voxels)
         ROI flag array
-    """
+    '''
 
     epi_voxel_size = epi_xyz_array.shape[1]
 
