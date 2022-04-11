@@ -384,3 +384,82 @@ def merge_rois(bdata, roi_name, merge_expr):
     print('Num voxels or vertexes: %d' % num_voxels)
 
     return bdata
+
+
+def add_hcp_rois(bdata):
+    '''Add HCP ROIs in `bdata`.
+
+    Note
+    ----
+    This function assumes that the HCP ROIs (splitted by left and right) are
+    named as "hcp180_r_lh.L_{}__*_ROI" and "hcp180_r_rh.R_{}__*_ROI".
+    '''
+
+    hcp180_rois = [
+        '1', '10d', '10pp', '10r', '10v', '11l', '13l', '2', '23c', '23d',
+        '24dd', '24dv', '25', '31a', '31pd', '31pv', '33pr', '3a', '3b', '4',
+        '43', '44', '45', '46', '47l', '47m', '47s', '52', '55b', '5L', '5m',
+        '5mv', '6a', '6d', '6ma', '6mp', '6r', '6v', '7AL', '7Am', '7PC',
+        '7PL', '7Pm', '7m', '8Ad', '8Av', '8BL', '8BM', '8C', '9-46d', '9a',
+        '9m', '9p', 'A1', 'A4', 'A5', 'AAIC', 'AIP', 'AVI', 'DVT', 'EC',
+        'FEF', 'FFC', 'FOP1', 'FOP2', 'FOP3', 'FOP4', 'FOP5', 'FST', 'H',
+        'IFJa', 'IFJp', 'IFSa', 'IFSp', 'IP0', 'IP1', 'IP2', 'IPS1', 'Ig',
+        'LBelt', 'LIPd', 'LIPv', 'LO1', 'LO2', 'LO3', 'MBelt', 'MI', 'MIP',
+        'MST', 'MT', 'OFC', 'OP1', 'OP2-3', 'OP4', 'PBelt', 'PCV', 'PEF',
+        'PF', 'PFcm', 'PFm', 'PFop', 'PFt', 'PGi', 'PGp', 'PGs', 'PH', 'PHA1',
+        'PHA2', 'PHA3', 'PHT', 'PI', 'PIT', 'POS1', 'POS2', 'PSL', 'PeEc',
+        'Pir', 'PoI1', 'PoI2', 'PreS', 'ProS', 'RI', 'RSC', 'SCEF', 'SFL',
+        'STGa', 'STSda', 'STSdp', 'STSva', 'STSvp', 'STV', 'TA2', 'TE1a',
+        'TE1m', 'TE1p', 'TE2a', 'TE2p', 'TF', 'TGd', 'TGv', 'TPOJ1', 'TPOJ2',
+        'TPOJ3', 'V1', 'V2', 'V3', 'V3A', 'V3B', 'V3CD', 'V4', 'V4t', 'V6',
+        'V6A', 'V7', 'V8', 'VIP', 'VMV1', 'VMV2', 'VMV3', 'VVC', 'a10p',
+        'a24', 'a24pr', 'a32pr', 'a47r', 'a9-46v', 'd23ab', 'd32', 'i6-8',
+        'p10p', 'p24', 'p24pr', 'p32', 'p32pr', 'p47r', 'p9-46v', 'pOFC',
+        's32', 's6-8', 'v23ab'
+    ]
+
+    hcp_22_regions = {
+        'PVC': ['V1'],
+        'EVC': ['V2', 'V3', 'V4'],
+        'DSVC': ['V3A', 'V7', 'V3B', 'V6', 'V6A', 'IPS1'],
+        'VSVC': ['V8', 'VVC', 'VMV1', 'VMV2', 'VMV3', 'PIT', 'FFC'],
+        'MTcVA': ['V3CD', 'LO1', 'LO2', 'LO3', 'MT', 'MST', 'V4t', 'FST', 'PH'],
+        'SMC': ['4', '3a', '3b', '1', '2'],
+        'PCL_MCC': ['5L', '5m', '5mv', '24dd', '24dv', '6mp', '6ma', 'SCEF'],
+        'PMC': ['6a', '6d', 'FEF', 'PEF', '55b', '6v', '6r'],
+        'POC': ['43', 'FOP1', 'OP4', 'OP2-3', 'OP1', 'PFcm'],
+        'EAC': ['A1', 'MBelt', 'LBelt', 'PBelt', 'RI'],
+        'AAC': ['A4', 'A5', 'STSdp', 'STSda', 'STSvp', 'STSva', 'TA2', 'STGa'],
+        'IFOC': ['52', 'PI', 'Ig', 'PoI1', 'PoI2', 'FOP2', 'Pir', 'AAIC', 'MI', 'FOP3', 'FOP4', 'FOP5', 'AVI'],
+        'MTC': ['H', 'PreS', 'EC', 'PeEc', 'PHA1', 'PHA2', 'PHA3'],
+        'LTC': ['TGd', 'TGv', 'TF', 'TE2a', 'TE2p', 'TE1a', 'TE1m', 'TE1p', 'PHT'],
+        'TPOJ': ['TPOJ2', 'TPOJ3', 'TPOJ1', 'STV', 'PSL'],
+        'SPC': ['MIP', 'LIPv', 'VIP', 'LIPd', 'AIP', '7PC', '7Am', '7AL', '7Pm', '7PL'],
+        'IPC': ['PGp', 'IP0', 'IP1', 'IP2', 'PF', 'PFt', 'PFop', 'PFm', 'PGi', 'PGs'],
+        'PCC': ['DVT', 'ProS', 'POS2', 'POS1', 'RSC', '7m', 'PCV', 'v23ab', 'd23ab', '31pv', '31pd', '31a', '23c', '23d'],
+        'ACC_mPFC': ['33pr', 'a24pr', 'p24pr', 'p24', 'a24', 'p32pr', 'a32pr', 'd32', 'p32', 's32', '8BM', '9m', '10r', '10v', '25'],
+        'OPFC': ['OFC', 'pOFC', '13l', '11l', '47s', '47m', 'a47r', '10pp', 'a10p', 'p10p', '10d'],
+        'IFC': ['44', '45', '47l', 'IFJp', 'IFJa', 'IFSp', 'IFSa', 'p47r'],
+        'DLPFC': ['SFL', 's6-8', 'i6-8', '8BL', '8Ad', '8Av', '8C', '9p', '9a', '9-46d', 'a9-46v', 'p9-46v', '46'],
+    }
+
+    # Merge left and right ROIs
+    for roi in hcp180_rois:
+        name = 'hcp180_{}'.format(roi)
+        if name in bdata.metadata.key:
+            continue
+        select = '"hcp180_r_lh.L_{}_ROI" + "hcp180_r_rh.R_{}_ROI"'.format(roi, roi)
+        print('{}: {}'.format(name, select))
+        bdata = merge_rois(bdata, name, select)
+
+    # Merge HCP ROI groups
+    # See "Supplementary Neuroanatomical Results" of Glasser et al. (2016)
+    # https://www.nature.com/articles/nature18933
+    for name, rois in hcp_22_regions.items():
+        name = 'hcp180_reg_{}'.format(name)
+        if name in bdata.metadata.key:
+            continue
+        select = ' + '.join(['"hcp180_{}"'.format(a) for a in rois])
+        bdata = merge_rois(bdata, name, select)
+
+    return bdata
