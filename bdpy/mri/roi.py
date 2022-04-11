@@ -463,3 +463,38 @@ def add_hcp_rois(bdata):
         bdata = merge_rois(bdata, name, select)
 
     return bdata
+
+
+
+
+def add_hcp_visual_cortex(bdata):
+    '''Add HCP-based visual cortex in `bdata`.'''
+
+    # Whole VC
+    vc_rois = [
+        'V1', 'V2', 'V3', 'V4',
+        'V3A', 'V3B', 'V6', 'V6A', 'V7', 'IPS1',
+        'V8', 'VVC', 'VMV1', 'VMV2', 'VMV3', 'PIT', 'FFC',
+        'V3CD', 'LO1', 'LO2', 'LO3', 'MT', 'MST', 'V4t', 'FST', 'PH',
+        'MIP', 'AIP', 'VIP', 'LIPv', 'LIPd', '7PC', '7Am', '7AL', '7Pm', '7PL',
+        'PHA1', 'PHA2', 'PHA3',
+        'IP0', 'IP1', 'IP2', 'PGp',
+        'TPOJ2', 'TPOJ3',
+        'DVT', 'ProS', 'POS1', 'POS2'
+    ]
+    select = ' + '.join(['"hcp180_{}"'.format(a) for a in vc_rois])
+
+    if 'hcp180_hcpVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_hcpVC', select)
+
+    # Early, Ventral, Dorsal, and MT VC
+    if 'hcp180_EarlyVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_EarlyVC',   'hcp180_V1 + hcp180_V2 + hcp180_V3')
+    if 'hcp180_MTVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_MTVC',      'hcp180_reg_MTcVA + hcp180_TPOJ2 + hcp180_TPOJ3 - hcp180_EarlyVC')
+    if 'hcp180_VentralVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_VentralVC', 'hcp180_V4 + hcp180_reg_VSVC + hcp180_PHA1 + hcp180_PHA2 + hcp180_PHA3 - hcp180_EarlyVC - hcp180_MTVC')
+    if 'hcp180_DorsalVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_DorsalVC',  'hcp180_reg_DSVC + hcp180_reg_SPC + hcp180_PGp + hcp180_IP0 + hcp180_IP1 + hcp180_IP2 - hcp180_EarlyVC - hcp180_MTVC - hcp180_VentralVC')
+
+    return bdata
