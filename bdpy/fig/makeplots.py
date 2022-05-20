@@ -36,7 +36,6 @@ def makeplots(
         verbose=False, colors=None, reverse_x=False
 ):
     '''Make plots.
-
     Parameters
     ----------
     df : pandas.core.frame.DataFrame
@@ -57,14 +56,13 @@ def makeplots(
     tick_fontsize : int
     style : str
     verbose : bool
-
     Returns
     -------
     fig : matplotlib.figure.Figure or list of matplotlib.figure.Figure
     '''
 
     x_keys       = sorted(df[x].unique())
-    subplot_keys = sorted(df[subplot].unique())
+    subplot_keys = sorted(df[subplot].unique()) if subplot is not None else [None]
     figure_keys  = sorted(df[figure].unique()) if figure is not None else [None]
     group_keys   = sorted(df[group].unique()) if group is not None else [None]
 
@@ -75,8 +73,7 @@ def makeplots(
 
     if reverse_x:
         x_list = x_list[::-1]
-        group_list = group_list[::-1]
-
+        
     grouping = group is not None
 
     if plot_type == 'paired violin':
@@ -89,9 +86,10 @@ def makeplots(
 
     if verbose:
         print('X:       {}'.format(x_list))
-        print('Subplot: {}'.format(subplot_list))
         if grouping:
             print('Group by: {} ({})'.format(group_keys, group_list))
+        if subplot is not None:
+            print('Subplot: {}'.format(subplot_list))
         if figure is not None:
             print('Figures: {}'.format(figure_list))
 
@@ -162,18 +160,28 @@ def makeplots(
             # Get data
             if plot_type == 'paired violin':
                 group_list = figure_instance['comparison pair']
-
-            data = __get_data(df, subplot, sp_label,
-                            x, x_list, figure, fig_label, y,
-                            group, group_list, grouping, removenan)
-
-            if not isinstance(sp_label, list):
-                if grouping:
-                    data_mean = [[np.nanmean(d) for d in data_t] for data_t in data]
-                else:
-                    data_mean = [np.nanmean(d) for d in data]
+                
+            if plot_type == "swarm+box":
+                df_t = __strict_data(df, subplot, sp_label,
+                                figure, fig_label, y, removenan)
+                weird_keys = []
+                for key_candidate in [figure, subplot, group, x]:
+                    if key_candidate is not None:
+                        weird_keys.append(key_candidate)
+                df_t = __weird_form_to_long(df_t, y, identify_cols = weird_keys)
+                
             else:
-                data_mean = None
+                data = __get_data(df, subplot, sp_label,
+                                x, x_list, figure, fig_label, y,
+                                group, group_list, grouping, removenan)
+
+                if not isinstance(sp_label, list):
+                    if grouping:
+                        data_mean = [[np.nanmean(d) for d in data_t] for data_t in data]
+                    else:
+                        data_mean = [np.nanmean(d) for d in data]
+                else:
+                    data_mean = None
 
             # Plot
             ax = plt.subplot(row_num, col_num, sbpos)
@@ -217,14 +225,15 @@ def makeplots(
                     violin_color=swarm_violin_color,
                 )
             elif plot_type == 'swarm+box':
-                group_label_list = __plot_swarmbox(
-                    ax, x_list, data,
+                legend_handler = __plot_swarmbox(
+                    ax, x, y, x_list, df_t, 
                     horizontal=horizontal, reverse_x=reverse_x,
-                    grouping=grouping, group_list=group_list, 
+                    grouping=grouping, group=group, group_list=group_list, 
                     dot_color=swarm_dot_color,
                     dot_size=swarm_dot_size,
                     dot_alpha=swarm_dot_alpha,
-                    box_color=box_color, box_width=box_width, box_linewidth=box_linewidth,
+                    box_color=box_color, box_width=box_width, 
+                    box_linewidth=box_linewidth,
                     box_meanprops=box_meanprops,
                     box_medianprops=box_medianprops
                 )
@@ -233,13 +242,8 @@ def makeplots(
 
             if not horizontal:
                 # Vertical plot
-                if grouping and plot_type == 'swarm+box': # swarm+boxのgroupingは擬似的なgroupingになっているためxticksの修正が必要
-                    ax.set_xlim([ -1, len(x_list) * len(group_list) ])
-                    new_x_list = np.arange(len(x_list)) * len(group_list) + len(group_list) / 2. - 0.5
-                    ax.set_xticks(new_x_list)
-                else:
-                    ax.set_xlim([-1, len(x_list)])
-                    ax.set_xticks(range(len(x_list)))
+                ax.set_xlim([-1, len(x_list)])
+                ax.set_xticks(range(len(x_list)))
                     
                 if row == 0:
                     ax.set_xticklabels(x_list, rotation=-45, ha='left', fontsize=tick_fontsize)
@@ -260,13 +264,8 @@ def makeplots(
                     plt.hlines(chance_level, xmin=plt.gca().get_xlim()[0], xmax=plt.gca().get_xlim()[1], **chance_level_style)
             else:
                 # Horizontal plot
-                if grouping and plot_type == 'swarm+box': # swarm+boxのgroupingは擬似的なgroupingになっているためyticksの修正が必要
-                    ax.set_ylim([ -1, len(x_list) * len(group_list) ])
-                    new_x_list = np.arange(len(x_list)) * len(group_list) + len(group_list) / 2. - 0.5
-                    ax.set_yticks(new_x_list)
-                else:
-                    ax.set_ylim([-1, len(x_list)])
-                    ax.set_yticks(range(len(x_list)))
+                ax.set_ylim([-1, len(x_list)])
+                ax.set_yticks(range(len(x_list)))
                                                             
                 if col == 0:
                     ax.set_yticklabels(x_list, fontsize=tick_fontsize)
@@ -291,7 +290,7 @@ def makeplots(
             y_range = plt.gca().get_ylim()[1] - plt.gca().get_ylim()[0]
             tpos = (
                 plt.gca().get_xlim()[0] + 0.03 * x_range,
-                plt.gca().get_ylim()[1] - 0.03 * y_range
+                plt.gca().get_ylim()[1] + 0.01 * y_range
             )
 
             ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', verticalalignment='top', fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
@@ -303,8 +302,7 @@ def makeplots(
                         group_label_list = group_label_list[::-1]
                         ax.legend(*zip(*group_label_list), loc='upper left', bbox_to_anchor=(1, 1))
                 elif plot_type == 'swarm+box':
-                    if i == len(subplot_list) - 1:
-                        ax.legend(*zip(*group_label_list), loc='upper left', bbox_to_anchor=(1, 1))
+                    pass
                 else:
                     plt.legend()
 
@@ -334,6 +332,18 @@ def makeplots(
             else:
                 ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
 
+        # Legend
+        if plot_type == 'swarm+box':
+            if legend_handler is not None:
+                if len(subplot_list) < col_num*row_num:
+                    ax = plt.subplot(row_num, col_num, col_num)
+                else:
+                    ax = fig.add_axes([1, 0.5, 1./col_num*0.6, 0.5])
+                ax.legend(legend_handler[0], legend_handler[1],
+                          loc='upper left', bbox_to_anchor=(0, 1.0), fontsize=tick_fontsize)
+                ax.set_axis_off()
+                plt.tight_layout()
+                
         figs.append(fig)
 
     if figure is None:
@@ -463,125 +473,85 @@ def __plot_swarm(
 
 
 def __plot_swarmbox(
-        ax, x_list, data,
+        ax, x, y, x_list, df_t,
         horizontal=False, reverse_x=False,
-        grouping=False, group_list=[], 
+        grouping=False, group=None, group_list=[], 
         dot_color='#696969', dot_size=3, dot_alpha=0.7,
         box_color='blue', box_width=0.5, box_linewidth=1, box_props={'alpha': .3},
         box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
         box_medianprops={}
 ):
-    group_label_list = []
-    
+    # warning
     if grouping:
-        # color settings
-        if isinstance(box_color, str): # grouping=Trueにも関わらず，カラーが単色で指定されている場合，強制的に複数色リストに変更
-            box_color = [[0.3, 0.3, 1], [1, 0.3, 0.3], [0.3, 1, 0.3], [1, 0.3, 1], [0.3, 1, 1], [1, 1, 0.3], [0.6, 0.6, 0.6]]
-            
-        # data arrangement
-        df_list = []
-        grp_x_list = []
-        for xi, x_lbl in enumerate(x_list):
-            for grpi, grp_lbl in enumerate(group_list):
-                a_df = pd.DataFrame.from_dict({'y': data[xi][grpi]})
-                grp_x = x_lbl + "_" + grp_lbl
-                a_df['x'] = grp_x
-                df_list.append(a_df)
-                grp_x_list.append(grp_x)
-        tmp_df = pd.concat(df_list)
-        
-        # plot
-        if horizontal:
-            plotx, ploty = 'y', 'x'
-        else:
-            plotx, ploty = 'x', 'y'
+        warnings.warn('When grouping is True, "box_width" is not working to make the layout consistent with the swarm plot.')
+    
+    # prepare plot
+    box_color_palette = sns.color_palette("pastel") if grouping else None
+    dot_color_palette = sns.color_palette("bright") if grouping else None
+    if horizontal:
+        plotx, ploty = y, x
+    else:
+        plotx, ploty = x, y
+    
+    # plot swarmplot
+    if grouping:
         sns.swarmplot(
-            x=plotx, y=ploty, order=grp_x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color=dot_color, size=dot_size, alpha=dot_alpha, zorder=10
+            data=df_t, ax=ax, 
+            x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list, 
+            orient="h" if horizontal else "v",
+            palette=dot_color_palette, 
+            dodge=True,
+            color=dot_color, size=dot_size, alpha=dot_alpha, zorder=10
         )
-        ax = sns.boxplot(
-            x=plotx, y=ploty, order=grp_x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color="#0000FF", # この色指定は一時的なもの，後で変更
-            width=box_width, linewidth=box_linewidth,
+    else:
+        sns.swarmplot(
+            data=df_t, ax=ax,
+            x=plotx, y=ploty, order=x_list, 
+            orient="h" if horizontal else "v",
+            color=dot_color, size=dot_size, alpha=dot_alpha, zorder=10
+        )
+        
+    # plot boxplot
+    if grouping:
+        boxax = sns.boxplot(
+            data=df_t, ax=ax, 
+            x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list, 
+            orient="h" if horizontal else "v",
+            palette=dot_color_palette, 
+            linewidth=box_linewidth, 
             showfliers=False, 
             showmeans=True, meanline=True, meanprops=box_meanprops,
             medianprops=box_medianprops,
             boxprops=box_props, zorder=100 # <- This zorder is very important for visualization.
         )
-        ax.set(xlabel=None, ylabel=None)
-        
-        # coloring facecolor
-        artists = ax.artists
-        if reverse_x:
-            artists = artists[::-1]
-        color_patch_list = []
-        for axi, patch in enumerate(artists):
-            grpi = axi % len(group_list)
-            if grpi < len(box_color):
-                colori = grpi
-            else:
-                colori = grpi % len(box_color)
-            a_color = box_color[colori][:] # get rgb color (0~1, 3dim)
-            a_color.append(0.3) # add alpha value
-            patch.set_facecolor(a_color)
-            if axi < len(group_list): # get color patch for legend
-                color_patch_list.append(mpatches.Patch(color=a_color))
-        if reverse_x:
-            group_label_list = list(zip(color_patch_list, group_list[::-1]))
-        else:
-            group_label_list = list(zip(color_patch_list, group_list))
-                
-    else:
-        # color settings
-        # box_colorとしてlistが与えられていた場合，中身が単色のRGBAリストか， 複数色のRGBを格納したリストかを判定する
-        # 単色の場合はそのままboxplotに与えてOK
-        box_color_list = []
-        if hasattr(box_color, '__iter__'): 
-            if np.asarray(box_color).ndim == 2:
-                # 二重リストになる場合， 複数色のRGBのリストと判定し， box_color_listとして保持
-                box_color_list = box_color
-                box_color = "#0000FF" # temporaliry color
-            
-        # data arrangement
-        df_list = []
-        for xi, x_lbl in enumerate(x_list):
-            a_df = pd.DataFrame.from_dict({'y': data[xi]})
-            a_df['x'] = x_lbl
-            df_list.append(a_df)
-        tmp_df = pd.concat(df_list)
-        
-        # plot
+        # prepare legend
+        handlers, labels = boxax.get_legend_handles_labels()
+        handlers = handlers[:len(group_list)]
+        labels = labels[:len(group_list)]
         if horizontal:
-            plotx, ploty = 'y', 'x'
+            legend_handler = [handlers[::-1], labels[::-1]]
         else:
-            plotx, ploty = 'x', 'y'
-        sns.swarmplot(
-            x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color=dot_color, size=dot_size, alpha=dot_alpha, zorder=10
-        )
-        ax = sns.boxplot(
-            x=plotx, y=ploty, order=x_list, orient="h" if horizontal else "v",
-            data=tmp_df, ax=ax, color=box_color, 
-            width=box_width,  linewidth=box_linewidth, 
+            legend_handler = [handlers, labels]
+        ax.get_legend().remove()
+    else:
+        sns.boxplot(
+            data=df_t, ax=ax, 
+            x=plotx, y=ploty, order=x_list, 
+            orient="h" if horizontal else "v",
+            color=box_color, 
+            linewidth=box_linewidth,
+            width=box_width,
             showfliers=False, 
             showmeans=True, meanline=True, meanprops=box_meanprops,
             medianprops=box_medianprops,
-            boxprops=box_props, zorder=100 # <- This zorder is very important for visualization. 
+            boxprops=box_props, zorder=100 # <- This zorder is very important for visualization.
         )
-        ax.set(xlabel=None, ylabel=None)
+        legend_handler = None
         
-        # coloring facecolor if `box_color` is specified
-        if not len(box_color_list) == 0:
-            artists = ax.artists
-            if reverse_x:
-                artists = artists[::-1]
-            for axi, patch in enumerate(artists):
-                colori = axi % len(box_color_list)
-                a_color = box_color_list[colori][:] # get rgb color (0~1, 3dim)
-                a_color.append(0.3) # add alpha value
-                patch.set_facecolor(a_color)
+    # remove label
+    ax.set(xlabel=None, ylabel=None)
                 
-    return group_label_list
+    return legend_handler
 
 
 def __split_list(l, n):
@@ -624,6 +594,31 @@ def __get_data(
 
     return data
 
+def __strict_data(
+        df, subplot, sp_label, figure, fig_label, y, removenan
+):
+    if fig_label is None and sp_label is None:
+        df_t = df
+    elif fig_label is None:
+        df_t = df.query('`{}` == "{}"'.format(subplot, sp_label))
+    else:
+        df_t = df.query('`{}` == "{}" & `{}` == "{}"'.format(subplot, sp_label, figure, fig_label))
+    df_t = df_t.reset_index(drop=True)
+
+    if removenan:
+        df_t[y] = df_t[y].apply(lambda x: np.delete(x, np.isnan(x)))
+        
+    return df_t
+
+def __weird_form_to_long(df, target_col, identify_cols=[]):
+    df_result = pd.DataFrame()
+    for i, row in df.iterrows():
+        tmp = {}
+        for col in identify_cols:
+            tmp[col] = row[col]
+        tmp[target_col] = row[target_col]
+        df_result = pd.concat([df_result, pd.DataFrame(tmp)])
+    return df_result
 
 def __draw_half_violin(
         ax, data, points, positions,
