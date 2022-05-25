@@ -310,7 +310,19 @@ def makeplots(
 
             plt.tight_layout()
 
-        # Draw X/Y labels and title ------------------------------------------
+        # Draw legend, X/Y labels, and title ------------------------------------------
+        # Legend
+        if plot_type == 'swarm+box':
+            if legend_handler is not None:
+                if len(subplot_list) < col_num*row_num:
+                    ax = plt.subplot(row_num, col_num, col_num)
+                else:
+                    ax = fig.add_axes([1, 0.5, 1./col_num*0.6, 0.5])
+                ax.legend(legend_handler[0], legend_handler[1],
+                          loc='upper left', bbox_to_anchor=(0, 1.0), fontsize=tick_fontsize)
+                ax.set_axis_off()
+                plt.tight_layout()
+                
         ax = fig.add_axes([0, 0, 1, 1])
         ax.patch.set_alpha(0.0)
         ax.set_axis_off()
@@ -332,18 +344,6 @@ def makeplots(
             else:
                 ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
 
-        # Legend
-        if plot_type == 'swarm+box':
-            if legend_handler is not None:
-                if len(subplot_list) < col_num*row_num:
-                    ax = plt.subplot(row_num, col_num, col_num)
-                else:
-                    ax = fig.add_axes([1, 0.5, 1./col_num*0.6, 0.5])
-                ax.legend(legend_handler[0], legend_handler[1],
-                          loc='upper left', bbox_to_anchor=(0, 1.0), fontsize=tick_fontsize)
-                ax.set_axis_off()
-                plt.tight_layout()
-                
         figs.append(fig)
 
     if figure is None:
