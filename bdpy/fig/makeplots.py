@@ -73,7 +73,7 @@ def makeplots(
 
     if reverse_x:
         x_list = x_list[::-1]
-        
+
     grouping = group is not None
 
     if plot_type == 'paired violin':
@@ -160,20 +160,24 @@ def makeplots(
             # Get data
             if plot_type == 'paired violin':
                 group_list = figure_instance['comparison pair']
-                
+
             if plot_type == "swarm+box":
-                df_t = __strict_data(df, subplot, sp_label,
-                                figure, fig_label, y, removenan)
+                df_t = __strict_data(
+                    df, subplot, sp_label,
+                    figure, fig_label, y, removenan
+                )
                 weird_keys = []
                 for key_candidate in [figure, subplot, group, x]:
                     if key_candidate is not None:
                         weird_keys.append(key_candidate)
                 df_t = __weird_form_to_long(df_t, y, identify_cols = weird_keys)
-                
+
             else:
-                data = __get_data(df, subplot, sp_label,
-                                x, x_list, figure, fig_label, y,
-                                group, group_list, grouping, removenan)
+                data = __get_data(
+                    df, subplot, sp_label,
+                    x, x_list, figure, fig_label, y,
+                    group, group_list, grouping, removenan
+                )
 
                 if not isinstance(sp_label, list):
                     if grouping:
@@ -226,13 +230,13 @@ def makeplots(
                 )
             elif plot_type == 'swarm+box':
                 legend_handler = __plot_swarmbox(
-                    ax, x, y, x_list, df_t, 
+                    ax, x, y, x_list, df_t,
                     horizontal=horizontal, reverse_x=reverse_x,
-                    grouping=grouping, group=group, group_list=group_list, 
+                    grouping=grouping, group=group, group_list=group_list,
                     dot_color=swarm_dot_color,
                     dot_size=swarm_dot_size,
                     dot_alpha=swarm_dot_alpha,
-                    box_color=box_color, box_width=box_width, 
+                    box_color=box_color, box_width=box_width,
                     box_linewidth=box_linewidth,
                     box_meanprops=box_meanprops,
                     box_medianprops=box_medianprops
@@ -244,7 +248,7 @@ def makeplots(
                 # Vertical plot
                 ax.set_xlim([-1, len(x_list)])
                 ax.set_xticks(range(len(x_list)))
-                    
+
                 if row == 0:
                     ax.set_xticklabels(x_list, rotation=-45, ha='left', fontsize=tick_fontsize)
                 else:
@@ -266,7 +270,7 @@ def makeplots(
                 # Horizontal plot
                 ax.set_ylim([-1, len(x_list)])
                 ax.set_yticks(range(len(x_list)))
-                                                            
+
                 if col == 0:
                     ax.set_yticklabels(x_list, fontsize=tick_fontsize)
                 else:
@@ -310,7 +314,8 @@ def makeplots(
 
             plt.tight_layout()
 
-        # Draw legend, X/Y labels, and title ------------------------------------------
+        # Draw legend, X/Y labels, and title ----------------------------
+
         # Legend
         if plot_type == 'swarm+box':
             if legend_handler is not None:
@@ -322,7 +327,7 @@ def makeplots(
                           loc='upper left', bbox_to_anchor=(0, 1.0), fontsize=tick_fontsize)
                 ax.set_axis_off()
                 plt.tight_layout()
-                
+
         ax = fig.add_axes([0, 0, 1, 1])
         ax.patch.set_alpha(0.0)
         ax.set_axis_off()
@@ -389,7 +394,7 @@ def __plot_violin(
         group_label_list = []
         for grpi in range(n_grp):
             offset = grpi * w - (n_grp // 2) * w
-            xpos_grp = np.array(xpos) + offset #- bar_group_width / 2 + (bar_group_width / 2) * w + offset
+            xpos_grp = np.array(xpos) + offset  #- bar_group_width / 2 + (bar_group_width / 2) * w + offset
             ydata_grp = [a_data[grpi] for a_data in data]
             violinobj = ax.violinplot(
                 ydata_grp, xpos_grp,
@@ -475,7 +480,7 @@ def __plot_swarm(
 def __plot_swarmbox(
         ax, x, y, x_list, df_t,
         horizontal=False, reverse_x=False,
-        grouping=False, group=None, group_list=[], 
+        grouping=False, group=None, group_list=[],
         dot_color='#696969', dot_size=3, dot_alpha=0.7,
         box_color='blue', box_width=0.5, box_linewidth=1, box_props={'alpha': .3},
         box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
@@ -484,7 +489,7 @@ def __plot_swarmbox(
     # warning
     if grouping:
         warnings.warn('When grouping is True, "box_width" is not working to make the layout consistent with the swarm plot.')
-    
+
     # prepare plot
     box_color_palette = sns.color_palette("pastel") if grouping else None
     dot_color_palette = sns.color_palette("bright") if grouping else None
@@ -492,37 +497,37 @@ def __plot_swarmbox(
         plotx, ploty = y, x
     else:
         plotx, ploty = x, y
-    
+
     # plot swarmplot
     if grouping:
         sns.swarmplot(
-            data=df_t, ax=ax, 
-            x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list, 
+            data=df_t, ax=ax,
+            x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
             orient="h" if horizontal else "v",
-            palette=dot_color_palette, 
+            palette=dot_color_palette,
             dodge=True,
             color=dot_color, size=dot_size, alpha=dot_alpha, zorder=10
         )
     else:
         sns.swarmplot(
             data=df_t, ax=ax,
-            x=plotx, y=ploty, order=x_list, 
+            x=plotx, y=ploty, order=x_list,
             orient="h" if horizontal else "v",
             color=dot_color, size=dot_size, alpha=dot_alpha, zorder=10
         )
-        
+
     # plot boxplot
     if grouping:
         boxax = sns.boxplot(
-            data=df_t, ax=ax, 
-            x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list, 
+            data=df_t, ax=ax,
+            x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
             orient="h" if horizontal else "v",
-            palette=dot_color_palette, 
-            linewidth=box_linewidth, 
-            showfliers=False, 
+            palette=dot_color_palette,
+            linewidth=box_linewidth,
+            showfliers=False,
             showmeans=True, meanline=True, meanprops=box_meanprops,
             medianprops=box_medianprops,
-            boxprops=box_props, zorder=100 # <- This zorder is very important for visualization.
+            boxprops=box_props, zorder=100  # <- This zorder is very important for visualization.
         )
         # prepare legend
         handlers, labels = boxax.get_legend_handles_labels()
@@ -535,22 +540,22 @@ def __plot_swarmbox(
         ax.get_legend().remove()
     else:
         sns.boxplot(
-            data=df_t, ax=ax, 
-            x=plotx, y=ploty, order=x_list, 
+            data=df_t, ax=ax,
+            x=plotx, y=ploty, order=x_list,
             orient="h" if horizontal else "v",
-            color=box_color, 
+            color=box_color,
             linewidth=box_linewidth,
             width=box_width,
-            showfliers=False, 
+            showfliers=False,
             showmeans=True, meanline=True, meanprops=box_meanprops,
             medianprops=box_medianprops,
-            boxprops=box_props, zorder=100 # <- This zorder is very important for visualization.
+            boxprops=box_props, zorder=100  # <- This zorder is very important for visualization.
         )
         legend_handler = None
-        
+
     # remove label
     ax.set(xlabel=None, ylabel=None)
-                
+
     return legend_handler
 
 
@@ -594,6 +599,7 @@ def __get_data(
 
     return data
 
+
 def __strict_data(
         df, subplot, sp_label, figure, fig_label, y, removenan
 ):
@@ -607,8 +613,9 @@ def __strict_data(
 
     if removenan:
         df_t[y] = df_t[y].apply(lambda x: np.delete(x, np.isnan(x)))
-        
+
     return df_t
+
 
 def __weird_form_to_long(df, target_col, identify_cols=[]):
     df_result = pd.DataFrame()
@@ -619,6 +626,7 @@ def __weird_form_to_long(df, target_col, identify_cols=[]):
         tmp[target_col] = row[target_col]
         df_result = pd.concat([df_result, pd.DataFrame(tmp)])
     return df_result
+
 
 def __draw_half_violin(
         ax, data, points, positions,
