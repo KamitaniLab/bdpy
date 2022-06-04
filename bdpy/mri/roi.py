@@ -333,6 +333,7 @@ def merge_rois(bdata, roi_name, merge_expr):
             tkn = tkn.replace("'", '')
             tkn_e = re.escape(tkn)
             tkn_e = tkn_e.replace('\*', '.*')
+            tkn_e = tkn_e + '$'  # To mimic `fullmatch` that is available in Python >= 3.4
 
             mks = [k for k in bdata.metadata.key if re.match(tkn_e, k)]
             if len(mks) == 0:
