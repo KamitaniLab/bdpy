@@ -387,7 +387,7 @@ def merge_rois(bdata, roi_name, merge_expr):
     return bdata
 
 
-def add_hcp_rois(bdata):
+def add_hcp_rois(bdata, overwrite=False):
     '''Add HCP ROIs in `bdata`.
 
     Note
@@ -447,7 +447,7 @@ def add_hcp_rois(bdata):
     # Merge left and right ROIs
     for roi in hcp180_rois:
         name = 'hcp180_{}'.format(roi)
-        if name in bdata.metadata.key:
+        if not overwrite and name in bdata.metadata.key:
             continue
         select = '"hcp180_r_lh.L_{}_ROI" + "hcp180_r_rh.R_{}_ROI"'.format(roi, roi)
         print('{}: {}'.format(name, select))
@@ -458,7 +458,7 @@ def add_hcp_rois(bdata):
     # https://www.nature.com/articles/nature18933
     for name, rois in hcp_22_regions.items():
         name = 'hcp180_reg_{}'.format(name)
-        if name in bdata.metadata.key:
+        if not overwrite and name in bdata.metadata.key:
             continue
         select = ' + '.join(['"hcp180_{}"'.format(a) for a in rois])
         bdata = merge_rois(bdata, name, select)
@@ -466,9 +466,7 @@ def add_hcp_rois(bdata):
     return bdata
 
 
-
-
-def add_hcp_visual_cortex(bdata):
+def add_hcp_visual_cortex(bdata, overwrite=False):
     '''Add HCP-based visual cortex in `bdata`.'''
 
     # Whole VC
@@ -485,17 +483,17 @@ def add_hcp_visual_cortex(bdata):
     ]
     select = ' + '.join(['"hcp180_{}"'.format(a) for a in vc_rois])
 
-    if 'hcp180_hcpVC' not in bdata.metadata.key:
+    if overwrite or 'hcp180_hcpVC' not in bdata.metadata.key:
         bdata = merge_rois(bdata, 'hcp180_hcpVC', select)
 
     # Early, Ventral, Dorsal, and MT VC
-    if 'hcp180_EarlyVC' not in bdata.metadata.key:
+    if overwrite or 'hcp180_EarlyVC' not in bdata.metadata.key:
         bdata = merge_rois(bdata, 'hcp180_EarlyVC',   'hcp180_V1 + hcp180_V2 + hcp180_V3')
-    if 'hcp180_MTVC' not in bdata.metadata.key:
+    if overwrite or 'hcp180_MTVC' not in bdata.metadata.key:
         bdata = merge_rois(bdata, 'hcp180_MTVC',      'hcp180_reg_MTcVA + hcp180_TPOJ2 + hcp180_TPOJ3 - hcp180_EarlyVC')
-    if 'hcp180_VentralVC' not in bdata.metadata.key:
+    if overwrite or 'hcp180_VentralVC' not in bdata.metadata.key:
         bdata = merge_rois(bdata, 'hcp180_VentralVC', 'hcp180_V4 + hcp180_reg_VSVC + hcp180_PHA1 + hcp180_PHA2 + hcp180_PHA3 - hcp180_EarlyVC - hcp180_MTVC')
-    if 'hcp180_DorsalVC' not in bdata.metadata.key:
+    if overwrite or 'hcp180_DorsalVC' not in bdata.metadata.key:
         bdata = merge_rois(bdata, 'hcp180_DorsalVC',  'hcp180_reg_DSVC + hcp180_reg_SPC + hcp180_PGp + hcp180_IP0 + hcp180_IP1 + hcp180_IP2 - hcp180_EarlyVC - hcp180_MTVC - hcp180_VentralVC')
 
     return bdata
