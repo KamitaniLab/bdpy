@@ -100,6 +100,7 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True, r
                 s = s[~np.isnan(s)]
             ac = np.sum(s < 0) / (len(s) - 1)
             cr.append(ac)
+        cr = np.asarray(cr)
     else:
         d = 1 - cdist(p, t, metric=metric)
 
