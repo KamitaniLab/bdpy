@@ -73,7 +73,7 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
     return r
 
 
-def pairwise_identification(pred, true, metric='correlation', remove_nan=True, remove_nan_dist=True):
+def pairwise_identification(pred, true, metric='correlation', remove_nan=True, remove_nan_dist=True, single_trial=False, pred_labels=None, true_labels=None):
     '''Pair-wise identification.'''
 
     p = pred.reshape(pred.shape[0], -1)
@@ -87,20 +87,34 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True, r
         p = p[:, ~nan_cols]
         t = t[:, ~nan_cols]
 
-    d = 1 - cdist(p, t, metric=metric)
-
-    if remove_nan_dist:
+    if single_trial:
         cr = []
-        for d_ind in range(d.shape[0]):
-            pef = d[d_ind, :] - d[d_ind, d_ind]
-            if np.isnan(pef).any():
-                warnings.warn('NaN value detected in the distance matrix ({}).'.format(np.sum(np.isnan(pef))))
-                pef = pef[~np.isnan(pef)] # Remove nan value from the comparison for identification
-            pef = np.sum(pef < 0) / (len(pef) - 1)
-            cr.append(pef)
-        cr = np.asarray(cr)
+        for i in range(p.shape[0]):
+            d = 1 - cdist(p[i][np.newaxis], t, metric=metric)
+            # label の情報
+            ind = np.where(np.array(true_labels) == pred_labels[i])[0][0]
+
+            s = (d - d[0, ind]).flatten()
+            if remove_nan_dist and np.isnan(s).any():
+                warnings.warn('NaN value detected in the distance matrix ({}).'.format(np.sum(np.isnan(s))))
+                s = s[~np.isnan(s)]
+            ac = np.sum(s < 0) / (len(s) - 1)
+            cr.append(ac)
     else:
-        cr = np.sum(d - np.diag(d)[:, np.newaxis] < 0, axis=1) / (d.shape[1] - 1)
+        d = 1 - cdist(p, t, metric=metric)
+
+        if remove_nan_dist:
+            cr = []
+            for d_ind in range(d.shape[0]):
+                pef = d[d_ind, :] - d[d_ind, d_ind]
+                if np.isnan(pef).any():
+                    warnings.warn('NaN value detected in the distance matrix ({}).'.format(np.sum(np.isnan(pef))))
+                    pef = pef[~np.isnan(pef)] # Remove nan value from the comparison for identification
+                pef = np.sum(pef < 0) / (len(pef) - 1)
+                cr.append(pef)
+            cr = np.asarray(cr)
+        else:
+            cr = np.sum(d - np.diag(d)[:, np.newaxis] < 0, axis=1) / (d.shape[1] - 1)
 
     return cr
 
