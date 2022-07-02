@@ -9,7 +9,10 @@ import torch
 
 
 class FeatureExtractor(object):
-    def __init__(self, encoder, layers=None, layer_mapping=None, device='cpu', detach=True):
+    def __init__(self, encoder, layers=None, layer_mapping=None,
+                 device='cpu', detach=True, targets=None,
+                 return_final_output=False, final_output_saving_name='model_output',
+                 sample_axis_list=None):
         self._encoder = encoder
         self.__layers = layers
         self.__layer_map = layer_mapping
@@ -20,10 +23,39 @@ class FeatureExtractor(object):
 
         self._encoder.to(self.__device)
 
+        targets = self.get_target_dict(targets)
+
+        self.return_final_output = return_final_output
+        self.final_output_saving_name = final_output_saving_name
+        if return_final_output and final_output_saving_name in self.__layers:
+            self.__layers.remove(final_output_saving_name)
+
         for layer in self.__layers:
+            target = targets[layer]
             if self.__layer_map is not None:
                 layer = self.__layer_map[layer]
-            eval('self._encoder.{}.register_forward_hook(self._extractor)'.format(layer))
+            eval('self._encoder.{}.register_forward_hook(self._extractor.get_extraction_function("{}"))'.format(layer, target))
+
+        self.sample_axis_list = sample_axis_list
+
+    def get_target_dict(self, targets):
+        default_target = 'module_out'
+        if targets is None:
+            targets = {}
+        elif isinstance(targets, list):
+            target_dict = {}
+            for i, target in enumerate(targets):
+                target_dict[self.__layers[i]] = target
+            targets = target_dict
+        elif isinstance(targets, str):
+            assert targets in ['module_in', 'module_out']
+            default_target = targets
+            targets = {}
+        assert isinstance(targets, dict)
+        for layer in self.__layers:
+            if layer not in targets:
+                targets[layer] = default_target
+        return targets
 
     def __call__(self, x) -> dict:
         return self.run(x)
@@ -35,27 +67,66 @@ class FeatureExtractor(object):
         else:
             xt = x
 
-        self._encoder.forward(xt)
+        final_output = self._encoder.forward(xt)
 
-        features = {
-            layer: self._extractor.outputs[i]
-            for i, layer in enumerate(self.__layers)
-        }
+        features = {}
+        for feature, layer in zip(self._extractor.outputs, self.__layers):
+            if isinstance(feature, tuple): # This is true for "module_in", and "module_out" for some types of layers
+                print(layer, feature)
+                assert isinstance(layer, tuple)
+                assert len(feature) == len(layer)
+                for i, sublayer in enumerate(layer):
+                    features[sublayer] = feature[i]
+            else:
+                features[layer] = feature
+
+        if self.return_final_output:
+            features[self.final_output_saving_name] = final_output
         if self.__detach:
             features = {
                 k: v.cpu().detach().numpy()
                 for k, v in features.items()
             }
 
+        features = self.change_sample_axis(features)
+
         return features
+
+    def change_sample_axis(self, features):
+        if self.sample_axis_list is None:
+            return features
+        else:
+            for layer, sample_axis in self.sample_axis_list.items():
+                if layer in features:
+                    if sample_axis != 0:
+                        feature = features[layer]
+                        ndim = feature.ndim
+                        axes = list(range(ndim))
+                        axes.remove(sample_axis)
+                        axes.insert(0, sample_axis)
+                        if not self.__detach:
+                            features[layer] = feature.transpose(*axes)
+                        else:
+                            features[layer] = feature.permute(*axes)
+            return features
 
 
 class FeatureExtractorHandle(object):
     def __init__(self):
         self.outputs = []
 
-    def __call__(self, module, module_in, module_out):
+    def get_extraction_function(self, target: str):
+        assert target in ['module_in', 'module_out']
+        if target == 'module_in':
+            return self.save_input
+        else: # target == self.save_output
+            return self.save_output
+
+    def save_output(self, module, module_in, module_out):
         self.outputs.append(module_out)
+
+    def save_input(self, module, module_in, module_out):
+        self.outputs.append(module_in)
 
     def clear(self):
         self.outputs = []

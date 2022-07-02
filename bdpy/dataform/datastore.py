@@ -9,6 +9,7 @@ from __future__ import print_function
 import os
 import glob
 import re
+from pathlib import Path
 
 import numpy as np
 import scipy.io as sio
@@ -285,3 +286,91 @@ class DecodedFeatures(DirStore):
             for f in glob.glob(os.path.join(self._dpath, '*/*/*', '*.mat'))
         ]))
         return labels
+
+
+class GeneralFeatures(DirStore):
+    def __init__(self, dpath, dirs_pattern=[],
+                 file_pattern='<image>.mat', squeeze=False):
+        DirStore.__init__(self, dpath,
+                          dirs_pattern=dirs_pattern,
+                          file_pattern=file_pattern,
+                          variable='feat',
+                          squeeze=squeeze)
+
+    @property
+    def labels(self):
+        dpath = Path(self._dpath)
+        search_pattern = Path('')
+        for i in range(len(self._DirStore__dirs_pattern)):
+            search_pattern = search_pattern / '*'
+        file_pattern = self._DirStore__file_pattern
+        wild_patterns_in_file_pattern = re.findall('(<[^<]*>)', file_pattern)
+        for wild_pattern in wild_patterns_in_file_pattern:
+            file_pattern = file_pattern.replace(wild_pattern, '*')
+        search_pattern = search_pattern / file_pattern
+
+        labels = sorted(np.unique(
+            [file_path.stem
+            for file_path in dpath.glob(str(search_pattern))]
+        ))
+
+        return labels
+
+    def get(self, **kargs):
+        '''Returns data specified by kargs.
+        Example
+        -------
+        Files are organized as below:
+            <dpath>/<layer>/<subject>/<roi>/<image>.mat
+        Then,
+            ds = DirStore('./data/dir',
+                          dirs_pattern=['layer', 'subject', 'roi'],
+                          file_pattern='<image>.mat',
+                          variable='feat')
+            data = ds.get(layer='conv1', subject='TH', roi='VC', image='Image_001')
+        the above code reads ./data/dir/conv1/subject/TH/VC/Image_001.mat and
+        returns variable 'feat' in the file.
+        '''
+
+        # Sub-directories
+        if len(self._DirStore__dirs_pattern) > 0:
+            subdir_path = os.path.join(*[kargs[p] for p in self._DirStore__dirs_pattern])
+        else:
+            subdir_path = ''
+
+        # File name
+        file_name = self._DirStore__file_pattern
+        match = re.findall('<(.*?)>', file_name)
+        replace_dict = {}
+        for m in match:
+            if m in kargs:
+                replace_dict.update({'<' + m + '>': kargs[m]})
+
+        if not replace_dict:
+            match = re.findall('<.*>(.*)', file_name)
+            # FXIME
+            file_path = os.path.join(self._DirStore__dpath, subdir_path, '*' + match[0])
+        else:
+            for k, v in replace_dict.items():
+                file_name = file_name.replace(k, v)
+                file_path = os.path.join(self._DirStore__dpath, subdir_path, file_name)
+
+        # Get files
+        files = sorted(glob.glob(file_path))
+
+        if len(files) == 0:
+            raise RuntimeError('File not found: %s' % file_path)
+        elif len(files) >= 2:
+            # FIXME
+            dat = np.vstack([
+                self._DirStore__load_feature(f)
+                for f in files
+            ])
+            self._file_names = [
+                os.path.splitext(os.path.basename(f))[0]
+                for f in files
+            ]
+        else:
+            dat = self._DirStore__load_feature(files[0])
+
+        return dat
