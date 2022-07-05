@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+__all__ = ['layer_map', 'VGG19', 'AlexNet', 'AlexNetGenerator']
 
 def layer_map(net):
     maps = {

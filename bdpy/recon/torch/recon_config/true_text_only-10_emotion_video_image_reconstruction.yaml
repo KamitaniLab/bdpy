@@ -1,0 +1,153 @@
+general_settings:
+  device: 'cuda:0'
+  # label_upperbound: '401'
+  label_lowerbound: '342'
+
+output_settings:
+  output_root: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results
+  experiment_name: new_ver_with_emotion_with_generator
+  experiment_name_from_options: False
+  save_snapshot: True
+  save_loss_hist: True
+  snapshot_ext: .tiff
+  retult_image_ext: .tiff
+  snapshot_interval: 50
+  info_display_interval: 1 # FIXME: currently not working
+  save_generator_feature: True
+  save_final_encoder_activations: True # FIXME: NYI
+  no_postproc_for_snapshot: True # FIXME: currently not working
+
+# ------------------------- #
+optimization_settings:
+  n_iter: 100
+  image_shape: [224, 224, 3] # image shape should be included in loss settings
+
+  generator:
+    use_generator: True
+    network_name: AlexNetGenerator_ILSVRC2012_Training_relu7
+    params_file: /home/eitoikuta/reconstruction_revised/AlexNetGenerator/ILSVRC2012_Training/relu7/generator.pt
+    feature_range_file: /home/eitoikuta/reconstruction_revised/AlexNetGenerator/ILSVRC2012_Training/relu7/act_range_3x.txt
+    feature_shape: [4096]
+    output_BGR: True # this information will be used for loss settings
+    # deprocess: null # TODO: use this field to specify denormalization function
+    deprocess:
+      mean: [104, 117, 123]
+      std: [1, 1, 1]
+  image_postprocess: null
+  snapshot_postprocess: null
+
+  normalize_gradients: True
+
+  optimizer_info:
+    optimizer_name: Adam
+    param_dicts:
+      - param_name: lr
+        param_values: [2., 1e-10]
+      # - param_name: momentum
+      #   param_values: [0.9, 0.9]
+
+  inter_step_processes:
+    - process_name: L2_decay
+      param_values: [0.2, 1e-10]
+    # - process_name: image_blurring
+    #   param_values: [2., .5]
+
+    - process_name: feature_clipping
+      param_values:
+        - null # TODO: change programs to load the value from a file if path is specified
+        - /home/eitoikuta/reconstruction_revised/AlexNetGenerator/ILSVRC2012_Training/relu7/act_range_3x.txt
+
+  stabilizing_processes:
+    - process_name: jittering
+      jitter_size: 4
+
+# ------------------------- #
+loss_settings:
+  # - loss_type: ImageEncoderActivationLoss
+  #   encoder_info:
+  #     network_name: CLIP_ViT-B_32
+  #     std_file: /home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/features_std_ddof1_ImageNet_include_output.mat
+  #     std_ddof: 1
+  #     model_inputs_are_RGB: True
+  #     preprocess_from_PIL: False # TODO: where should this arg be placed?
+  #     image_encoder_only: True
+  #     input_image_shape: [224, 224]
+  #   num_layers_to_use: 27
+  #   # num_layers_to_use: [27] # FIXME: list will not be accepted
+  #   ref_feature_info:
+  #     input_type: image
+  #     layer_mapping_pkl: /home/eitoikuta/reconstruction_revised/extracted_features/CLIP_ViT-B_32/layer_mapping_include_output.pkl
+  #     decoded: True # for enabling to use true features easily
+  #     # decoding_conf: /home/eitoikuta/reconstruction_revised/emotion/config/emotion_movie_image_reconstruction.yaml
+  #     features_dir: /home/eitoikuta/reconstruction_revised/emotion/pipeline_results/decoded_features/emotion_image_recon_fmriprep_500voxel_allunits_fastl2lir_alpha100/decoded_features/CLIP_ViT-B_32/ImageNetTraining
+  #     subjects: [TH]
+  #     rois: [whole_VC]
+  #     normalize_feature: True
+  #     channel_axis_list: [1,
+  #                         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  #                         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  #                         1, 1]
+
+  #     sample_axis_list: [0,
+  #                        [1], 1, [1], 1, [1], 1, [1], 1,
+  #                        [1], 1, [1], 1, [1], 1, [1], 1,
+  #                        [1], 1, [1], 1, [1], 1, [1], 1,
+  #                        0, 0]
+  #     include_model_output: True
+  #     normalization_settings:
+  #       subtracthend:
+  #         values: '/home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/ImageNetTraining/unit-wise_mean_and_std/ImageNetTraining_unit-wise_mean.mat'
+  #         calculation_type: 'unit-wise'
+  #       dividor:
+  #         values: 'std'
+  #         calculation_type: 'positional'
+  #         std_ddof: 1
+  #       multiplier:
+  #         values: '/home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/ImageNetBase10000/positional_mean_and_std/ImageNetBase10000_positional_std-ddof1.mat'
+  #         calculation_type: 'positional'
+  #         std_ddof: 1
+  #       addend:
+  #         values: '/home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/ImageNetBase10000/positional_mean_and_std/ImageNetBase10000_positional_mean.mat'
+  #         calculation_type: 'positional'
+
+  #   uniform_layer_weight: False
+  #   loss_dicts:
+  #     - loss_name: MSE
+  #       weight: 1
+  #     # - loss_name: MSEwithReguralization
+  #     #   weight: 2
+  #     #   params:
+  #     #     vid: 1
+  #     #     l_lambda: 0.01
+  #     # - loss_name: Corr
+  #     #   weight: 0.2
+  #     # - loss_name: FeatCorrLoss
+  #     #   weight: 0.6
+  #   weight: 1
+
+  - loss_type: CLIPLoss
+    encoder_info:
+      network_name: CLIP_ViT-B_32
+      text_input_shape: [77, 1, 512]
+    image_augmentation:
+      perform_augmentation: True
+      n_cutouts: 10
+      image_aug_dicts:
+        - type: ColorJitter
+          # params:
+          #   brightness: [0, 0.5]
+        - type: RandomAffine
+        - type: RandomResizedCrop
+        - type: RandomErasing
+    ref_feature_info:
+      input_type: text
+      features_dir: /home/eitoikuta/reconstruction_revised/emotion/GT_features/27_categories
+      text_features_module_saving_names:
+        - output_layer
+      text_features_hooked_module_names:
+        - output_layer
+      text_features_yaml_file: /home/eitoikuta/reconstruction_revised/CLIP/recon_config/recon_with_text_config/emotion/null.yaml
+      decoded: False
+      subjects: [TH]
+      rois: [whole_VC]
+    weight: 10

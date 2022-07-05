@@ -9,10 +9,12 @@ import torch
 # Import from bdpy
 from bdpy.dataform import save_array
 from bdpy.recon.utils import gaussian_blur, normalize_image, clip_extreme
-from torch_utils.optimizer_utils import optim_name2class
+from utils import optim_name2class, image_deprocess_in_tensor
 
 from scipy.io import savemat
 import matplotlib.pyplot as plt
+
+__all__ = ['ReconProcess', 'create_ReconProcess_from_conf']
 
 def print_with_verbose(*args, verbose=False, **kwargs):
     if verbose:
@@ -69,7 +71,7 @@ class ReconProcess:
             self.use_generator = False
             self.image_array = self.initialize_image_array(initial_image, image_shape, image_mean)
             self.image_tensor = torch.tensor(self.image_array.transpose(2,0,1)[None], device=self.device, requires_grad=True)
-            self.optimizer = optimizer([self.image_tensor])
+            self.optimizer = optim_name2class(optimizer_info['optimizer_name'])([self.image_tensor])
         self.loss_history = np.zeros(n_iter, dtype=np.float32)
         self.optimizer_param_dicts = optimizer_info['param_dicts']
         self.normalize_gradient = normalize_gradient
@@ -101,8 +103,12 @@ class ReconProcess:
         if initial_image is None:
             if image_mean is not None:
                 initial_image = np.zeros(image_shape, dtype='float32')
+                # since image_mean was BGR, we needed to reverse the order to make it RGB
+                # for i in range(3):
+                #     initial_image[:, :, i] = image_mean[2-i].copy()
+                # TODO: make sure the image_mean is given in the RGB order
                 for i in range(3):
-                    initial_image[:, :, i] = image_mean[2-i].copy()
+                    initial_image[:, :, i] = image_mean[i].copy()
                 return initial_image
             else:
                 return np.random.randint(value_range[0], value_range[1], image_shape)
@@ -317,7 +323,7 @@ class ReconProcess:
                 if self.snapshot_postprocess is not None:
                     snapshot = self.snapshot_postprocess(snapshot)
                 snapshot = snapshot.clip(min=0, max=255)
-                # TODO: add tail and change ext
+
                 image_saving_name = Path(saving_name + self.snapshot_image_pattern_tail).with_suffix(self.snapshot_ext)
                 Image.fromarray(snapshot.astype(np.uint8)).save(image_saving_name)
                 print_with_verbose("saved snapshot: {}".format(saving_name), verbose=print_logs)
@@ -326,8 +332,6 @@ class ReconProcess:
                 save_array(feature_saving_name, self.feature_array, key='initial_gen_feat')
                 print_with_verbose("saved initial feature: {}".format(Path(feature_saving_name).with_suffix('.mat')), verbose=print_logs)
         else:
-        # self.feature_saving_pattern_tail = feature_saving_pattern_tail
-        # self.image_label = image_label
         # use (self.current_iteration - 1) for saving name
             saving_name = self.filename_formatting('final')
             image = self.image_array.copy()
@@ -350,3 +354,48 @@ class ReconProcess:
                 feature_saving_name = saving_name + self.feature_saving_pattern_tail
                 savemat(feature_saving_name, {'final_generator_feature': self.feature_array})
                 print_with_verbose('saved the final feature: {}'.format(feature_saving_name))
+
+def create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject='', roi_for_each_loss=[''], **recon_conf):
+    general_settings = recon_conf['general_settings']
+    output_settings = recon_conf['output_settings']
+    optimization_settings = recon_conf['optimization_settings']
+    generator_settings = optimization_settings['generator']
+
+    model_instance = None
+    if generator_settings['use_generator']:
+        model_name = generator_settings['network_name']
+        model_instance = models_dict[model_name]['model_instance']
+
+    roi_names = ''
+    for roi in roi_for_each_loss:
+        roi_names += '_' + roi
+    roi_names = roi_names[1:]
+    output_dir = Path(output_settings['output_root']) / recon_conf['conf_file_name'] / subject / roi_names
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if output_settings['save_snapshot']:
+        snapshot_dir = output_dir / 'snapshots' / image_label
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+
+    image_mean = None
+    if 'image_mean_file' in optimization_settings and optimization_settings['image_mean_file'] is not None:
+        image_mean_file_info = optimization_settings['image_mean_file']
+        image_mean = np.load(image_mean_file_info['file_path'])
+        if image_mean_file_info['BGR']:
+            image_mean = np.float32([image_mean[2].mean(), image_mean[1].mean(), image_mean[0].mean()])
+        else:
+            image_mean = np.float32([image_mean[0].mean(), image_mean[1].mean(), image_mean[2].mean()])
+
+    # image_deprocess
+    generator_deprocess = None
+    if generator_settings['use_generator']:
+        generator_deprocess =\
+            lambda img_tensor: image_deprocess_in_tensor(img_tensor,
+                                                         image_mean=np.float32(generator_settings['deprocess']['mean']),
+                                                         image_std=np.float32(generator_settings['deprocess']['std']))
+
+    return ReconProcess(loss_lists, **general_settings, **output_settings,
+                        **optimization_settings, **generator_settings,
+                        output_dir=output_dir, snapshot_dir=snapshot_dir,
+                        generator_model=model_instance,
+                        image_deprocess=generator_deprocess,
+                        image_mean=image_mean)

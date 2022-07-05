@@ -1,5 +1,7 @@
 import torch.optim as optim
 
+__all__ = ['optim_name2class']
+
 def optim_name2class(optim_name):
     if optim_name == 'SGD':
         return optim.SGD

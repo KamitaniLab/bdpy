@@ -8,13 +8,15 @@ import kornia.augmentation as K
 
 import warnings
 
-# Import from bdpy
-from bdpy.recon.utils import make_feature_masks
 
-# Import from my own scripts
-import sys
-sys.path.append('/home/eitoikuta/reconstruction_revised/utils')
-from feature_extraction_utils import extract_feature_and_rearrange
+# tricks for loading bdpy files from working directory
+if __file__ == '/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/torch/recon_process_manager/utils/losses/losses.py':
+    from importlib.machinery import SourceFileLoader
+    bdpy = SourceFileLoader("bdpy","/home/eitoikuta/bdpy_update/bdpy/bdpy/__init__.py").load_module()
+else:
+    import bdpy
+from bdpy.dl import FeatureExtractor
+from bdpy.recon.utils import make_feature_masks
 
 
 ### Typical loss based on encoder activations ---------- ###
@@ -31,7 +33,7 @@ def cov_torch(m, y=None):
     m_exp = torch.mean(m,dim=2)
     x = m.permute(0,2,1) - m_exp[:, None]
     x = x.permute(0,2,1)
-    #return x
+
     cov = 1 / (x.size(2) -1) * torch.einsum('bnm,bmk->bnk', x, x.permute(0,2,1))
     denom = 1. /torch.einsum('bn,bm->bnm',x.std(2),x.std(2))
     return cov * denom
@@ -86,7 +88,6 @@ class FeatCorrLoss():
         self.loss_fun = torch.nn.MSELoss()
 
     def __call__(self, act, feat):
-        feat_shape = feat.shape
         x = convert_for_corrmat(act)
         y = convert_for_corrmat(feat)
         x_mat = cov_torch(x)
@@ -98,8 +99,8 @@ class FeatCorrLoss():
 class ImageEncoderActivationLoss():
     def __init__(self, model, device, ref_features,
                  preprocess=None, given_as_BGR=False, model_inputs_are_RGB=True,
-                 layer_mapping=None, sample_axis_list=None,
-                 include_model_output=False,
+                 layer_mapping=None, targets=None, sample_axis_list=None,
+                 include_model_output=False, model_output_saving_name='model_output',
                  input_image_shape=(224, 224), layer_weights=None,
                  loss_dicts=[{'loss_name': 'MSE', 'weight': 1}],
                  masks=None, channels=None, **args):
@@ -117,10 +118,18 @@ class ImageEncoderActivationLoss():
         self.layer_weights = layer_weights
         self.loss_dicts = loss_dicts
         self.layer_mapping = layer_mapping
+        self.targets = targets
         self.include_model_output = include_model_output
         self.sample_axis_list = sample_axis_list
         self.init_loss_funcs()
         self.feature_masks = make_feature_masks(ref_features, masks, channels)
+
+        self.feature_extractor = FeatureExtractor(model, layers=list(layer_mapping.keys()),
+                                                  layer_mapping=layer_mapping,
+                                                  device=device, detach=False,
+                                                  targets=targets, return_final_output=include_model_output,
+                                                  final_output_saving_name=model_output_saving_name,
+                                                  sample_axis_list=sample_axis_list)
 
     def init_loss_funcs(self):
         tmp_dicts = []
@@ -151,17 +160,15 @@ class ImageEncoderActivationLoss():
             image_batch = image_batch[:, permute, :, :]
         if self.preprocess is not None:
             image_batch = self.preprocess(image_batch)
-        # TODO: accept activations given in function arguments so that no redundant computation occur
-        current_features = extract_feature_and_rearrange(self.model, image_batch,
-                                                         self.layer_mapping, self.sample_axis_list,
-                                                         self.include_model_output, self.device)
+        # TODO: accept activations given in function arguments so that no redundant computation occurs
+        current_features = self.feature_extractor(image_batch)
         return self.calc_losses(current_features)
 
     def calc_losses(self, current_features):
         if not self.include_model_output:
-            eval('self.model.{}.zero_grad()'.format(list(self.layer_mapping.keys())[-1]))
+            eval('self.model.{}.zero_grad()'.format(list(self.layer_mapping.values())[-1]))
         else:
-            eval('self.model.{}.zero_grad()'.format(list(self.layer_mapping.keys())[-2]))
+            eval('self.model.{}.zero_grad()'.format(list(self.layer_mapping.values())[-2]))
         layers = self.ref_features.keys()
         reversed_layer_list = reversed(layers) if not self.include_model_output else list(reversed(layers))[1:]
         loss = 0
@@ -183,32 +190,7 @@ class ImageEncoderActivationLoss():
             loss += loss_dict['weight'] * tmp_loss
         return loss
 
-    # def calc_loss(self, current_features):
-    #     '''
-    #     return one scholar obtained from weighted sum of layer-wise losses
-    #     '''
-    #     self.model.zero_grad()
-    #     if loss_type == 'MSE':
-    #         print('MSE')
-    #         # compute layer-wise loss and calculate weighted sum
-    #         # for layer in ...
-    #         #   MSE()
-    #         loss = 0
-    #     elif loss_type == 'Corr':
-    #         print('Corr')
-    #         # compute layer-wise loss and calculate weighted sum
-    #         # for layer in ...
-    #         #   corr_loss()
-    #         loss = 0
-    #     else:
-    #         warnings.warn('invalid loss type!')
-    #     return loss
 
-    # def mse(self, feature1, feature2):
-    #     pass
-
-    # def corr_loss(self, feature1, feature2):
-    #     pass
 ### ---------------------------------------------------- ###
 
 ### Loss based on CLIP similarity scores --------------- ###
@@ -268,7 +250,6 @@ class CLIPLoss():
         self.device = device
         self.given_as_BGR = given_as_BGR
         self.image_augmentation = image_augmentation
-        # self.n_cutouts = n_cutouts
         self.mean = torch.tensor([0.48145466, 0.4578275, 0.40821073]).to(device)
         self.std = torch.tensor([0.26862954, 0.26130258, 0.27577711]).to(device)
         if image_augmentation:
@@ -280,7 +261,6 @@ class CLIPLoss():
         image_batch is expected `not` to be preprocessed/normalized
         '''
         image_encoder = self.clip_model.visual.float()
-        # text_encoder = self.clip_model.transformer.float()
         if self.given_as_BGR:
             permute = [2, 1, 0]
             image_batch = image_batch[:, permute, :, :]
@@ -290,7 +270,6 @@ class CLIPLoss():
             image_batch = self.image_aug(image_batch)
         image_batch.sub_(self.mean[None, :, None, None]).div_(self.std[None, :, None, None])
         image_features = image_encoder(image_batch)
-        # print('image_features:', image_features.mean().item(), image_features.min().item(), image_features.max().item())
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         ref_features = self.ref_features / self.ref_features.norm(dim=-1, keepdim=True)
 
@@ -299,11 +278,8 @@ class CLIPLoss():
         logits_per_image = logit_scale * image_features @ ref_features.T
 
         # to maximize similarity, -1 * score must be minimized
-        # return (-1.) * logits_per_image.mean(dim=0, keepdim=False)
         loss = (-1.) * logits_per_image.mean(dim=0, keepdim=False)
-        # print(image_features.shape)
-        # print(ref_features.shape)
-        # print(loss.shape)
+
         assert loss.shape == torch.Size([1])
         return loss[0]
 ### ---------------------------------------------------- ###

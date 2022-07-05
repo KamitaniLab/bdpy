@@ -1,6 +1,8 @@
 import numpy as np
 from torchvision import transforms
 
+__all__ = ['image_preprocess', 'image_deprocess', 'image_deprocess_in_tensor']
+
 def image_preprocess(img, image_mean=np.float32([104, 117, 123]), image_std=np.float32([1, 1, 1])):
     '''convert to Caffe's input image layout'''
     return (np.float32(np.transpose(img, (2, 0, 1))[::-1]) - np.reshape(image_mean, (3, 1, 1))) / np.reshape(image_std, (3, 1, 1))

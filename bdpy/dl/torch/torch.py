@@ -1,5 +1,7 @@
 '''PyTorch module.'''
 
+__all__ = ['FeatureExtractor', 'ImageDataset']
+
 
 import os
 
