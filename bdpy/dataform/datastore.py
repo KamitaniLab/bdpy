@@ -353,7 +353,7 @@ class GeneralFeatures(DirStore):
         else:
             for k, v in replace_dict.items():
                 file_name = file_name.replace(k, v)
-                file_path = os.path.join(self._DirStore__dpath, subdir_path, file_name)
+            file_path = os.path.join(self._DirStore__dpath, subdir_path, file_name)
 
         # Get files
         files = sorted(glob.glob(file_path))
