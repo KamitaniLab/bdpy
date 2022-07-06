@@ -1,0 +1,83 @@
+to_be_removed_yaml: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/unfavorable.yaml
+image_width: 224
+image_height: 224
+
+inputs:
+  - tag: source
+    root_dir: /home/eitoikuta/reconstruction_revised/emotion/source
+    inputs_pattern: <image_id>.mp4
+    is_image: False
+    font_color: black
+  - tag: "true emotion \n coeff=0.5, w/ DA"
+    root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/true_text_only-0.5_emotion_video_image_reconstruction
+    inputs_pattern: <image_id>/*.tiff
+    is_image: True
+    font_color: green
+  - tag: "true emotion \n coeff=0.5, w/o DA"
+    root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/without_DA_true_text_only-0.5_emotion_video_image_reconstruction
+    inputs_pattern: <image_id>/*.tiff
+    is_image: True
+    font_color: blue
+  - tag: "true emotion \n coeff=10, w/ DA"
+    # root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/CLIP_ViT-B_32/ImageNetTraining/first27layers_emotion_image_recon_fmriprep_500voxel_allunits_fastl2lir_alpha100_with_generator/TH/whole_VC
+    root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/true_text_only-10_emotion_video_image_reconstruction
+    inputs_pattern: <image_id>/*.tiff
+    is_image: True
+    font_color: green
+  - tag: "true emotion \n coeff=10, w/o DA"
+    # root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/CLIP_ViT-B_32/ImageNetTraining/first27layers_emotion_image_recon_fmriprep_500voxel_allunits_fastl2lir_alpha100_with_generator/TH/whole_VC
+    root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/without_DA_true_text_only-10_emotion_video_image_reconstruction
+    inputs_pattern: <image_id>/*.tiff
+    is_image: True
+    font_color: blue
+  - tag: "true emotion \n coeff=100, w/ DA"
+    # root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/CLIP_ViT-B_32/ImageNetTraining/first27layers_emotion_image_recon_fmriprep_500voxel_allunits_fastl2lir_alpha100_with_generator/TH/whole_VC
+    root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/true_text_only-100_emotion_video_image_reconstruction
+    inputs_pattern: <image_id>/*.tiff
+    is_image: True
+    font_color: green
+  - tag: "true emotion \n coeff=100, w/o DA"
+    # root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/CLIP_ViT-B_32/ImageNetTraining/first27layers_emotion_image_recon_fmriprep_500voxel_allunits_fastl2lir_alpha100_with_generator/TH/whole_VC
+    root_dir: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/without_DA_true_text_only-100_emotion_video_image_reconstruction
+    inputs_pattern: <image_id>/*.tiff
+    is_image: True
+    font_color: blue
+
+
+index:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+n_targets: 5
+
+output_root: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results/comparisons/DA_true_emotion_images
+output_filename: 5-<index>.mp4
+save_gif: True
+
+image_margin:
+  - 1
+  - 1
+  - 0
+  - 0
+
+group_margin:
+  - 20
+  - 0
+  - 20
+  - 0
+
+max_column_size: 5
+title_fontsize: 20
+title_top_padding: 70
+title_left_padding: 15
+
+# ncols: 5
+# columned: True
+# wspace: 0
+# hspace: 0.1
+# horizontal_margin: 0.05
+# vertical_margin: 0.05
+# label_fontsize: 12

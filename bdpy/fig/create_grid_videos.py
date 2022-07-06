@@ -349,8 +349,6 @@ def main():
                                 image_size=(height, width), image_margin=conf['image_margin'], group_margin=conf['group_margin'], max_column_size=conf['max_column_size'],
                                 title_fontsize=conf['title_fontsize'], title_top_padding=conf['title_top_padding'], title_left_padding=conf['title_left_padding'], font_family_path=None,
                                 id_show=False, id_fontcolor="black", id_fontsize=18, image_id_list=[])
-                # if i == 0:
-                #     frame_out.save('test.png')
                 frame_out = pil2cv(frame_out)
                 frame_shape = frame_out.shape
                 if i == 0:
