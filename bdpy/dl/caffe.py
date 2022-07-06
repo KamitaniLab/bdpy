@@ -4,7 +4,7 @@
 import os
 
 import PIL
-import caffe
+# import caffe
 import numpy as np
 from bdpy.dataform import save_array
 from tqdm import tqdm

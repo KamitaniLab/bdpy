@@ -9,7 +9,7 @@ import torch
 # Import from bdpy
 from bdpy.dataform import save_array
 from bdpy.recon.utils import gaussian_blur, normalize_image, clip_extreme
-from utils import optim_name2class, image_deprocess_in_tensor
+from .utils import optim_name2class, image_deprocess_in_tensor
 
 from scipy.io import savemat
 import matplotlib.pyplot as plt
@@ -39,10 +39,10 @@ class ReconProcess:
                  loss_history_ext='.png',
                  result_saving_pattern_head='<image_label>_<iteration(:0>6)>',
                  snapshot_saving_pattern_head='<iteration(:0>6)>',
-                 result_image_pattern_tail='normalized',
+                 result_image_pattern_tail='_normalized',
                  snapshot_image_pattern_tail='',
-                 loss_history_pattern_tail='loss_history',
-                 feature_saving_pattern_tail='feature',
+                 loss_history_pattern_tail='_loss_history',
+                 feature_saving_pattern_tail='_feature',
                  image_label='',
                  generator_output_BGR=False, **args):
         '''
@@ -328,7 +328,7 @@ class ReconProcess:
                 Image.fromarray(snapshot.astype(np.uint8)).save(image_saving_name)
                 print_with_verbose("saved snapshot: {}".format(saving_name), verbose=print_logs)
             if (self.current_iteration - 1) == 0 and self.use_generator and self.save_feature:
-                feature_saving_name = saving_name + self.feature_saving_pattern_tail
+                feature_saving_name = saving_name + self.feature_saving_pattern_tail + '.mat'
                 save_array(feature_saving_name, self.feature_array, key='initial_gen_feat')
                 print_with_verbose("saved initial feature: {}".format(Path(feature_saving_name).with_suffix('.mat')), verbose=print_logs)
         else:
@@ -351,7 +351,7 @@ class ReconProcess:
                 del figure
                 print_with_verbose("saved loss history: {}".format(loss_history_saving_name), verbose=print_logs)
             if self.use_generator and self.save_feature:
-                feature_saving_name = saving_name + self.feature_saving_pattern_tail
+                feature_saving_name = saving_name + self.feature_saving_pattern_tail + '.mat'
                 savemat(feature_saving_name, {'final_generator_feature': self.feature_array})
                 print_with_verbose('saved the final feature: {}'.format(feature_saving_name))
 
@@ -398,4 +398,4 @@ def create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=
                         output_dir=output_dir, snapshot_dir=snapshot_dir,
                         generator_model=model_instance,
                         image_deprocess=generator_deprocess,
-                        image_mean=image_mean)
+                        image_mean=image_mean, image_label=image_label)

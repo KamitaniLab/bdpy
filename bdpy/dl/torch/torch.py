@@ -14,7 +14,7 @@ class FeatureExtractor(object):
     def __init__(self, encoder, layers=None, layer_mapping=None,
                  device='cpu', detach=True, targets=None,
                  return_final_output=False, final_output_saving_name='model_output',
-                 sample_axis_list=None):
+                 sample_axis_info=None):
         self._encoder = encoder
         self.__layers = layers
         self.__layer_map = layer_mapping
@@ -27,6 +27,7 @@ class FeatureExtractor(object):
 
         targets = self.get_target_dict(targets)
 
+        self.sample_axis_dict = self.get_sample_axis_dict(sample_axis_info)
         self.return_final_output = return_final_output
         self.final_output_saving_name = final_output_saving_name
         if return_final_output and final_output_saving_name in self.__layers:
@@ -38,7 +39,6 @@ class FeatureExtractor(object):
                 layer = self.__layer_map[layer]
             eval('self._encoder.{}.register_forward_hook(self._extractor.get_extraction_function("{}"))'.format(layer, target))
 
-        self.sample_axis_list = sample_axis_list
 
     def get_target_dict(self, targets):
         default_target = 'module_out'
@@ -59,6 +59,30 @@ class FeatureExtractor(object):
                 targets[layer] = default_target
         return targets
 
+    def get_sample_axis_dict(self, sample_axis_info):
+        if sample_axis_info is None:
+            return None
+        default_sample_axis = 0
+        if isinstance(sample_axis_info, list):
+            sample_axis_dict = {}
+            for i, sample_axis in enumerate(sample_axis_info):
+                if not isinstance(sample_axis, int):
+                    for j, sub_module_saving_name in enumerate(self.__layers[i]):
+                        if sub_module_saving_name is not None:
+                            sample_axis_dict[sub_module_saving_name] = sample_axis[j]
+                else:
+                    sample_axis_dict[self.__layers[i]] = sample_axis
+        elif isinstance(sample_axis_info, int):
+            default_sample_axis = sample_axis_info
+            sample_axis_dict = {}
+        else:
+            assert isinstance(sample_axis_info, dict)
+            sample_axis_dict = sample_axis_info
+        for layer in self.__layers:
+            if layer not in sample_axis_dict:
+                sample_axis_dict[layer] = default_sample_axis
+        return sample_axis_dict
+
     def __call__(self, x) -> dict:
         return self.run(x)
 
@@ -73,11 +97,13 @@ class FeatureExtractor(object):
 
         features = {}
         for feature, layer in zip(self._extractor.outputs, self.__layers):
-            if isinstance(feature, tuple): # This is true for "module_in", and "module_out" for some types of layers
-                print(layer, feature)
+            if isinstance(feature, tuple): # This is true for "module_in", and "module_out" for some types of layers such as attention layers
                 assert isinstance(layer, tuple)
-                assert len(feature) == len(layer)
+                assert len(feature) == len(layer), print(len(feature), len(layer))
                 for i, sublayer in enumerate(layer):
+                    if sublayer is None:
+                        continue
+                    assert feature[i] is not None
                     features[sublayer] = feature[i]
             else:
                 features[layer] = feature
@@ -95,10 +121,10 @@ class FeatureExtractor(object):
         return features
 
     def change_sample_axis(self, features):
-        if self.sample_axis_list is None:
+        if self.sample_axis_dict is None:
             return features
         else:
-            for layer, sample_axis in self.sample_axis_list.items():
+            for layer, sample_axis in self.sample_axis_dict.items():
                 if layer in features:
                     if sample_axis != 0:
                         feature = features[layer]
@@ -106,7 +132,7 @@ class FeatureExtractor(object):
                         axes = list(range(ndim))
                         axes.remove(sample_axis)
                         axes.insert(0, sample_axis)
-                        if not self.__detach:
+                        if self.__detach:
                             features[layer] = feature.transpose(*axes)
                         else:
                             features[layer] = feature.permute(*axes)

@@ -40,6 +40,48 @@ def layer_map(net):
             'fc7':   'classifier[2]',
             'relu7': 'classifier[3]',
             'fc8':   'classifier[4]',
+        },
+
+        'CLIP_ViT-B_32': {
+            'conv1': 'conv1',
+            ('transformer_resblocks0_attn_output', None):
+                'transformer.resblocks[0].attn',
+            'transformer_resblocks0_mlp': 'transformer.resblocks[0].mlp',
+            ('transformer_resblocks1_attn_output', None):
+                'transformer.resblocks[1].attn',
+            'transformer_resblocks1_mlp': 'transformer.resblocks[1].mlp',
+            ('transformer_resblocks2_attn_output', None):
+                'transformer.resblocks[2].attn',
+            'transformer_resblocks2_mlp': 'transformer.resblocks[2].mlp',
+            ('transformer_resblocks3_attn_output', None):
+                'transformer.resblocks[3].attn',
+            'transformer_resblocks3_mlp': 'transformer.resblocks[3].mlp',
+            ('transformer_resblocks4_attn_output', None):
+                'transformer.resblocks[4].attn',
+            'transformer_resblocks4_mlp': 'transformer.resblocks[4].mlp',
+            ('transformer_resblocks5_attn_output', None):
+                'transformer.resblocks[5].attn',
+            'transformer_resblocks5_mlp': 'transformer.resblocks[5].mlp',
+            ('transformer_resblocks6_attn_output', None):
+                'transformer.resblocks[6].attn',
+            'transformer_resblocks6_mlp': 'transformer.resblocks[6].mlp',
+            ('transformer_resblocks7_attn_output', None):
+                'transformer.resblocks[7].attn',
+            'transformer_resblocks7_mlp': 'transformer.resblocks[7].mlp',
+            ('transformer_resblocks8_attn_output', None):
+                'transformer.resblocks[8].attn',
+            'transformer_resblocks8_mlp': 'transformer.resblocks[8].mlp',
+            ('transformer_resblocks9_attn_output', None):
+                'transformer.resblocks[9].attn',
+            'transformer_resblocks9_mlp': 'transformer.resblocks[9].mlp',
+            ('transformer_resblocks10_attn_output', None):
+                'transformer.resblocks[10].attn',
+            'transformer_resblocks10_mlp': 'transformer.resblocks[10].mlp',
+            ('transformer_resblocks11_attn_output', None):
+                'transformer.resblocks[11].attn',
+            'transformer_resblocks11_mlp': 'transformer.resblocks[11].mlp',
+            'ln_post': 'ln_post',
+            'model_output': 'model_output'
         }
     }
     return maps[net]

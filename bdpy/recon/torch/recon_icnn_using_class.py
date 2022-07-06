@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 
 import yaml
-import pickle
+# import pickle
 from natsort import os_sorted
 
 from itertools import product
@@ -14,37 +14,40 @@ from recon_process_manager import loss_dicts_to_loss_instances, create_ReconProc
 
 # tricks for loading bdpy files from working directory
 if __file__ == '/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/torch/recon_icnn_using_class.py':
-    from importlib.machinery import SourceFileLoader
-    bdpy = SourceFileLoader("bdpy","/home/eitoikuta/bdpy_update/bdpy/bdpy/__init__.py").load_module()
+    import importlib.util
+    datastore_spec = importlib.util.spec_from_file_location('datastore', "/home/eitoikuta/bdpy_update/bdpy/bdpy/dataform/datastore.py")
+    datastore = importlib.util.module_from_spec(datastore_spec)
+    datastore_spec.loader.exec_module(datastore)
+    DecodedFeatures = datastore.DecodedFeatures
+    GeneralFeatures = datastore.GeneralFeatures
+
+    models_spec = importlib.util.spec_from_file_location('models', "/home/eitoikuta/bdpy_update/bdpy/bdpy/dl/torch/models.py")
+    models = importlib.util.module_from_spec(models_spec)
+    models_spec.loader.exec_module(models)
+    layer_map = models.layer_map
 else:
-    import bdpy
-from bdpy.dataform import DecodedFeatures, GeneralFeatures
+    # import bdpy
+    from bdpy.dataform import DecodedFeatures, GeneralFeatures
+    from bdpy.dl.torch import layer_map
+
 
 def is_in_and_True(key, dictionary):
     return key in dictionary and dictionary[key]
 
-def get_layer_mapping(conf):
+def get_layer_mapping(conf, network_name):
     input_type = conf['input_type']
     if input_type == 'image':
         module_saving_names_key = 'module_saving_names'
         hooked_module_names_key = 'hooked_module_names'
-        layer_mapping_pkl_key = 'layer_mapping_pkl'
     elif input_type == 'text':
         module_saving_names_key = 'text_features_module_saving_names'
         hooked_module_names_key = 'text_features_hooked_module_names'
-        layer_mapping_pkl_key = 'text_features_layer_mapping_pkl'
     else:
         assert False, print('invalid input type for `get_layer_mapping`: {}'.format(input_type))
     if module_saving_names_key not in conf.keys() or hooked_module_names_key not in conf.keys():
-        if layer_mapping_pkl_key not in conf.keys():
-            print('error in loading layer mapping for input type {}'.format(input_type))
-            print("target layers must be specified by '{}' + '{}' or '{}'".format(module_saving_names_key, hooked_module_names_key, layer_mapping_pkl_key))
-            sys.exit()
-        else:
-            with open(conf[layer_mapping_pkl_key], 'rb') as f:
-                layer_mapping = pickle.load(f)
-            module_saving_names = list(layer_mapping.keys())
-            hooked_module_names = list(layer_mapping.values())
+        layer_mapping = layer_map(network_name)
+        module_saving_names = list(layer_mapping.keys())
+        hooked_module_names = list(layer_mapping.values())
     else:
         hooked_module_names = conf[hooked_module_names_key]
         module_saving_names = conf[module_saving_names_key]
@@ -142,7 +145,7 @@ def get_required_features(loss_dicts):
                 dirs_pattern = ref_feature_info['dirs_pattern']
             # Features
             features_instance = GeneralFeatures(features_dir, dirs_pattern=dirs_pattern)
-        hooked_module_names, module_saving_names, layer_mapping = get_layer_mapping(ref_feature_info)
+        hooked_module_names, module_saving_names, _ = get_layer_mapping(ref_feature_info, network)
         tmp_dict['hooked_module_names'] = hooked_module_names
         tmp_dict['module_saving_names'] = module_saving_names
 

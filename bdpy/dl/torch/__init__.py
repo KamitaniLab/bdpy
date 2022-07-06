@@ -1,2 +1,2 @@
-from torch import *
-from models import *
+from .torch import *
+from .models import *

@@ -1,2 +1,2 @@
-from torch import *
-from caffe import *
+from .torch import *
+from .caffe import *

@@ -11,12 +11,19 @@ import warnings
 
 # tricks for loading bdpy files from working directory
 if __file__ == '/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/torch/recon_process_manager/utils/losses/losses.py':
-    from importlib.machinery import SourceFileLoader
-    bdpy = SourceFileLoader("bdpy","/home/eitoikuta/bdpy_update/bdpy/bdpy/__init__.py").load_module()
+    import importlib.util
+    dl_torch_spec = importlib.util.spec_from_file_location('dl_torch', "/home/eitoikuta/bdpy_update/bdpy/bdpy/dl/torch/torch.py")
+    dl_torch = importlib.util.module_from_spec(dl_torch_spec)
+    dl_torch_spec.loader.exec_module(dl_torch)
+    FeatureExtractor = dl_torch.FeatureExtractor
+
+    recon_utils_spec = importlib.util.spec_from_file_location('recon_utils', "/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/utils.py")
+    recon_utils = importlib.util.module_from_spec(recon_utils_spec)
+    recon_utils_spec.loader.exec_module(recon_utils)
+    make_feature_masks = recon_utils.make_feature_masks
 else:
-    import bdpy
-from bdpy.dl import FeatureExtractor
-from bdpy.recon.utils import make_feature_masks
+    from bdpy.dl import FeatureExtractor
+    from bdpy.recon.utils import make_feature_masks
 
 
 ### Typical loss based on encoder activations ---------- ###
@@ -99,7 +106,7 @@ class FeatCorrLoss():
 class ImageEncoderActivationLoss():
     def __init__(self, model, device, ref_features,
                  preprocess=None, given_as_BGR=False, model_inputs_are_RGB=True,
-                 layer_mapping=None, targets=None, sample_axis_list=None,
+                 layer_mapping=None, targets=None, sample_axis_info=None,
                  include_model_output=False, model_output_saving_name='model_output',
                  input_image_shape=(224, 224), layer_weights=None,
                  loss_dicts=[{'loss_name': 'MSE', 'weight': 1}],
@@ -120,7 +127,7 @@ class ImageEncoderActivationLoss():
         self.layer_mapping = layer_mapping
         self.targets = targets
         self.include_model_output = include_model_output
-        self.sample_axis_list = sample_axis_list
+        # self.sample_axis_info = sample_axis_info
         self.init_loss_funcs()
         self.feature_masks = make_feature_masks(ref_features, masks, channels)
 
@@ -129,7 +136,7 @@ class ImageEncoderActivationLoss():
                                                   device=device, detach=False,
                                                   targets=targets, return_final_output=include_model_output,
                                                   final_output_saving_name=model_output_saving_name,
-                                                  sample_axis_list=sample_axis_list)
+                                                  sample_axis_info=sample_axis_info)
 
     def init_loss_funcs(self):
         tmp_dicts = []

@@ -4,7 +4,7 @@ general_settings:
 
 output_settings:
   # output_root: /home/eitoikuta/reconstruction_revised/reconstruction_results/CLIP_ViT-B_32/500voxel_allunits_fastl2lir_alpha100
-  output_root: /mnt/s4/home/eitoikuta/reconstruction_results/CLIP_ViT-B_32/500voxel_allunits_fastl2lir_alpha100
+  output_root: /home/eitoikuta/_import_test/image_recon_test_results
   experiment_name: new_normalization_with_generator
   experiment_name_from_options: False
   save_snapshot: True
@@ -25,11 +25,9 @@ optimization_settings:
   generator:
     use_generator: True
     network_name: AlexNetGenerator_ILSVRC2012_Training_relu7
-    params_file: /home/eitoikuta/reconstruction_revised/AlexNetGenerator/ILSVRC2012_Training/relu7/generator.pt
-    feature_range_file: /home/eitoikuta/reconstruction_revised/AlexNetGenerator/ILSVRC2012_Training/relu7/act_range_3x.txt
+    params_file: /home/kiss/data/models_shared/pytorch/bvlc_reference_caffenet/generators/ILSVRC2012_Training/relu7/generator.pt
     feature_shape: [4096]
     output_BGR: True # this information will be used for loss settings
-    # deprocess: null # TODO: use this field to specify denormalization function
     deprocess:
       mean: [104, 117, 123]
       std: [1, 1, 1]
@@ -55,7 +53,7 @@ optimization_settings:
     - process_name: feature_clipping
       param_values:
         - null # TODO: change programs to load the value from a file if path is specified
-        - /home/eitoikuta/reconstruction_revised/AlexNetGenerator/ILSVRC2012_Training/relu7/act_range_3x.txt
+        - /home/kiss/data/models_shared/caffe/bvlc_reference_caffenet/generators/ILSVRC2012_Training/relu7/act_range/3x/fc7.txt
 
   stabilizing_processes:
     - process_name: jittering
@@ -66,8 +64,6 @@ loss_settings:
   - loss_type: ImageEncoderActivationLoss
     encoder_info:
       network_name: CLIP_ViT-B_32
-      std_file: /home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/features_std_ddof1_ImageNet_include_output.mat
-      std_ddof: 1
       model_inputs_are_RGB: True
       preprocess_from_PIL: False # TODO: where should this arg be placed?
       image_encoder_only: True
@@ -82,13 +78,12 @@ loss_settings:
       subjects: [TH]
       rois: [VC]
       normalize_feature: True
-      conventional_normalization: False
       channel_axis_list: [1,
                           2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                           2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                           1, 1]
 
-      sample_axis_list: [0,
+      sample_axis_info: [0,
                          [1], 1, [1], 1, [1], 1, [1], 1,
                          [1], 1, [1], 1, [1], 1, [1], 1,
                          [1], 1, [1], 1, [1], 1, [1], 1,

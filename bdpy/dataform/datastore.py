@@ -17,7 +17,7 @@ import h5py
 import hdf5storage
 
 
-__all__ = ['DataStore', 'DirStore', 'DecodedFeatures']
+__all__ = ['DataStore', 'DirStore', 'DecodedFeatures', 'GeneralFeatures']
 
 
 class DataStore(object):

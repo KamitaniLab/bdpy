@@ -8,8 +8,8 @@ import numpy as np
 import torch
 
 
-from losses import ImageEncoderActivationLoss, CLIPLoss, ImageAugs
-from feature_scaling_utils import normalize_features
+from .losses import ImageEncoderActivationLoss, CLIPLoss, ImageAugs
+from .feature_scaling_utils import normalize_features
 
 __all__ = ['loss_dicts_to_loss_instances']
 
@@ -21,7 +21,7 @@ def is_in_and_True(key, dictionary):
 ### Helper functions for creating typical loss instances based on encoder activations ---------- ###
 def calc_layer_weight_from_norm(features_dict, layers):
     feat_norms = np.array([np.linalg.norm(features_dict[layer])
-                           for layer in layers],
+                           for layer in layers if layer is not None],
                            dtype='float32')
     # Weight of each layer in the total loss function
     # Use the inverse of the squared norm of the DNN features as the
@@ -38,15 +38,27 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
                                                image_label, subject=None, roi=None,
                                                generator_BGR=True, device='cpu'):
     # FIXME: channels and masks are not used now
-    num_layers = len(hooked_module_names)
+    num_layers = 0
+    for module_saving_name in module_saving_names:
+        if isinstance(module_saving_name, tuple):
+            for sub_module_saving_name in module_saving_name:
+                if sub_module_saving_name is not None: num_layers += 1
+        else:
+            num_layers += 1
     if 'num_layers_to_use' in loss_dict:
         num_layers_to_use = loss_dict['num_layers_to_use']
     else:
         num_layers_to_use = num_layers
     ref_feature_info = loss_dict['ref_feature_info']
     include_model_output = num_layers_to_use == num_layers and ref_feature_info['include_model_output']
-    hooked_module_names = hooked_module_names[:num_layers_to_use]
-    module_saving_names = module_saving_names[:num_layers_to_use]
+    if num_layers_to_use > 0:
+        hooked_module_names = hooked_module_names[:num_layers_to_use]
+        module_saving_names = module_saving_names[:num_layers_to_use]
+    elif num_layers_to_use < 0:
+        hooked_module_names = hooked_module_names[num_layers_to_use:]
+        module_saving_names = module_saving_names[num_layers_to_use:]
+    else:
+        assert False, print('invalid setting: num_layers_to_use = 0')
     # layer_mapping = dict(zip(hooked_module_names, module_saving_names))
     layer_mapping = dict(zip(module_saving_names, hooked_module_names))
     module_loading_names = []
@@ -54,16 +66,19 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
         if isinstance(module_saving_name, str):
             module_loading_names.append(module_saving_name)
         else:
-            module_loading_names.extend(module_saving_name)
+            assert isinstance(module_saving_name, tuple)
+            for sub_module_saving_name in module_saving_name:
+                if sub_module_saving_name is not None:
+                    module_loading_names.append(sub_module_saving_name)
 
-    sample_axis_list = ref_feature_info['sample_axis_list'][:num_layers_to_use]
+    sample_axis_info = ref_feature_info['sample_axis_info']
 
     if ref_feature_info['decoded']:
         ref_features = {layer: features.get(layer=layer, subject=subject, roi=roi, image=image_label)
-                        for layer in module_loading_names}
+                        for layer in module_loading_names if layer is not None}
     else:
         ref_features = {layer: features.get(layer=layer, image=image_label)
-                        for layer in module_loading_names}
+                        for layer in module_loading_names if layer is not None}
 
     # normalize features
     ref_feature_info = loss_dict['ref_feature_info']
@@ -99,7 +114,7 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
                                                **loss_dict['encoder_info'],
                                                loss_dicts=loss_dict['loss_dicts'],
                                                layer_mapping=layer_mapping,
-                                               sample_axis_list=sample_axis_list,
+                                               sample_axis_info=sample_axis_info,
                                                include_model_output=include_model_output)
     return loss_instance
 

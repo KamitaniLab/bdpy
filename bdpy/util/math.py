@@ -28,5 +28,5 @@ def average_elemwise(arrays, keepdims=False):
 
     if not keepdims:
         mean_array = np.squeeze(mean_array)
-        
+
     return mean_array
