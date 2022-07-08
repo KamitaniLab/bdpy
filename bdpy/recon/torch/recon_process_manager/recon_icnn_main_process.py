@@ -271,7 +271,8 @@ class ReconProcess:
         # TODO: change here to save each loss value respectively
         self.loss_history[self.current_iteration-1] = loss.cpu().detach().numpy()
         loss.backward()
-        del loss
+        del c_loss, loss
+        gc.collect()
 
         if self.normalize_gradients:
             self.gradient_normalization()
@@ -286,6 +287,7 @@ class ReconProcess:
         self.stabilizing_process(backward=True)
         self.current_iteration += 1
         del image_batch
+        torch.cuda.empty_cache()
         gc.collect()
 
     def optimize(self, print_logs=False):
@@ -407,18 +409,6 @@ def create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=
             image_postprocess = get_image_deprocess_fucntion(output_settings['image_postprocess']['mean'],
                                                              output_settings['image_postprocess']['std'],
                                                              BGR2RGB=False)
-        # output_settings['image_postprocesss_mean'] = np.float32(output_settings['image_postprocess']['mean'])
-        # output_settings['image_postprocess_std'] = np.float32(output_settings['image_postprocess']['std'])
-        # # def image_postprocess(img_array):
-        # #     return image_deprocess(img_array,
-        # #                            image_mean=np.float32(output_settings['image_postprocess']['mean']),
-        # #                            image_std=np.float32(output_settings['image_postprocess']['std']),
-        # #                            BGR2RGB=False)
-        # image_postprocess =\
-        #     lambda img_array: image_deprocess(img_array,
-        #                                       image_mean=output_settings['image_postprocess_mean'],
-        #                                       image_std=output_settings['image_postprocess_std'],
-        #                                       BGR2RGB=False)
     output_settings['image_postprocess'] = image_postprocess
     snapshot_postprocess = None
     if is_in_and_not_None('snapshot_postprocess', output_settings):
@@ -428,28 +418,6 @@ def create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=
             snapshot_postprocess = get_image_deprocess_fucntion(output_settings['snapshot_postprocess']['mean'],
                                                                 output_settings['snapshot_postprocess']['std'],
                                                                 BGR2RGB=False)
-        # output_settings['snapshot_postprocesss_mean'] = np.float32(output_settings['snapshot_postprocess']['mean'])
-        # output_settings['snapshot_postprocess_std'] = np.float32(output_settings['snapshot_postprocess']['std'])
-        # # def image_postprocess(img_array):
-        # #     return image_deprocess(img_array,
-        # #                            image_mean=np.float32(output_settings['image_postprocess']['mean']),
-        # #                            image_std=np.float32(output_settings['image_postprocess']['std']),
-        # #                            BGR2RGB=False)
-        # snapshot_postprocess =\
-        #     lambda img_array: image_deprocess(img_array,
-        #                                       image_mean=output_settings['snapshot_postprocess_mean'],
-        #                                       image_std=output_settings['snapshot_postprocess_std'],
-        #                                       BGR2RGB=False)
-        # # def snapshot_postprocess(img_array):
-        # #     return image_deprocess(img_array,
-        # #                            image_mean=np.float32(output_settings['snapshot_postprocess']['mean']),
-        # #                            image_std=np.float32(output_settings['snapshot_postprocess']['std']),
-        # #                            BGR2RGB=False)
-        # snapshot_postprocess=\
-        #     lambda img_array: image_deprocess(img_array,
-        #                                       image_mean=np.float32(output_settings['snapshot_postprocess']['mean']),
-        #                                       image_std=np.float32(output_settings['snapshot_postprocess']['std']),
-        #                                       BGR2RGB=False)
     output_settings['snapshot_postprocess'] = snapshot_postprocess
 
     return ReconProcess(loss_lists, **general_settings, **output_settings,

@@ -33,12 +33,19 @@ class FeatureExtractor(object):
         if return_final_output and final_output_saving_name in self.__layers:
             self.__layers.remove(final_output_saving_name)
 
+        self.hook_handles = []
         for layer in self.__layers:
             target = targets[layer]
             if self.__layer_map is not None:
                 layer = self.__layer_map[layer]
-            eval('self._encoder.{}.register_forward_hook(self._extractor.get_extraction_function("{}"))'.format(layer, target))
+            exec('handle = self._encoder.{}.register_forward_hook(self._extractor.get_extraction_function("{}"))'.format(layer, target))
+            exec('self.hook_handles.append(handle)')
 
+    def __del__(self):
+        for handle in self.hook_handles:
+            handle.remove()
+        self._extractor.clear()
+        del self._extractor
 
     def get_target_dict(self, targets):
         default_target = 'module_out'

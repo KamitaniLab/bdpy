@@ -118,6 +118,12 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
         model = model_info['model_instance']
     preprocess = model_info['preprocess']
 
+    image_augmentation_info = loss_dict['image_augmentation']
+    perform_image_augmentation = image_augmentation_info['perform_augmentation']
+    image_augs = None
+    if perform_image_augmentation:
+        image_augs = ImageAugs(**image_augmentation_info)
+
     loss_instance = ImageEncoderActivationLoss(model, device, ref_features,
                                                preprocess=preprocess,
                                                given_as_BGR=generator_BGR,
@@ -126,7 +132,9 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
                                                loss_dicts=loss_dict['loss_dicts'],
                                                layer_mapping=layer_mapping,
                                                sample_axis_info=sample_axis_info,
-                                               include_model_output=include_model_output)
+                                               include_model_output=include_model_output,
+                                               image_augmentation=perform_image_augmentation,
+                                               image_aug=image_augs)
     return loss_instance
 
 

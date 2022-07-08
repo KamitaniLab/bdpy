@@ -111,8 +111,10 @@ class ImageEncoderActivationLoss():
                  include_model_output=False, model_output_saving_name='model_output',
                  input_image_shape=(224, 224), layer_weights=None,
                  loss_dicts=[{'loss_name': 'MSE', 'weight': 1}],
-                 masks=None, channels=None, **args):
+                 masks=None, channels=None,
+                 image_augmentation=False, image_aug=None, **args):
         self.model = model
+        self.model.eval()
         self.given_as_BGR = given_as_BGR
         self.model_inputs_are_RGB = model_inputs_are_RGB
         self.input_image_shape = input_image_shape
@@ -128,7 +130,6 @@ class ImageEncoderActivationLoss():
         self.layer_mapping = layer_mapping
         self.targets = targets
         self.include_model_output = include_model_output
-        # self.sample_axis_info = sample_axis_info
         self.init_loss_funcs()
         self.feature_masks = make_feature_masks(ref_features, masks, channels)
 
@@ -138,6 +139,13 @@ class ImageEncoderActivationLoss():
                                                   targets=targets, return_final_output=include_model_output,
                                                   final_output_saving_name=model_output_saving_name,
                                                   sample_axis_info=sample_axis_info)
+        self.image_augmentation = image_augmentation
+        if image_augmentation:
+            assert image_aug is not None
+            self.image_aug = image_aug
+
+    def __del__(self):
+        del self.feature_extractor
 
     def init_loss_funcs(self):
         tmp_dicts = []
@@ -160,14 +168,18 @@ class ImageEncoderActivationLoss():
 
     def __call__(self, image_batch: Tensor):
         '''
-        image_batch needs to be deprocessed beforehand
+        image_batch needs to be deprocessed beforehand (i.e., given in range [0, 255] or [0, 1])
         '''
         image_batch = F.interpolate(image_batch, tuple(list(self.input_image_shape)[:2]))
         if self.model_inputs_are_RGB and self.given_as_BGR:
             permute = [2, 1, 0]
             image_batch = image_batch[:, permute, :, :]
+        if self.image_augmentation:
+            # TODO: check pixel value range ([0, 255] or [0, 1])
+            image_batch = self.image_aug(image_batch / 255) * 255
         if self.preprocess is not None:
             image_batch = self.preprocess(image_batch)
+        # FIXME: kornia expects image with pixel values in a range [0, 1], so normalization is needed
         # TODO: accept activations given in function arguments so that no redundant computation occurs
         current_features = self.feature_extractor(image_batch)
         return self.calc_losses(current_features)
@@ -185,17 +197,19 @@ class ImageEncoderActivationLoss():
             tmp_loss = 0
             for j, lay in enumerate(reversed_layer_list):
                 act_j = current_features[lay].clone().to(self.device)
-                feat_j = torch.tensor(self.ref_features[lay], device=self.device).clone()
+                act_j_shape = [shape_i if i == 0 else 1 for (i, shape_i) in enumerate(act_j.shape)]
+                feat_j = torch.tensor(self.ref_features[lay], device=self.device).clone().repeat(act_j_shape) # for image augmentation case
                 mask_j = torch.FloatTensor(self.feature_masks[lay]).to(self.device)
                 weight_j = self.layer_weights[lay]
-                masked_act_j = torch.masked_select(act_j, mask_j.bool()).view(act_j.shape)
                 masked_feat_j = torch.masked_select(feat_j, mask_j.bool()).view(feat_j.shape)
+                masked_act_j = torch.masked_select(act_j, mask_j.bool()).view(act_j.shape)
                 loss_j = loss_dict['loss_func'](masked_act_j, masked_feat_j) * weight_j
                 tmp_loss += loss_j
 
             if self.include_model_output:
                 tmp_loss = tmp_loss + loss_dict['loss_func'](current_features['model_output'], torch.tensor(self.ref_features['model_output'], device=self.device).clone()) * self.layer_weights['model_output']
             loss += loss_dict['weight'] * tmp_loss
+        torch.cuda.empty_cache()
         return loss
 
 
@@ -252,8 +266,9 @@ class ImageAugs():
 # main loss class used for reconstruction ----------#
 class CLIPLoss():
     def __init__(self, clip_model, ref_features, device, given_as_BGR=False,
-                 image_augmentation=False, image_aug=None):
+                 image_augmentation=False, image_aug=None, **args):
         self.clip_model = clip_model.to(device)
+        self.clip_model.eval()
         self.ref_features = torch.tensor(ref_features).to(device).float() # (1, 512)-shaped feature. maybe (n, 512) is also acceptable. Also, image feature can be used
         self.device = device
         self.given_as_BGR = given_as_BGR
@@ -289,5 +304,6 @@ class CLIPLoss():
         loss = (-1.) * logits_per_image.mean(dim=0, keepdim=False)
 
         assert loss.shape == torch.Size([1])
+        torch.cuda.empty_cache()
         return loss[0]
 ### ---------------------------------------------------- ###

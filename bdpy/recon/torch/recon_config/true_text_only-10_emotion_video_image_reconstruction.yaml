@@ -14,6 +14,8 @@ output_settings:
   save_generator_feature: True
   save_final_encoder_activations: True # FIXME: NYI
   no_postproc_for_snapshot: True # FIXME: currently not working
+  image_postprocess: null
+  snapshot_postprocess: null
 
 # ------------------------- #
 optimization_settings:
@@ -31,8 +33,6 @@ optimization_settings:
     deprocess:
       mean: [104, 117, 123]
       std: [1, 1, 1]
-  image_postprocess: null
-  snapshot_postprocess: null
 
   normalize_gradients: True
 

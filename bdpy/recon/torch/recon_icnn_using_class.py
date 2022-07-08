@@ -9,6 +9,7 @@ from natsort import os_sorted
 from itertools import product
 
 import gc
+import torch
 
 # Import from my own scripts
 from recon_process_manager import loss_dicts_to_loss_instances, create_ReconProcess_from_conf, create_model_instance
@@ -236,14 +237,18 @@ def run_reconstruction(recon_conf):
                                                               generator_BGR=generator_BGR, device=recon_conf['general_settings']['device'])
                     recon_process = create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=subject, roi_for_each_loss=roi_for_each_loss, **recon_conf)
                     recon_process.optimize(print_logs=True)
+                    del recon_process, loss_lists
+                    torch.cuda.empty_cache()
+                    gc.collect()
         else:
             loss_lists = loss_dicts_to_loss_instances(recon_conf['loss_settings'], models_dict, features_dicts,
                                                       image_label=image_label, subject='', rois_list=[],
                                                       generator_BGR=generator_BGR, device=recon_conf['general_settings']['device'])
             recon_process = create_ReconProcess_from_conf(image_label, models_dict, loss_lists, **recon_conf)
             recon_process.optimize(print_logs=True)
-        del recon_process, loss_lists
-        gc.collect()
+            torch.cuda.empty_cache()
+            del recon_process, loss_lists
+            gc.collect()
 
 def main():
     parser = argparse.ArgumentParser()
