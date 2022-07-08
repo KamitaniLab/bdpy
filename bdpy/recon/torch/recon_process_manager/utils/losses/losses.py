@@ -259,6 +259,32 @@ class ImageAugs():
                 param_dict = {'scale':(.25, .25), 'ratio':(.3, 1/.3), 'p': 1.0}
                 param_dict.update(update_dict)
                 augs.append(K.RandomErasing(**param_dict))
+            # augmentations below is randomly applied by default even if specified by conf
+            # the propabilities are based on those in VQGAN-CLIP
+            elif aug_type == 'RandomSharpness':
+                param_dict = {'sharpness': 0.3, 'p': 0.5}
+                param_dict.update(update_dict)
+                augs.append(K.RandomSharpness(**param_dict))
+            elif aug_type == 'RandomGaussianNoise':
+                param_dict = {'mean': 0.0, 'std': 1., 'p': 0.5}
+                param_dict.update(update_dict)
+                augs.append(K.RandomGaussianNoise(**param_dict))
+            elif aug_type == 'RandomPerspective':
+                param_dict = {'distortion_scale': 0.7, 'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomPerspective(**param_dict))
+            elif aug_type == 'RandomRotation':
+                param_dict = {'degrees': (-15, 15), 'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomRotation(**param_dict))
+            elif aug_type == 'RandomElasticTransform':
+                param_dict = {'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomElasticTransform(**param_dict))
+            elif aug_type == 'RandomThinPlateSpline':
+                param_dict = {'scale': 0.8, 'same_on_batch': True, 'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomThinPlateSpline(**param_dict))
             else:
                 warnings.warn('Unknown augmentaion type {}'.format(aug_type))
         return nn.Sequential(*augs)
