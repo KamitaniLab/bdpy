@@ -17,6 +17,8 @@ __all__ = ['loss_dicts_to_loss_instances']
 def is_in_and_True(key, dictionary):
     return key in dictionary and dictionary[key]
 
+def is_in_and_not_None(key, dictionary):
+    return key in dictionary and dictionary[key] is not None
 
 ### Helper functions for creating typical loss instances based on encoder activations ---------- ###
 def calc_layer_weight_from_norm(features_dict, layers):
@@ -30,7 +32,14 @@ def calc_layer_weight_from_norm(features_dict, layers):
 
     # Normalise the weights such that the sum of the weights = 1
     weights = weights / weights.sum()
-    layer_weights = dict(zip(layers, weights))
+    layer_weights = {}
+    i = 0
+    for layer in layers:
+        if layer is None:
+            continue
+        layer_weights[layer] = weights[i]
+        i += 1
+    assert i == len(weights)
     return layer_weights
 
 def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
@@ -50,7 +59,7 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
     else:
         num_layers_to_use = num_layers
     ref_feature_info = loss_dict['ref_feature_info']
-    include_model_output = num_layers_to_use == num_layers and ref_feature_info['include_model_output']
+    include_model_output = num_layers_to_use == num_layers and is_in_and_True('include_model_output', ref_feature_info)
     if num_layers_to_use > 0:
         hooked_module_names = hooked_module_names[:num_layers_to_use]
         module_saving_names = module_saving_names[:num_layers_to_use]
@@ -71,7 +80,9 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
                 if sub_module_saving_name is not None:
                     module_loading_names.append(sub_module_saving_name)
 
-    sample_axis_info = ref_feature_info['sample_axis_info']
+    sample_axis_info = None
+    if is_in_and_not_None('sample_axis_info', ref_feature_info):
+        sample_axis_info = ref_feature_info['sample_axis_info']
 
     if ref_feature_info['decoded']:
         ref_features = {layer: features.get(layer=layer, subject=subject, roi=roi, image=image_label)

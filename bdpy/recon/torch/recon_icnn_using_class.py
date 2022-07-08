@@ -8,6 +8,7 @@ from natsort import os_sorted
 
 from itertools import product
 
+import gc
 
 # Import from my own scripts
 from recon_process_manager import loss_dicts_to_loss_instances, create_ReconProcess_from_conf, create_model_instance
@@ -44,7 +45,12 @@ def get_layer_mapping(conf, network_name):
         hooked_module_names_key = 'text_features_hooked_module_names'
     else:
         assert False, print('invalid input type for `get_layer_mapping`: {}'.format(input_type))
-    if module_saving_names_key not in conf.keys() or hooked_module_names_key not in conf.keys():
+    # FIXME: current implementation does not allow using different layers for different loss instances
+    if module_saving_names_key in conf.keys() and hooked_module_names_key not in conf.keys():
+        layer_mapping = layer_map(network_name)
+        module_saving_names = conf[module_saving_names_key]
+        hooked_module_names = [layer_mapping[module_saving_name] for module_saving_name in module_saving_names]
+    elif module_saving_names_key not in conf.keys():
         layer_mapping = layer_map(network_name)
         module_saving_names = list(layer_mapping.keys())
         hooked_module_names = list(layer_mapping.values())
@@ -80,6 +86,8 @@ def get_required_models(recon_conf):
                     tmp_info['image_encoder_only'] = True
                 elif is_in_and_True('text_encoder_only', encoder_info):
                     tmp_info['text_encoder_only'] = True
+            if 'params_file' in encoder_info:
+                tmp_info['params_file'] = encoder_info['params_file']
             required_models[network_name] = tmp_info
         else:
             if network_name == 'CLIP_ViT-B_32':
@@ -87,6 +95,9 @@ def get_required_models(recon_conf):
                     required_models[network_name]['image_encoder_only'] = False
                 elif not is_in_and_True('text_encoder_only', encoder_info):
                     required_models[network_name]['text_encoder_only'] = False
+            if 'params_file' in encoder_info:
+                assert 'params_file' in required_models[network_name]
+                assert tmp_info['params_file'] == required_models[network_name]['params_file']
     for network_name, model_info in required_models.items():
         model_info['model_instance'], model_info['preprocess'] = create_model_instance(network_name, device=device, **model_info)
         models_dict[network_name] = model_info
@@ -231,6 +242,8 @@ def run_reconstruction(recon_conf):
                                                       generator_BGR=generator_BGR, device=recon_conf['general_settings']['device'])
             recon_process = create_ReconProcess_from_conf(image_label, models_dict, loss_lists, **recon_conf)
             recon_process.optimize(print_logs=True)
+        del recon_process, loss_lists
+        gc.collect()
 
 def main():
     parser = argparse.ArgumentParser()

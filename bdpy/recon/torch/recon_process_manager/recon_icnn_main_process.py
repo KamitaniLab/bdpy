@@ -5,11 +5,12 @@ import warnings
 from PIL import Image
 import numpy as np
 import torch
+import gc
 
 # Import from bdpy
 from bdpy.dataform import save_array
 from bdpy.recon.utils import gaussian_blur, normalize_image, clip_extreme
-from .utils import optim_name2class, image_deprocess_in_tensor
+from .utils import optim_name2class, image_deprocess_in_tensor, get_image_deprocess_fucntion
 
 from scipy.io import savemat
 import matplotlib.pyplot as plt
@@ -20,16 +21,19 @@ def print_with_verbose(*args, verbose=False, **kwargs):
     if verbose:
         print(*args, **kwargs)
 
+def is_in_and_not_None(key, target_dict):
+    return key in target_dict and target_dict[key] is not None
+
 class ReconProcess:
     # TODO: `reset` function
     def __init__(self, loss_func_dicts,
                  initial_image=None, initial_feature=None,
                  image_mean=None,
-                 generator_model=None, optimizer=None, optimizer_info=[],
+                 generator_model=None, optimizer_info=[],
                  image_shape=None, feature_shape=None,
                  image_deprocess=None,
                  inter_step_processes=[], stabilizing_processes=[],
-                 normalize_gradient=False,
+                 normalize_gradients=True,
                  n_iter=100, device='cpu',
                  use_generator=False, output_dir=None,
                  snapshot_dir=None, snapshot_interval=50,
@@ -65,16 +69,16 @@ class ReconProcess:
             self.generator_model = generator_model
             self.use_generator = True
             self.image_deprocess = image_deprocess
-            self.optimizer = optim_name2class(optimizer_info['optimizer_name'])([self.feature_tensor])
+            self.optimizer = optim_name2class(optimizer_info['optimizer_name'])([self.feature_tensor], lr=2.0) # lr will be configurated in each step
         else:
             self.generator_model = None
             self.use_generator = False
             self.image_array = self.initialize_image_array(initial_image, image_shape, image_mean)
             self.image_tensor = torch.tensor(self.image_array.transpose(2,0,1)[None], device=self.device, requires_grad=True)
-            self.optimizer = optim_name2class(optimizer_info['optimizer_name'])([self.image_tensor])
+            self.optimizer = optim_name2class(optimizer_info['optimizer_name'])([self.image_tensor], lr=2.0) # lr will be configurated in each step
         self.loss_history = np.zeros(n_iter, dtype=np.float32)
         self.optimizer_param_dicts = optimizer_info['param_dicts']
-        self.normalize_gradient = normalize_gradient
+        self.normalize_gradients = normalize_gradients
         self.inter_step_process_dicts = inter_step_processes
         self.stabilizing_process_dicts = stabilizing_processes
 
@@ -166,7 +170,7 @@ class ReconProcess:
                 param_values = optimizer_param_dict['param_values']
                 if not isinstance(param_values, (int, float)):
                     if len(param_values) > 1:
-                        param_it = float(param_values[0]) + (self.current_iteration - 1) * (float(param_values[1]) - float(param_values[0])) / self.n_iter
+                        param_it = float(param_values[0]) + (self.current_iteration - 1) * (float(param_values[1]) - float(param_values[0])) / (self.n_iter- 1)
                     else:
                         param_it = float(param_values[0])
                 else:
@@ -186,7 +190,7 @@ class ReconProcess:
         else:
             grad_mean = torch.abs(self.image_tensor.grad).mean().cpu().detach()
             if grad_mean > 0:
-                self.image_tensor /= grad_mean
+                self.image_tensor.grad /= grad_mean
 
     def inter_step_process(self):
         for inter_step_process_dict in self.inter_step_process_dicts:
@@ -267,8 +271,9 @@ class ReconProcess:
         # TODO: change here to save each loss value respectively
         self.loss_history[self.current_iteration-1] = loss.cpu().detach().numpy()
         loss.backward()
+        del loss
 
-        if self.normalize_gradient:
+        if self.normalize_gradients:
             self.gradient_normalization()
         if self.use_generator:
             self.image_array = image_batch.clone().detach().cpu().numpy()[0].transpose(1,2,0)
@@ -280,6 +285,8 @@ class ReconProcess:
             self.image_array = image_batch.detach().cpu().numpy()[0].transpose(1,2,0)
         self.stabilizing_process(backward=True)
         self.current_iteration += 1
+        del image_batch
+        gc.collect()
 
     def optimize(self, print_logs=False):
         while self.current_iteration <= self.n_iter:
@@ -315,13 +322,13 @@ class ReconProcess:
             saving_name = self.filename_formatting('snapshot')
             if self.image_array is not None:
                 snapshot = self.image_array.copy()
-                if self.generator_output_BGR:
-                    print('BGR to RGB')
-                    snapshot = snapshot[:,:,::-1]
                 if self.image_postprocess is not None:
                     snapshot = self.image_postprocess(snapshot)
                 if self.snapshot_postprocess is not None:
                     snapshot = self.snapshot_postprocess(snapshot)
+                if self.generator_output_BGR:
+                    print('BGR to RGB')
+                    snapshot = snapshot[:,:,::-1]
                 snapshot = snapshot.clip(min=0, max=255)
 
                 image_saving_name = Path(saving_name + self.snapshot_image_pattern_tail).with_suffix(self.snapshot_ext)
@@ -335,10 +342,10 @@ class ReconProcess:
         # use (self.current_iteration - 1) for saving name
             saving_name = self.filename_formatting('final')
             image = self.image_array.copy()
-            if self.generator_output_BGR:
-                image = image[:,:,::-1]
             if self.image_postprocess is not None:
                 image = self.image_postprocess(image)
+            if self.generator_output_BGR:
+                image = image[:,:,::-1]
             image_saving_name = Path(saving_name + self.result_image_pattern_tail).with_suffix(self.result_image_ext)
             image = Image.fromarray(normalize_image(clip_extreme(image, pct=4)))
             image.save(image_saving_name)
@@ -385,13 +392,65 @@ def create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=
         else:
             image_mean = np.float32([image_mean[0].mean(), image_mean[1].mean(), image_mean[2].mean()])
 
-    # image_deprocess
+    # image_deprocess for generator
     generator_deprocess = None
-    if generator_settings['use_generator']:
+    if generator_settings['use_generator'] and is_in_and_not_None('deprocess', generator_settings):
         generator_deprocess =\
             lambda img_tensor: image_deprocess_in_tensor(img_tensor,
                                                          image_mean=np.float32(generator_settings['deprocess']['mean']),
                                                          image_std=np.float32(generator_settings['deprocess']['std']))
+    image_postprocess = None
+    if is_in_and_not_None('image_postprocess', output_settings):
+        if callable(output_settings['image_postprocess']):
+            image_postprocess = output_settings['image_postprocess']
+        else:
+            image_postprocess = get_image_deprocess_fucntion(output_settings['image_postprocess']['mean'],
+                                                             output_settings['image_postprocess']['std'],
+                                                             BGR2RGB=False)
+        # output_settings['image_postprocesss_mean'] = np.float32(output_settings['image_postprocess']['mean'])
+        # output_settings['image_postprocess_std'] = np.float32(output_settings['image_postprocess']['std'])
+        # # def image_postprocess(img_array):
+        # #     return image_deprocess(img_array,
+        # #                            image_mean=np.float32(output_settings['image_postprocess']['mean']),
+        # #                            image_std=np.float32(output_settings['image_postprocess']['std']),
+        # #                            BGR2RGB=False)
+        # image_postprocess =\
+        #     lambda img_array: image_deprocess(img_array,
+        #                                       image_mean=output_settings['image_postprocess_mean'],
+        #                                       image_std=output_settings['image_postprocess_std'],
+        #                                       BGR2RGB=False)
+    output_settings['image_postprocess'] = image_postprocess
+    snapshot_postprocess = None
+    if is_in_and_not_None('snapshot_postprocess', output_settings):
+        if callable(output_settings['snapshot_postprocess']):
+            snapshot_postprocess = output_settings['snapshot_postprocess']
+        else:
+            snapshot_postprocess = get_image_deprocess_fucntion(output_settings['snapshot_postprocess']['mean'],
+                                                                output_settings['snapshot_postprocess']['std'],
+                                                                BGR2RGB=False)
+        # output_settings['snapshot_postprocesss_mean'] = np.float32(output_settings['snapshot_postprocess']['mean'])
+        # output_settings['snapshot_postprocess_std'] = np.float32(output_settings['snapshot_postprocess']['std'])
+        # # def image_postprocess(img_array):
+        # #     return image_deprocess(img_array,
+        # #                            image_mean=np.float32(output_settings['image_postprocess']['mean']),
+        # #                            image_std=np.float32(output_settings['image_postprocess']['std']),
+        # #                            BGR2RGB=False)
+        # snapshot_postprocess =\
+        #     lambda img_array: image_deprocess(img_array,
+        #                                       image_mean=output_settings['snapshot_postprocess_mean'],
+        #                                       image_std=output_settings['snapshot_postprocess_std'],
+        #                                       BGR2RGB=False)
+        # # def snapshot_postprocess(img_array):
+        # #     return image_deprocess(img_array,
+        # #                            image_mean=np.float32(output_settings['snapshot_postprocess']['mean']),
+        # #                            image_std=np.float32(output_settings['snapshot_postprocess']['std']),
+        # #                            BGR2RGB=False)
+        # snapshot_postprocess=\
+        #     lambda img_array: image_deprocess(img_array,
+        #                                       image_mean=np.float32(output_settings['snapshot_postprocess']['mean']),
+        #                                       image_std=np.float32(output_settings['snapshot_postprocess']['std']),
+        #                                       BGR2RGB=False)
+    output_settings['snapshot_postprocess'] = snapshot_postprocess
 
     return ReconProcess(loss_lists, **general_settings, **output_settings,
                         **optimization_settings, **generator_settings,

@@ -33,15 +33,16 @@ def create_model_instance(model_name, device='cpu', training=False, **args):
             model.eval()
         return model, None
     # TODO: check whether following two models work correctly
-    elif model_name == 'VGG19':
+    elif model_name == 'vgg19':
         # from bdpy.dl import VGG19
         model = dl.VGG19().to(device)
         if 'params_file' in args:
+            print('loading VGG19 parameters')
             model.load_state_dict(torch.load(args['params_file']))
         if not training:
             model.eval()
         return model, None
-    elif model_name == 'AlexNet':
+    elif model_name == 'alexnet':
         # from bdpy.dl import AlexNet
         # TODO: accept different number of classes
         model = dl.AlexNet().to(device)

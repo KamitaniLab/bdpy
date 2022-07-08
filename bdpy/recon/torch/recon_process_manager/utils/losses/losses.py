@@ -8,6 +8,7 @@ import kornia.augmentation as K
 
 import warnings
 
+from bdpy.recon.utils import make_feature_masks
 
 # tricks for loading bdpy files from working directory
 if __file__ == '/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/torch/recon_process_manager/utils/losses/losses.py':
@@ -17,13 +18,13 @@ if __file__ == '/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/torch/recon_process_
     dl_torch_spec.loader.exec_module(dl_torch)
     FeatureExtractor = dl_torch.FeatureExtractor
 
-    recon_utils_spec = importlib.util.spec_from_file_location('recon_utils', "/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/utils.py")
-    recon_utils = importlib.util.module_from_spec(recon_utils_spec)
-    recon_utils_spec.loader.exec_module(recon_utils)
-    make_feature_masks = recon_utils.make_feature_masks
+    # recon_utils_spec = importlib.util.spec_from_file_location('recon_utils', "/home/eitoikuta/bdpy_update/bdpy/bdpy/recon/utils.py")
+    # recon_utils = importlib.util.module_from_spec(recon_utils_spec)
+    # recon_utils_spec.loader.exec_module(recon_utils)
+    # make_feature_masks = recon_utils.make_feature_masks
 else:
     from bdpy.dl import FeatureExtractor
-    from bdpy.recon.utils import make_feature_masks
+    # from bdpy.recon.utils import make_feature_masks
 
 
 ### Typical loss based on encoder activations ---------- ###

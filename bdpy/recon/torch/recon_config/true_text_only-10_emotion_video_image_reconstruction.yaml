@@ -5,8 +5,6 @@ general_settings:
 
 output_settings:
   output_root: /home/eitoikuta/reconstruction_revised/emotion/image_reconstruction_results
-  experiment_name: new_ver_with_emotion_with_generator
-  experiment_name_from_options: False
   save_snapshot: True
   save_loss_hist: True
   snapshot_ext: .tiff

@@ -3,24 +3,27 @@ general_settings:
   # label_upperbound: n01443537_22563
 
 output_settings:
-  # output_root: /home/eitoikuta/reconstruction_revised/reconstruction_results/CLIP_ViT-B_32/500voxel_allunits_fastl2lir_alpha100
+  # output_root: ./results/ImageNetTest/derivatives/reconstruction/icnn/vgg19_dgn_relu7gen_gd_train_mean_centering_positional_sd_scaling_600iter_pytorch
   output_root: /home/eitoikuta/_import_test/image_recon_test_results
   save_snapshot: True
   save_loss_hist: True
   snapshot_ext: .tiff
   retult_image_ext: .tiff
-  snapshot_interval: 50
+  # snapshot_interval: 1
+  snapshot_interval: 200
   info_display_interval: 1 # FIXME: currently not working
-  save_generator_feature: True
-  save_final_encoder_activations: True # FIXME: NYI
-  no_postproc_for_snapshot: True # FIXME: currently not working
-  image_postprocess: null
+  save_generator_feature: False
+  save_final_encoder_activations: False # FIXME: NYI
+  image_postprocess:
+    mean: [104, 117, 123]
+    std: [1, 1, 1]
   snapshot_postprocess: null
+  no_postproc_for_snapshot: True # FIXME: currently not working
 
 # ------------------------- #
 optimization_settings:
   n_iter: 600
-  image_shape: [224, 224, 3] # image shape should be included in loss settings
+  image_shape: [224, 224, 3] # used only if a generator is not used
 
   generator:
     use_generator: True
@@ -28,14 +31,13 @@ optimization_settings:
     params_file: /home/kiss/data/models_shared/pytorch/bvlc_reference_caffenet/generators/ILSVRC2012_Training/relu7/generator.pt
     feature_shape: [4096]
     output_BGR: True # this information will be used for loss settings
-    deprocess:
-      mean: [104, 117, 123]
-      std: [1, 1, 1]
+    deprocess: null
 
   normalize_gradients: True
 
   optimizer_info:
-    optimizer_name: Adam
+    # optimizer_name: Adam
+    optimizer_name: SGD
     param_dicts:
       - param_name: lr
         param_values: [2., 1e-10]
@@ -50,8 +52,8 @@ optimization_settings:
 
     - process_name: feature_clipping
       param_values:
-        - null # TODO: change programs to load the value from a file if path is specified
-        - /home/kiss/data/models_shared/caffe/bvlc_reference_caffenet/generators/ILSVRC2012_Training/relu7/act_range/3x/fc7.txt
+        - null # lower bound
+        - /home/kiss/data/models_shared/caffe/bvlc_reference_caffenet/generators/ILSVRC2012_Training/relu7/act_range/3x/fc7.txt # upper bound
 
   stabilizing_processes:
     - process_name: jittering
@@ -61,45 +63,39 @@ optimization_settings:
 loss_settings:
   - loss_type: ImageEncoderActivationLoss
     encoder_info:
-      network_name: CLIP_ViT-B_32
-      model_inputs_are_RGB: True
+      network_name: vgg19
+      params_file: /home/kiss/data/models_shared/pytorch/VGG_ILSVRC_19_layers/VGG_ILSVRC_19_layers.pt
+      model_inputs_are_RGB: False
       preprocess_from_PIL: False # TODO: where should this arg be placed?
-      image_encoder_only: True
       input_image_shape: [224, 224]
-    num_layers_to_use: 27
-    # num_layers_to_use: [27] # FIXME: list will not be accepted
     ref_feature_info:
       input_type: image
       decoded: True # for enabling to use true features easily
-      features_dir: /home/eitoikuta/reconstruction_revised/CLIP/pipeline_results/decoded_features/ImageNet_fmriprep_500voxel_allunits_fastl2lir_alpha100/decoded_features/CLIP_ViT-B_32/ImageNetTraining
-      subjects: [TH]
+      features_dir: /home/nu/data/contents_shared/ImageNetTest/derivatives/decoded_features/deeprecon_fmriprep_rep3_500voxel_allunits_fastl2lir_alpha100/decoded_features/caffe/VGG_ILSVRC_19_layers
+      subjects: [SA]
+      # subjects: [TH]
       rois: [VC]
       normalize_feature: True
-      channel_axis_list: [1,
-                          2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                          2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                          1, 1]
+      module_saving_names: ['conv1_1', 'conv1_2', 'conv2_1', 'conv2_2',
+                            'conv3_1', 'conv3_2', 'conv3_3', 'conv3_4',
+                            'conv4_1', 'conv4_2', 'conv4_3', 'conv4_4',
+                            'conv5_1', 'conv5_2', 'conv5_3', 'conv5_4',
+                            'fc6', 'fc7', 'fc8']
 
-      sample_axis_info: [0,
-                         [1], 1, [1], 1, [1], 1, [1], 1,
-                         [1], 1, [1], 1, [1], 1, [1], 1,
-                         [1], 1, [1], 1, [1], 1, [1], 1,
-                         0, 0]
-      include_model_output: True
       normalization_settings:
         subtracthend:
-          values: '/home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/ImageNetTraining/unit-wise_mean_and_std/ImageNetTraining_unit-wise_mean.mat'
+          values: '/home/eitoikuta/reconstruction_revised/encoder_features_std/caffe/VGG_ILSVRC_19_layers/ImageNetTraining/unit-wise_mean_and_std/ImageNetTraining_unit-wise_mean.smat'
           calculation_type: 'unit-wise'
         dividor:
           values: 'std'
           calculation_type: 'positional'
-          std_ddof: 1
+          std_ddof: 0 # TODO: use the same value as multiplier
         multiplier:
-          values: '/home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/ImageNetBase10000/positional_mean_and_std/ImageNetBase10000_positional_std-ddof1.mat'
+          values: '/home/eitoikuta/reconstruction_revised/encoder_features_std/caffe/VGG_ILSVRC_19_layers/ImageNetBase10000/position-wise_mean_and_std/ImageNetBase10000_position-wise_std.smat'
           calculation_type: 'positional'
-          std_ddof: 1
+          std_ddof: 0 # TODO: check whether this is true
         addend:
-          values: '/home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/ImageNetBase10000/positional_mean_and_std/ImageNetBase10000_positional_mean.mat'
+          values: '/home/eitoikuta/reconstruction_revised/encoder_features_std/caffe/VGG_ILSVRC_19_layers/ImageNetBase10000/position-wise_mean_and_std/ImageNetBase10000_position-wise_mean.smat'
           calculation_type: 'positional'
         # addend:
         #   - values: '/home/eitoikuta/reconstruction_revised/CLIP/encoder_features_std/CLIP_ViT-B_32/ImageNetTraining/positional_mean_and_std/ImageNetTraining_positional_mean.mat'
