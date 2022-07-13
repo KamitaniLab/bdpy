@@ -48,7 +48,8 @@ class ReconProcess:
                  loss_history_pattern_tail='_loss_history',
                  feature_saving_pattern_tail='_feature',
                  image_label='',
-                 generator_output_BGR=False, **args):
+                 image_array_is_BGR=False,
+                 **args):
         '''
         initialization
         '''
@@ -101,15 +102,12 @@ class ReconProcess:
         self.loss_history_pattern_tail = loss_history_pattern_tail
         self.feature_saving_pattern_tail = feature_saving_pattern_tail
         self.image_label = image_label
-        self.generator_output_BGR = generator_output_BGR
+        self.image_array_is_BGR = image_array_is_BGR
 
     def initialize_image_array(self, initial_image, image_shape, image_mean, value_range=(0, 256)):
         if initial_image is None:
             if image_mean is not None:
                 initial_image = np.zeros(image_shape, dtype='float32')
-                # since image_mean was BGR, we needed to reverse the order to make it RGB
-                # for i in range(3):
-                #     initial_image[:, :, i] = image_mean[2-i].copy()
                 # TODO: make sure the image_mean is given in the RGB order
                 for i in range(3):
                     initial_image[:, :, i] = image_mean[i].copy()
@@ -136,7 +134,13 @@ class ReconProcess:
         if self.use_generator:
             image_tensor = self.generate_image()
             if self.image_deprocess is not None:
+                print('start deprocessing')
+                print('before deprocess: min={}, mean={}, max={}'.format(image_tensor.min().item(), image_tensor.mean().item(), image_tensor.max().item()))
                 image_tensor = self.image_deprocess(image_tensor)
+                print('after deprocess: min={}, mean={}, max={}'.format(image_tensor.min().item(), image_tensor.mean().item(), image_tensor.max().item()))
+                print('done')
+            else:
+                print('min={}, mean={}, max={}'.format(image_tensor.min().item(), image_tensor.mean().item(), image_tensor.max().item()))
             self.image_tensor = image_tensor
         else:
             self.image_tensor.data = torch.tensor(self.image_array.transpose(2,0,1)[None], device=self.device)
@@ -328,7 +332,7 @@ class ReconProcess:
                     snapshot = self.image_postprocess(snapshot)
                 if self.snapshot_postprocess is not None:
                     snapshot = self.snapshot_postprocess(snapshot)
-                if self.generator_output_BGR:
+                if self.image_array_is_BGR:
                     print('BGR to RGB')
                     snapshot = snapshot[:,:,::-1]
                 snapshot = snapshot.clip(min=0, max=255)
@@ -346,7 +350,7 @@ class ReconProcess:
             image = self.image_array.copy()
             if self.image_postprocess is not None:
                 image = self.image_postprocess(image)
-            if self.generator_output_BGR:
+            if self.image_array_is_BGR:
                 image = image[:,:,::-1]
             image_saving_name = Path(saving_name + self.result_image_pattern_tail).with_suffix(self.result_image_ext)
             image = Image.fromarray(normalize_image(clip_extreme(image, pct=4)))
@@ -368,7 +372,7 @@ def create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=
     general_settings = recon_conf['general_settings']
     output_settings = recon_conf['output_settings']
     optimization_settings = recon_conf['optimization_settings']
-    generator_settings = optimization_settings['generator']
+    generator_settings = optimization_settings['generator'] if 'generator' in optimization_settings else {}
 
     model_instance = None
     if generator_settings['use_generator']:
@@ -401,6 +405,8 @@ def create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=
             lambda img_tensor: image_deprocess_in_tensor(img_tensor,
                                                          image_mean=np.float32(generator_settings['deprocess']['mean']),
                                                          image_std=np.float32(generator_settings['deprocess']['std']))
+        for loss_info in loss_lists:
+            loss_info['loss_func'].given_in_range_255 = generator_settings['deprocess']['output_range_255']
     image_postprocess = None
     if is_in_and_not_None('image_postprocess', output_settings):
         if callable(output_settings['image_postprocess']):

@@ -36,6 +36,9 @@ else:
 def is_in_and_True(key, dictionary):
     return key in dictionary and dictionary[key]
 
+def is_in_and_not_None(key, target_dict):
+    return key in target_dict and target_dict[key] is not None
+
 def get_layer_mapping(conf, network_name):
     input_type = conf['input_type']
     if input_type == 'image':
@@ -89,6 +92,8 @@ def get_required_models(recon_conf):
                     tmp_info['text_encoder_only'] = True
             if 'params_file' in encoder_info:
                 tmp_info['params_file'] = encoder_info['params_file']
+            if 'preprocess_info' in encoder_info:
+                tmp_info['preprocess_info'] = encoder_info['preprocess_info']
             required_models[network_name] = tmp_info
         else:
             if network_name == 'CLIP_ViT-B_32':
@@ -210,9 +215,32 @@ def run_reconstruction(recon_conf):
     '''
     load features, create loss and reconprocess instances, and run reconstruction
     '''
-    generator_settings = recon_conf['optimization_settings']['generator']
-    generator_BGR = generator_settings['use_generator'] and generator_settings['output_BGR']
-    recon_conf['optimization_settings']['generator']['generator_output_BGR'] = generator_BGR
+    if 'generator' in recon_conf['optimization_settings'] and is_in_and_True('use_generator', recon_conf['optimization_settings']['generator']):
+        generator_settings = recon_conf['optimization_settings']['generator']
+        use_generator = True
+        generator_BGR = use_generator and generator_settings['output_BGR']
+        given_in_range_255 = use_generator and ((not is_in_and_not_None('deprocess', generator_settings) and is_in_and_True('output_range_255', generator_settings)) or
+                                                (is_in_and_not_None('deprocess', generator_settings) and is_in_and_True('output_range_255', generator_settings['deprocess'])))
+        # recon_conf['optimization_settings']['generator']['image_array_is_BGR'] = generator_BGR
+        recon_conf['optimization_settings']['image_array_is_BGR'] = generator_BGR
+    else: # optimize in the pixel space
+        if is_in_and_not_None('initial_image', recon_conf['optimization_settings']):
+            # TODO: accept following types of specification
+            # 1: a list of values (RGB or BGR), 2: file where one array of values are stored (RGB or BGR), 3: initial image file,
+            # 5: initial value dictionary (text), 6: initial value dictionary (file), 7: initial image file list (text),
+            # 8: initial image file list (file), 9: initial image file dictionary (text), 10: initial image file dictionary (file),
+            # 11: initial value list (text), 12: initial value list (file), 13: initial value dictionary (text),
+            # 14: initial value dictionary (file), 15: initial image range (text), 16: initial image range (file)
+            # 17: initial image range list (text), 18: initial image range list (file), 19: initial image range dictionary (text)
+            # 20: initial image range dictionary (file)
+            initial_image_settings = recon_conf['optimization_settings']['initial_image']
+            if is_in_and_not_None('BGR', initial_image_settings):
+                recon_conf['optimization_settings']['image_array_is_BGR'] = True
+            if is_in_and_True('range_255', initial_image_settings):
+                given_in_range_255 = True
+        else:
+            recon_conf['optimization_settings']['image_array_is_BGR'] = False
+            given_in_range_255 = True
     models_dict = get_required_models(recon_conf)
     features_dicts = get_required_features(recon_conf['loss_settings'])
     image_labels = os_sorted(get_image_labels(features_dicts[0]))
@@ -234,7 +262,8 @@ def run_reconstruction(recon_conf):
                     # prepare loss_instances and reconprocess
                     loss_lists = loss_dicts_to_loss_instances(recon_conf['loss_settings'], models_dict, features_dicts,
                                                               image_label=image_label, subject=subject, rois_list=roi_for_each_loss,
-                                                              generator_BGR=generator_BGR, device=recon_conf['general_settings']['device'])
+                                                              generator_BGR=generator_BGR, given_in_range_255=given_in_range_255,
+                                                              device=recon_conf['general_settings']['device'])
                     recon_process = create_ReconProcess_from_conf(image_label, models_dict, loss_lists, subject=subject, roi_for_each_loss=roi_for_each_loss, **recon_conf)
                     recon_process.optimize(print_logs=True)
                     del recon_process, loss_lists
@@ -243,7 +272,8 @@ def run_reconstruction(recon_conf):
         else:
             loss_lists = loss_dicts_to_loss_instances(recon_conf['loss_settings'], models_dict, features_dicts,
                                                       image_label=image_label, subject='', rois_list=[],
-                                                      generator_BGR=generator_BGR, device=recon_conf['general_settings']['device'])
+                                                      generator_BGR=generator_BGR, given_in_range_255=given_in_range_255,
+                                                      device=recon_conf['general_settings']['device'])
             recon_process = create_ReconProcess_from_conf(image_label, models_dict, loss_lists, **recon_conf)
             recon_process.optimize(print_logs=True)
             torch.cuda.empty_cache()

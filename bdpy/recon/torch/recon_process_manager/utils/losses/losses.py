@@ -27,13 +27,124 @@ else:
     # from bdpy.recon.utils import make_feature_masks
 
 
+# helper class ---------- #
+class ImageAugs():
+    def __init__(self, n_cutouts=10,
+                 aug_dicts=[{'type': 'ColorJitter'}, {'type': 'RandomAffine'},
+                            {'type': 'RandomResizedCrop'}, {'type': 'RandomErasing'}],
+                 **args):
+        self.n_cutouts = n_cutouts
+        self.augs = self.instantiate_augs(aug_dicts)
+    def __call__(self, image_batch: torch.Tensor):
+        assert image_batch.dim() == 4
+        # FIXME: currently only size-one image batch with BCHW is acceptable
+        assert image_batch.shape[0] == 1
+        image_batch = image_batch.repeat(self.n_cutouts, 1, 1, 1)
+        image_batch = self.augs(image_batch)
+        return image_batch
+    def instantiate_augs(self, aug_dicts):
+        augs = []
+        # TODO: implement other types of augmentations
+        for aug_dict in aug_dicts:
+            aug_type = aug_dict['type']
+            if 'params' not in aug_dict:
+                update_dict = {}
+            else:
+                update_dict = aug_dict['params']
+            if aug_type == 'ColorJitter':
+                param_dict = {'brightness':(0,0.5), 'contrast':(0., 2.),
+                              'saturation':(0.5, 1.5), 'hue':(-0.1, 0.1), 'p':1.0}
+                param_dict.update(update_dict)
+                augs.append(K.ColorJitter(**param_dict))
+            elif aug_type == 'RandomAffine':
+                # if you want to apply "shear" transformation, use this
+                param_dict = {'degrees':(-15, 15), 'translate':(0.125, 0.125),
+                              'p':1.0, 'padding_mode':'zeros', 'keepdim':True}
+                param_dict.update(update_dict)
+                augs.append(K.RandomAffine(**param_dict))
+            elif aug_type == 'RandomResizedCrop':
+                param_dict = {'size':(224,224), 'scale':(0.8,1.2),
+                              'ratio':(1,1), 'cropping_mode':'resample', 'p':1.0}
+                param_dict.update(update_dict)
+                augs.append(K.RandomResizedCrop(**param_dict))
+            elif aug_type == 'RandomErasing':
+                param_dict = {'scale':(.25, .25), 'ratio':(.3, 1/.3), 'p': 1.0}
+                param_dict.update(update_dict)
+                augs.append(K.RandomErasing(**param_dict))
+            # augmentations below is randomly applied by default even if specified by conf
+            # the propabilities are based on those in VQGAN-CLIP
+            elif aug_type == 'RandomSharpness':
+                param_dict = {'sharpness': 0.3, 'p': 0.5}
+                param_dict.update(update_dict)
+                augs.append(K.RandomSharpness(**param_dict))
+            elif aug_type == 'RandomGaussianNoise':
+                param_dict = {'mean': 0.0, 'std': 1., 'p': 0.5}
+                param_dict.update(update_dict)
+                augs.append(K.RandomGaussianNoise(**param_dict))
+            elif aug_type == 'RandomPerspective':
+                param_dict = {'distortion_scale': 0.7, 'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomPerspective(**param_dict))
+            elif aug_type == 'RandomRotation':
+                param_dict = {'degrees': (-15, 15), 'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomRotation(**param_dict))
+            elif aug_type == 'RandomElasticTransform':
+                param_dict = {'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomElasticTransform(**param_dict))
+            elif aug_type == 'RandomThinPlateSpline':
+                param_dict = {'scale': 0.8, 'same_on_batch': True, 'p': 0.7}
+                param_dict.update(update_dict)
+                augs.append(K.RandomThinPlateSpline(**param_dict))
+            # augmentations below are taken from "Better Aggregation in Test-Time Augmentation"
+            elif aug_type == 'RandomHorizontalFlip':
+                param_dict = {'p': 0.5}
+                param_dict.update(update_dict)
+                augs.append(K.RandomHorizontalFlip(**param_dict))
+            elif aug_type == 'RandomVerticalFlip':
+                param_dict = {'p': 0.5}
+                param_dict.update(update_dict)
+                augs.append(K.RandomVerticalFlip(**param_dict))
+            elif aug_type == 'RandomInvert':
+                param_dict = {'max_val': Tensor([1.0]), 'p': 0.5, 'same_on_batch': False,
+                              'keepdim': False, 'return_transform': None}
+                if 'max_val' in update_dict:
+                    update_dict['max_val'] = Tensor(update_dict['max_val'])
+                param_dict.update(update_dict)
+                augs.append(K.RandomInvert(**param_dict))
+            elif aug_type == 'RandomPosterize':
+                param_dict = {'bits': 3, 'same_on_batch': False,
+                              'p': 0.5, 'keepdim': False,
+                              'return_transform': None}
+                param_dict.update(update_dict)
+                augs.append(K.RandomPosterize(**param_dict))
+            elif aug_type == 'RandomSolarize':
+                param_dict = {'thresholds': 0.1, 'additions': 0.1,
+                              'same_on_batch': False, 'p': 0.5, 'keepdim': False,
+                              'return_transform': None}
+                param_dict.update(update_dict)
+                augs.append(K.RandomSolarize(**param_dict))
+            elif aug_type == 'RandomGaussianBlur':
+                param_dict = {'kernel_size': (3,3), 'sigma': (0.1, 2.0),
+                              'border_type': 'reflect', 'same_on_batch': False,
+                              'p': 0.5, 'keepdim': False, 'return_transform': None}
+                augs.append(K.RandomGaussianBlur(**param_dict))
+            elif aug_type == 'RandomEqualize':
+                param_dict = {'same_on_batch': False, 'p': 0.5,
+                              'keepdim': False, 'return_transform': None}
+                param_dict.update(update_dict)
+                augs.append(K.RandomEqualize(**param_dict))
+            else:
+                warnings.warn('Unknown augmentaion type {}'.format(aug_type))
+        return nn.Sequential(*augs)
+
 ### Typical loss based on encoder activations ---------- ###
 # helper functions ---------- #
 def convert_for_corrmat(feat):
     feat_shape = feat.shape
     feat_flatten = feat.view(feat_shape[0], feat_shape[1], -1)
     return feat_flatten
-
 
 def cov_torch(m, y=None):
     if y is not None:
@@ -106,13 +217,14 @@ class FeatCorrLoss():
 # main loss class used for reconstruction ----------#
 class ImageEncoderActivationLoss():
     def __init__(self, model, device, ref_features,
-                 preprocess=None, given_as_BGR=False, model_inputs_are_RGB=True,
+                 preprocess=None, preprocess_input_range_255=True,
+                 given_as_BGR=False, model_inputs_are_RGB=True,
                  layer_mapping=None, targets=None, sample_axis_info=None,
                  include_model_output=False, model_output_saving_name='model_output',
                  input_image_shape=(224, 224), layer_weights=None,
                  loss_dicts=[{'loss_name': 'MSE', 'weight': 1}],
                  masks=None, channels=None,
-                 image_augmentation=False, image_aug=None, **args):
+                 given_in_range_255=True, image_augmentation=False, image_aug=None, **args):
         self.model = model
         self.model.eval()
         self.given_as_BGR = given_as_BGR
@@ -125,6 +237,7 @@ class ImageEncoderActivationLoss():
             w = w / w.sum()
             layer_weights = {layer: w[i] for i, layer in enumerate(ref_features.keys())}
         self.preprocess = preprocess
+        self.preprocess_input_range_255 = preprocess_input_range_255
         self.layer_weights = layer_weights
         self.loss_dicts = loss_dicts
         self.layer_mapping = layer_mapping
@@ -140,6 +253,7 @@ class ImageEncoderActivationLoss():
                                                   final_output_saving_name=model_output_saving_name,
                                                   sample_axis_info=sample_axis_info)
         self.image_augmentation = image_augmentation
+        self.given_in_range_255 = given_in_range_255
         if image_augmentation:
             assert image_aug is not None
             self.image_aug = image_aug
@@ -174,12 +288,38 @@ class ImageEncoderActivationLoss():
         if self.model_inputs_are_RGB and self.given_as_BGR:
             permute = [2, 1, 0]
             image_batch = image_batch[:, permute, :, :]
-        if self.image_augmentation:
-            # TODO: check pixel value range ([0, 255] or [0, 1])
-            image_batch = self.image_aug(image_batch / 255) * 255
-        if self.preprocess is not None:
-            image_batch = self.preprocess(image_batch)
         # FIXME: kornia expects image with pixel values in a range [0, 1], so normalization is needed
+        if self.image_augmentation:
+            print('start augmentation process')
+            if self.given_in_range_255:
+                print('0~255 -> 0~1')
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+                image_batch = self.image_aug(image_batch / 255) * 255
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+            else: # pixel value range = [0, 1]
+                print('0~1 -> 0~1')
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+                image_batch = self.image_aug(image_batch)
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+            print('done')
+        if self.preprocess is not None:
+            print('start preprocessing')
+            if not self.preprocess_input_range_255 and self.given_in_range_255:
+                print('0~255 -> 0~1')
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+                image_batch = image_batch / 255
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+            elif self.preprocess_input_range_255 and not self.given_in_range_255:
+                print('0~1 -> 0~255')
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+                image_batch = image_batch * 255
+                print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+            print('before preprocess: min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+            image_batch = self.preprocess(image_batch)
+            print('before preprocess: min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
+            print('done')
+        else:
+            print('min={}, mean={}, max={}'.format(image_batch.min().item(), image_batch.mean().item(), image_batch.max().item()))
         # TODO: accept activations given in function arguments so that no redundant computation occurs
         current_features = self.feature_extractor(image_batch)
         return self.calc_losses(current_features)
@@ -216,83 +356,14 @@ class ImageEncoderActivationLoss():
 ### ---------------------------------------------------- ###
 
 ### Loss based on CLIP similarity scores --------------- ###
-# helper class ---------- #
-class ImageAugs():
-    def __init__(self, n_cutouts=10,
-                 aug_dicts=[{'type': 'ColorJitter'}, {'type': 'RandomAffine'},
-                            {'type': 'RandomResizedCrop'}, {'type': 'RandomErasing'}],
-                 **args):
-        self.n_cutouts = n_cutouts
-        self.augs = self.instantiate_augs(aug_dicts)
-    def __call__(self, image_batch: torch.Tensor):
-        assert image_batch.dim() == 4
-        # FIXME: currently only size-one image batch with BCHW is acceptable
-        assert image_batch.shape[0] == 1
-        image_batch = image_batch.repeat(self.n_cutouts, 1, 1, 1)
-        image_batch = self.augs(image_batch)
-        return image_batch
-    def instantiate_augs(self, aug_dicts):
-        augs = []
-        # TODO: implement other types of augmentations
-        for aug_dict in aug_dicts:
-            aug_type = aug_dict['type']
-            if 'params' not in aug_dict:
-                update_dict = {}
-            else:
-                update_dict = aug_dict['params']
-            if aug_type == 'ColorJitter':
-                param_dict = {'brightness':(0,0.5), 'contrast':(0., 2.),
-                              'saturation':(0.5, 1.5), 'hue':(-0.1, 0.1), 'p':1.0}
-                param_dict.update(update_dict)
-                augs.append(K.ColorJitter(**param_dict))
-            elif aug_type == 'RandomAffine':
-                param_dict = {'degrees':(-15, 15), 'translate':(0.125, 0.125),
-                              'p':1.0, 'padding_mode':'zeros', 'keepdim':True}
-                param_dict.update(update_dict)
-                augs.append(K.RandomAffine(**param_dict))
-            elif aug_type == 'RandomResizedCrop':
-                param_dict = {'size':(224,224), 'scale':(0.8,1.2),
-                              'ratio':(1,1), 'cropping_mode':'resample', 'p':1.0}
-                param_dict.update(update_dict)
-                augs.append(K.RandomResizedCrop(**param_dict))
-            elif aug_type == 'RandomErasing':
-                param_dict = {'scale':(.25, .25), 'ratio':(.3, 1/.3), 'p': 1.0}
-                param_dict.update(update_dict)
-                augs.append(K.RandomErasing(**param_dict))
-            # augmentations below is randomly applied by default even if specified by conf
-            # the propabilities are based on those in VQGAN-CLIP
-            elif aug_type == 'RandomSharpness':
-                param_dict = {'sharpness': 0.3, 'p': 0.5}
-                param_dict.update(update_dict)
-                augs.append(K.RandomSharpness(**param_dict))
-            elif aug_type == 'RandomGaussianNoise':
-                param_dict = {'mean': 0.0, 'std': 1., 'p': 0.5}
-                param_dict.update(update_dict)
-                augs.append(K.RandomGaussianNoise(**param_dict))
-            elif aug_type == 'RandomPerspective':
-                param_dict = {'distortion_scale': 0.7, 'p': 0.7}
-                param_dict.update(update_dict)
-                augs.append(K.RandomPerspective(**param_dict))
-            elif aug_type == 'RandomRotation':
-                param_dict = {'degrees': (-15, 15), 'p': 0.7}
-                param_dict.update(update_dict)
-                augs.append(K.RandomRotation(**param_dict))
-            elif aug_type == 'RandomElasticTransform':
-                param_dict = {'p': 0.7}
-                param_dict.update(update_dict)
-                augs.append(K.RandomElasticTransform(**param_dict))
-            elif aug_type == 'RandomThinPlateSpline':
-                param_dict = {'scale': 0.8, 'same_on_batch': True, 'p': 0.7}
-                param_dict.update(update_dict)
-                augs.append(K.RandomThinPlateSpline(**param_dict))
-            else:
-                warnings.warn('Unknown augmentaion type {}'.format(aug_type))
-        return nn.Sequential(*augs)
-
 # main loss class used for reconstruction ----------#
 class CLIPLoss():
+    '''
+    if `given_in_range_255`, pixel values are expected to in [0, 255]
+    otherwise, pixel values are expected to in [0, 1]
+    '''
     def __init__(self, clip_model, ref_features, device, given_as_BGR=False,
-                 image_augmentation=False, image_aug=None, **args):
+                 given_in_range_255=True, image_augmentation=False, image_aug=None, **args):
         self.clip_model = clip_model.to(device)
         self.clip_model.eval()
         self.ref_features = torch.tensor(ref_features).to(device).float() # (1, 512)-shaped feature. maybe (n, 512) is also acceptable. Also, image feature can be used
@@ -304,6 +375,7 @@ class CLIPLoss():
         if image_augmentation:
             assert image_aug is not None
             self.image_aug = image_aug
+        self.given_in_range_255 = given_in_range_255
 
     def __call__(self, image_batch: torch.Tensor):
         '''
@@ -314,7 +386,8 @@ class CLIPLoss():
             permute = [2, 1, 0]
             image_batch = image_batch[:, permute, :, :]
         image_batch = F.interpolate(image_batch, (224, 224))
-        image_batch = image_batch / 255.
+        if self.given_in_range_255:
+            image_batch = image_batch / 255.
         if self.image_augmentation:
             image_batch = self.image_aug(image_batch)
         image_batch.sub_(self.mean[None, :, None, None]).div_(self.std[None, :, None, None])

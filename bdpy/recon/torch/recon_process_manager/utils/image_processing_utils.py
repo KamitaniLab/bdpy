@@ -1,7 +1,7 @@
 import numpy as np
 from torchvision import transforms
 
-__all__ = ['image_preprocess', 'image_deprocess', 'image_deprocess_in_tensor', 'get_image_deprocess_fucntion']
+__all__ = ['image_preprocess', 'image_deprocess', 'image_deprocess_in_tensor', 'get_image_deprocess_fucntion', 'get_image_preprocess_in_tensor_function']
 
 def image_preprocess(img, image_mean=np.float32([104, 117, 123]), image_std=np.float32([1, 1, 1])):
     '''
@@ -29,6 +29,9 @@ def image_preprocess_in_tensor(img, image_mean=np.float32([104, 117, 123]), imag
 
 def image_deprocess_in_tensor(img, image_mean=np.float32([104, 117, 123]), image_std=np.float32([1, 1, 1])):
     ### in this function, the order of color channels will not be changed ###
-    deproc =  transforms.Compose([transforms.Normalize(mean=[0., 0., 0.], std=1/image_std),
-                                  transforms.Normalize(mean=-image_mean, std=[1., 1., 1.])])
+    deproc = transforms.Compose([transforms.Normalize(mean=[0., 0., 0.], std=1/image_std),
+                                 transforms.Normalize(mean=-image_mean, std=[1., 1., 1.])])
     return deproc(img)
+
+def get_image_preprocess_in_tensor_function(image_mean=np.float32([104, 117, 123]), image_std=np.float32([1, 1, 1])):
+    return lambda img_tsr: image_preprocess_in_tensor(img_tsr, image_mean=image_mean, image_std=image_std)

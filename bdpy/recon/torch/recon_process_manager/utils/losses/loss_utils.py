@@ -45,7 +45,8 @@ def calc_layer_weight_from_norm(features_dict, layers):
 def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
                                                hooked_module_names, module_saving_names,
                                                image_label, subject=None, roi=None,
-                                               generator_BGR=True, device='cpu'):
+                                               generator_BGR=True,
+                                               given_in_range_255=True, device='cpu', **args):
     # FIXME: channels and masks are not used now
     num_layers = 0
     for module_saving_name in module_saving_names:
@@ -117,16 +118,26 @@ def create_ImageEncoderActivationLoss_instance(loss_dict, model_info, features,
     else:
         model = model_info['model_instance']
     preprocess = model_info['preprocess']
+    preprocess_input_range_255 = True
+    if 'preprocess_info' in model_info:
+        if 'preprocess_input_range_255' in model_info['preprocess_info']:
+            preprocess_input_range_255 = model_info['preprocess_info']['preprocess_input_range_255']
 
-    image_augmentation_info = loss_dict['image_augmentation']
-    perform_image_augmentation = image_augmentation_info['perform_augmentation']
-    image_augs = None
-    if perform_image_augmentation:
-        image_augs = ImageAugs(**image_augmentation_info)
+    if 'image_augmentation' in loss_dict:
+        image_augmentation_info = loss_dict['image_augmentation']
+        perform_image_augmentation = image_augmentation_info['perform_augmentation']
+        image_augs = None
+        if perform_image_augmentation:
+            image_augs = ImageAugs(**image_augmentation_info)
+    else:
+        image_augs = None
+        perform_image_augmentation = False
 
     loss_instance = ImageEncoderActivationLoss(model, device, ref_features,
                                                preprocess=preprocess,
                                                given_as_BGR=generator_BGR,
+                                               given_in_range_255=given_in_range_255,
+                                               preprocess_input_range_255=preprocess_input_range_255,
                                                layer_weights=layer_weights,
                                                **loss_dict['encoder_info'],
                                                loss_dicts=loss_dict['loss_dicts'],
@@ -236,7 +247,8 @@ def refine_text_features(text_features, module_saving_names, hooked_module_names
 def create_CLIPLoss_instance(loss_dict, model_info, features,
                              hooked_module_names, module_saving_names,
                              image_label, subject=None, roi=None,
-                             generator_BGR=True, device='cpu'):
+                             generator_BGR=True,
+                             given_in_range_255=True, device='cpu', **args):
     module_loading_names = []
     for module_saving_name in module_saving_names:
         if isinstance(module_saving_name, str):
@@ -250,8 +262,8 @@ def create_CLIPLoss_instance(loss_dict, model_info, features,
         text_feature_ROI_selection = yaml.safe_load(file)
 
     if ref_feature_info['decoded']:
-        ref_features = {layer: features.get(layer=layer, subject=subject, roi=text_feature_ROI_selection[layer]['roi'], image=image_label)
-                        for layer in module_loading_names if not text_feature_ROI_selection[layer]['roi'] is None}
+        ref_features = {layer: features.get(layer=layer, subject=subject, roi=text_feature_ROI_selection[layer][roi], image=image_label)
+                        for layer in module_loading_names if not text_feature_ROI_selection[layer][roi] is None}
         ref_features['output_layer'] = features.get(layer='output_layer', subject=subject, roi='whole_VC', image=image_label)
         print('ref_features["output_layer"]', ref_features['output_layer'].shape)
     else:
@@ -269,6 +281,11 @@ def create_CLIPLoss_instance(loss_dict, model_info, features,
     mean_accuracy_dict['output_layer'] = 1
 
     clip_model = model_info['model_instance']
+    preprocess_input_range_255 = True
+    if 'preprocess_info' in model_info:
+        if 'preprocess_input_range_255' in model_info['preprocess_info']:
+            preprocess_input_range_255 = model_info['preprocess_info']['preprocess_input_range_255']
+
     dummy_input = torch.zeros(tuple(loss_dict['encoder_info']['text_input_shape'])).to(torch.float32)
     ref_features = refine_text_features(ref_features,
                                         module_saving_names,
@@ -286,6 +303,8 @@ def create_CLIPLoss_instance(loss_dict, model_info, features,
         image_augs = ImageAugs(**image_augmentation_info)
     loss_instance = CLIPLoss(clip_model, ref_features, device,
                              given_as_BGR=generator_BGR,
+                             given_in_range_255=given_in_range_255,
+                             preprocess_input_range_255=preprocess_input_range_255,
                              image_augmentation=perform_image_augmentation,
                              image_aug=image_augs)
     return loss_instance
@@ -307,16 +326,17 @@ def loss_dict_to_loss_instance(loss_dict, device='cpu', **args):
 ### Helper function for creating various loss instances from list of loss_dicts  ---------- ###
 def loss_dicts_to_loss_instances(loss_dicts, models_dict, features_dicts,
                                  image_label, subject='', rois_list=[],
-                                 generator_BGR=True, device='cpu'):
+                                 generator_BGR=True,
+                                 given_in_range_255=True, device='cpu'):
     loss_func_dicts = []
     rois_list_index = 0
     for loss_dict in loss_dicts:
         loss_func_dict = {}
         options = {'image_label': image_label}
         if 'ref_feature_info' in loss_dict:
-            options['subject'] = subject
             ref_feature_info = loss_dict['ref_feature_info']
             if ref_feature_info['decoded']:
+                options['subject'] = subject
                 options['roi'] = rois_list[rois_list_index]
                 rois_list_index += 1
                 features = None
@@ -349,7 +369,7 @@ def loss_dicts_to_loss_instances(loss_dicts, models_dict, features_dicts,
             options['features'] = features
 
             options['model_info'] = models_dict[loss_dict['encoder_info']['network_name']]
-            loss_instance = loss_dict_to_loss_instance(loss_dict, **options, generator_BGR=generator_BGR, device=device)
+            loss_instance = loss_dict_to_loss_instance(loss_dict, **options, generator_BGR=generator_BGR, given_in_range_255=given_in_range_255, device=device)
             loss_func_dict['loss_type'] = loss_dict['loss_type']
             loss_func_dict['loss_func'] = loss_instance
             loss_func_dict['weight'] = loss_dict['weight']
