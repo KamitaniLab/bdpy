@@ -7,7 +7,7 @@ This module provides utility functions for cross-validation.
 import numpy as np
 
 
-def cvindex_groupwise(group, nfolds=None, return_bool=False):
+def cvindex_groupwise(group, nfolds=None, return_bool=False, exclusive=None):
     '''Return k-fold iterator for group-wise cross-validation (e.g, run-wise, block-wise, ...)
 
     n_folds` specification are not supported yet.
@@ -20,6 +20,9 @@ def cvindex_groupwise(group, nfolds=None, return_bool=False):
         Number of folds (default: the number of unique elements in `group`)
     return_bool : bool, optional
         Return boolean arrays if True (default: False)
+    exclusive : array_like, optional
+        If specified, training samples that have the same labels as the test
+        data are removed in each fold.
 
     Returns
     -------
@@ -33,6 +36,9 @@ def cvindex_groupwise(group, nfolds=None, return_bool=False):
     if nfolds is None:
         nfolds = len(group_set)
 
+    if exclusive is not None:
+        exclusive = exclusive.flatten()
+
     for gl in group_set:
         index_train_bool = (group != gl).flatten()
         index_test_bool = (group == gl).flatten()
@@ -43,6 +49,14 @@ def cvindex_groupwise(group, nfolds=None, return_bool=False):
         else:
             index_train = np.where(index_train_bool)[0]
             index_test = np.where(index_test_bool)[0]
+
+        if exclusive is not None:
+            test_labels  = exclusive[index_test]
+            train_labels = exclusive[index_train]
+
+            index_train = np.array([
+                ind for ind, lab in zip(index_train, train_labels) if not lab in test_labels
+            ])
 
         yield index_train, index_test
 
