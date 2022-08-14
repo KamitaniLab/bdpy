@@ -136,3 +136,61 @@ def make_crossvalidationindex(group):
     """
 
     return make_cvindex(group)
+
+
+def make_cvindex_generator(group, folds=None, exclusive=None, return_bool=False):
+    '''Return cross-validation iterator.
+
+    n_folds` specification are not supported yet.
+
+    Parameters
+    ----------
+    group : array-like (shape =  (n_samples, )
+        Group labels (e.g., run labels, block labels, ...)
+    folds : list, optional
+        List of CV folds(training and test labels in each fold)
+    return_bool : bool, optional
+        Return boolean arrays if True (default: False)
+    exclusive : array_like, optional
+        If specified, training samples that have the same labels as the test
+        data are removed in each fold.
+
+    Returns
+    -------
+    K-fold iterator
+    '''
+
+
+    if folds is None:
+        group_set = np.unique(group)
+        folds = [{'train': np.delete(group_set, i), 'test': gl} for i, gl in enumerate(group_set)]
+
+    if exclusive is not None:
+        exclusive = exclusive.flatten()
+
+    for f in folds:
+        ind_train = f['train']
+        ind_test  = f['test']
+
+        #index_train_bool = (group != gl).flatten()
+        #index_test_bool = (group == gl).flatten()
+
+        index_train_bool = np.isin(group, ind_train)
+        index_test_bool  = np.isin(group, ind_test)
+
+        if return_bool:
+            index_train = index_train_bool
+            index_test = index_test_bool
+        else:
+            index_train = np.where(index_train_bool)[0]
+            index_test = np.where(index_test_bool)[0]
+
+        if exclusive is not None:
+            test_labels  = exclusive[index_test]
+            train_labels = exclusive[index_train]
+
+            index_train = np.array([
+                ind for ind, lab in zip(index_train, train_labels) if not lab in test_labels
+            ])
+
+        yield index_train, index_test
