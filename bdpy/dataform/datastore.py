@@ -16,7 +16,7 @@ import h5py
 import hdf5storage
 
 
-__all__ = ['DataStore', 'DirStore', 'DecodedFeatures']
+__all__ = ['DataStore', 'DirStore']
 
 
 class DataStore(object):
@@ -263,25 +263,3 @@ class DirStore(object):
         if self.__squeeze:
             r = np.squeeze(r)
         return r
-
-
-##############################################################################
-# Interfaces
-##############################################################################
-
-class DecodedFeatures(DirStore):
-    def __init__(self, dpath, squeeze=False):
-        DirStore.__init__(self, dpath,
-                          dirs_pattern=['layer', 'subject', 'roi'],
-                          file_pattern='<image>.mat',
-                          variable='feat',
-                          squeeze=squeeze)
-
-    @property
-    def labels(self):
-        # FIXME: super dirty solution
-        labels = sorted(np.unique([
-            os.path.splitext(os.path.basename(f))[0]
-            for f in glob.glob(os.path.join(self._dpath, '*/*/*', '*.mat'))
-        ]))
-        return labels
