@@ -14,6 +14,7 @@ __all__ = ['Features', 'DecodedFeatures']
 import os
 import glob
 import sqlite3
+import pickle
 
 import numpy as np
 import scipy.io as sio
@@ -62,6 +63,14 @@ class Features(object):
                 raise RuntimeError('%s do not exist' % self.__feat_index_table)
             self.__feat_index_table = hdf5storage.loadmat(self.__feat_index_table)['index']
 
+        self.__statistics = {}
+        for fdir in self.__dpath:
+            stat_file = os.path.join(fdir, 'statistics.pkl')
+            if os.path.exists(stat_file):
+                with open(stat_file, 'rb') as f:
+                    feat_stat = pickle.load(f)
+                self.__statistics.update(feat_stat)
+
     @property
     def labels(self):
         return self.__labels
@@ -93,6 +102,38 @@ class Features(object):
         '''
 
         return self.get_features(layer)
+
+    def statistic(self, statistic='mean', layer=None):
+
+        if statistic == 'std':
+            statistic = 'std, ddof=1'
+
+        k = (statistic, layer)
+        if k in self.__statistics:
+            s = self.__statistics[k]
+        else:
+            f = self.get(layer)
+
+            if statistic == 'mean':
+                s = np.mean(f, axis=0)[np.newaxis, :]
+            elif statistic == 'std, ddof=1':
+                s = np.std(f, axis=0, ddof=1)[np.newaxis, :]
+            elif statistic == 'std, ddof=0':
+                s = np.std(f, axis=0, ddof=0)[np.newaxis, :]
+            else:
+                raise ValueError('Unknown statistics: {}'.format(statistic))
+
+            self.__statistics.update({k: s})
+
+        if self.__feat_index_table is not None:
+            # Select features by index
+            self.__feature_index = self.__feat_index_table[layer]
+            n_sample = self.__features.shape[0]
+            n_feat = np.array(self.__features.shape[1:]).prod()
+
+            s = s.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
+
+        return s
 
     def get_features(self, layer):
         '''Return features in `layer`.
@@ -217,6 +258,14 @@ class DecodedFeatures(object):
         else:
             self.__db = self.__init_db(self.__keys)
 
+        stat_file = os.path.join(self.__path, 'statistics.pkl')
+
+        if os.path.exists(stat_file):
+            with open(stat_file, 'rb') as f:
+                self.__statistics = pickle.load(f)
+        else:
+            self.__statistics = {}
+
     @property
     def layers(self):
         return self.__db.get_available_values('layer')
@@ -279,6 +328,30 @@ class DecodedFeatures(object):
             y = np.squeeze(y)
 
         return y
+
+    def statistic(self, statistic='mean', layer=None, subject=None, roi=None, fold=None):
+
+        if statistic == 'std':
+            statistic = 'std, ddof=1'
+
+        k = (statistic, layer, subject, roi, fold)
+        if k in self.__statistics:
+            s = self.__statistics[k]
+        else:
+            f = self.get(layer=layer, subject=subject, roi=roi, fold=fold)
+
+            if statistic == 'mean':
+                s = np.mean(f, axis=0)[np.newaxis, :]
+            elif statistic == 'std, ddof=1':
+                s = np.std(f, axis=0, ddof=1)[np.newaxis, :]
+            elif statistic == 'std, ddof=0':
+                s = np.std(f, axis=0, ddof=0)[np.newaxis, :]
+            else:
+                raise ValueError('Unknown statistics: {}'.format(statistic))
+
+            self.__statistics.update({k: s})
+
+        return s
 
     def __parse_dir(self, path, keys):
         # TODO: refactoring
