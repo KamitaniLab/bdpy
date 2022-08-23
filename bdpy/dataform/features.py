@@ -15,6 +15,7 @@ import os
 import glob
 import sqlite3
 import pickle
+import warnings
 
 import numpy as np
 import scipy.io as sio
@@ -306,8 +307,15 @@ class DecodedFeatures(object):
     def selected_label(self):
         return self.__db.get_selected_values('label')
 
-    def get(self, layer=None, subject=None, roi=None, fold=None, label=None):
+    def get(self, layer=None, subject=None, roi=None, fold=None, label=None, image=None):
         '''Returns decoded features as an array.'''
+
+        if image is not None:
+            if label is None:
+                warnings.warn('`image` will be deprecated.')
+                label = image
+            else:
+                warnings.warn('`image` will be deprecated and overwritten by `label`.')
 
         files = self.__db.get_file(
             layer=layer,
