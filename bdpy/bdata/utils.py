@@ -115,6 +115,66 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
     return dat
 
 
+def resolve_vmap(bdata_list):
+    """ Replace the conflicting vmaps for multiple bdata with non-conflicting vmaps.
+
+    Parameters
+    ----------
+    bdata_list : list of BData
+        Data to be concatenated
+        
+    Returns
+    -------        
+    bdata_list : list of BData 
+        The vmap is fixed to avoid a collision.
+    """
+    # Get the vmap key list.
+    vmap_keys = bdata_list[0].get_vmap_keys()
+    
+    # Check each vmap key.
+    for vmap_key in vmap_keys:
+        new_vmap = {}
+        # Check each bdata vmap.
+        for ds in bdata_list:
+            vmap = ds.get_vmap(vmap_key)
+            
+            # Sanity check
+            if not vmap_key in ds.metadata.key:
+                raise ValueError('%s not found in metadata.' % vmap_key)
+            if type(vmap) is not dict:
+                raise TypeError('`vmap` should be a dictionary.')
+            for vk in vmap.keys():
+                if type(vk) is str:
+                    raise TypeError('Keys of `vmap` should be numerical.')
+            
+            # Check duplicate and create new vmap
+            for vk in vmap.keys():
+                if vk not in new_vmap.keys():
+                    # If find a novel key, add the new key and new value
+                    new_vmap[vk] = vmap[vk]
+                elif new_vmap[vk] != vmap[vk]:
+                    # If find the exisiting key and the values are different,
+                    # assign a new key by incrementing 1 to the maximum exisiting key.
+                    inflation_key_value = max(new_vmap.keys()) 
+                    new_vmap[inflation_key_value + 1] = vmap[vk]
+                    # Fix values in dataset.
+                    ds_values, selector = ds.select(vmap_key, return_index = True)
+                    ds_values[ds_values == vk] = inflation_key_value + 1
+                    ds.dataset[:, selector] = ds_values
+                else:
+                    # If the key and value is same, nothing to do.
+                    pass
+
+        # Update each bdata vmap.
+        for ds in bdata_list:
+            vmap = ds.get_vmap(vmap_key)
+            if not np.array_equal(sorted(list(vmap.keys())), sorted(list(new_vmap.keys()))): 
+                # If the present vmap is different from new_vmap, update it.
+                ds._BData__vmap[vmap_key] = new_vmap # BDataクラスにvmapのsetterがあると良い
+        
+        return bdata_list   
+
+
 def concat_dataset(data_list, successive=[]):
     '''Concatenate datasets
 
