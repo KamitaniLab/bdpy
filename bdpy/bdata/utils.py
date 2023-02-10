@@ -137,6 +137,8 @@ def resolve_vmap(bdata_list):
         # Check each bdata vmap.
         for ds in bdata_list:
             vmap = ds.get_vmap(vmap_key)
+            ds_values, selector = ds.select(vmap_key, return_index = True) # keep original dataset values
+            new_dsvalues = copy.deepcopy(ds_values)  # to update
             
             # Sanity check
             if not vmap_key in ds.metadata.key:
@@ -157,13 +159,14 @@ def resolve_vmap(bdata_list):
                     # assign a new key by incrementing 1 to the maximum exisiting key.
                     inflation_key_value = max(new_vmap.keys()) 
                     new_vmap[inflation_key_value + 1] = vmap[vk]
-                    # Fix values in dataset.
-                    ds_values, selector = ds.select(vmap_key, return_index = True)
-                    ds_values[ds_values == vk] = inflation_key_value + 1
-                    ds.dataset[:, selector] = ds_values
+                    # Update dataset values
+                    new_dsvalues[ds_values == vk] = inflation_key_value + 1
                 else:
                     # If the key and value is same, nothing to do.
                     pass
+                
+            # Update dataset
+            ds.dataset[:, selector] = new_dsvalues
 
         # Update each bdata vmap.
         for ds in bdata_list:
