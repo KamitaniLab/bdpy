@@ -861,16 +861,16 @@ class BData(object):
         if 'metaData' in dat:
             md_keys = [self.__to_unicode(x) for x in dat["metaData"]['key'][:].tolist()]
             md_descs = [self.__to_unicode(x) for x in dat["metaData"]['description'][:].tolist()]
-            md_values = np.asarray(dat["metaData"]['value'], dtype=np.float)
+            md_values = np.asarray(dat["metaData"]['value'], dtype=float)
         else:
             md_keys = [self.__to_unicode(x) for x in dat["metadata"]['key'][:].tolist()]
             md_descs = [self.__to_unicode(x) for x in dat["metadata"]['description'][:].tolist()]
-            md_values = np.asarray(dat["metadata"]['value'], dtype=np.float)
+            md_values = np.asarray(dat["metadata"]['value'], dtype=float)
 
         if 'dataSet' in dat:
-            self.dataset = np.asarray(dat["dataSet"], dtype=np.float)
+            self.dataset = np.asarray(dat["dataSet"], dtype=float)
         else:
-            self.dataset = np.asarray(dat["dataset"], dtype=np.float)
+            self.dataset = np.asarray(dat["dataset"], dtype=float)
 
         if 'header' in dat:
             for k, v in dat['header'].items():
