@@ -38,6 +38,7 @@ def select_top(data, value, num, axis=0, verbose=True):
 
     num_elem = data.shape[axis]
 
+    value = np.array([-np.inf if np.isnan(a) else a for a in value])
     sorted_index = np.argsort(value)[::-1]
 
     rank = np.zeros(num_elem, dtype=np.int)
