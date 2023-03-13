@@ -45,6 +45,10 @@ def reconstruct(features,
                 initial_feature=None,
                 preproc=None,
                 postproc=None,
+                encoder_preproc=None,
+                encoder_postproc=None,
+                generator_preproc=None,
+                generator_postproc=None,
                 gradient_normalization=True,
                 jittering=False, jitter_size=4,
                 blurring=False,
@@ -119,13 +123,25 @@ def reconstruct(features,
     image_size : tuple, optional
       Size of the image (h x w x c).
 
-    crop_generator_output=False, : book, optional (default: False)
-      If True, outputs of the generator are cropped.
+    crop_generator_output=True, : bool, optional (default: True)
+      If True, outputs of the generator are cropped into `image_size`.
 
     initial_image : numpy.ndarar, optionaly
 
-    preprocm, postproc : func, optional
-      Pre- and post-processing functions on images.
+    preproc, postproc : func, optional
+      Pre- and post-processing functions on reconstructed data. Note that the
+      preprocessing is applied only once before starting reconstruction iteration.
+      The post-processing is applied after the completion of reconstruction iterations
+      (before returning the reconstructed data) as well as before saving snapshots
+      during the iterations.
+
+    encoder_preproc : func, optional
+      Preprocessing function on encoder's input. Note that the preprocessings
+      are applied in every iterations.
+
+    generator_preproc, generator_postproc : func, optional
+      Pre- and post-processing functions on generator's input and output. Note
+      that the pre- and post-processings are applied in every iterations.
 
     gradient_normalization : bool, optional
 
@@ -199,9 +215,9 @@ def reconstruct(features,
     '''
 
     if return_final_feat:
-        warnings.warn('`return_final_feat` is deprecated and will be removed in future release. Please use `return_generator_feature` instead.', UserWarning)
+        warnings.warn('`return_final_feat` is deprecated and will be removed in future release. Please use `return_z` instead.', UserWarning)
     if return_generator_feature:
-        warnings.warn('`return_generator_feature` is deprecated and will be removed in future release. Please use `return_generator_feature` instead.', UserWarning)
+        warnings.warn('`return_generator_feature` is deprecated and will be removed in future release. Please use `return_z` instead.', UserWarning)
 
     return_z = return_z or return_generator_feature or return_final_feat
 
@@ -314,8 +330,14 @@ def reconstruct(features,
 
             final_f = ft.cpu().detach().numpy()[0]  # Keep features generateing the latest image
 
+            if generator_preproc is not None:
+                ft = generator_preproc(ft)
+
             xt = generator.forward(ft)
             # xt.retain_grad()
+
+            if generator_postproc is not None:
+                xt = generator.postproc(xt)
 
             # Crop the generated image
             if crop_generator_output:
@@ -337,7 +359,13 @@ def reconstruct(features,
             xt.data = torch.tensor(x[np.newaxis], device=device)
 
         # Forward (calculate features)
+        if encoder_preproc is not None:
+            xt = encoder_preproc(xt)
+
         activations = feature_extractor.run(xt)
+
+        if encoder_postproc is not None:
+            activations = encoder_postproc(activations)
 
         # Backward
         err = 0.

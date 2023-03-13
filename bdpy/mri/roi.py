@@ -1,6 +1,5 @@
-"""
-Utilities for ROIs
-"""
+'''Utilities for ROIs'''
+
 
 import os
 import glob
@@ -13,10 +12,13 @@ import nibabel.freesurfer
 from bdpy.mri import load_mri
 
 
-def add_roimask(bdata, roi_mask, roi_prefix='',
-                brain_data='VoxelData', xyz=['voxel_x', 'voxel_y', 'voxel_z'],
-                return_roi_flag=False,
-                verbose=True):
+def add_roimask(
+        bdata, roi_mask, roi_prefix='',
+        brain_data='VoxelData', xyz=['voxel_x', 'voxel_y', 'voxel_z'],
+        return_roi_flag=False,
+        verbose=True,
+        round=None
+):
     '''Add an ROI mask to `bdata`.
 
     Parameters
@@ -24,6 +26,8 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
     bdata : BData
     roi_mask : str or list
         ROI mask file(s).
+    round : int
+        Number of decimal places to round the voxel coordinate.
 
     Returns
     -------
@@ -38,6 +42,9 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
                            bdata.get_metadata(xyz[1], where=brain_data),
                            bdata.get_metadata(xyz[2], where=brain_data)])
 
+    if round is not None:
+        voxel_xyz = np.round(voxel_xyz, round)
+
     # Load the ROI mask files
     mask_xyz_all = []
     mask_v_all = []
@@ -46,6 +53,8 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
 
     for m in roi_mask:
         mask_v, mask_xyz, mask_ijk = load_mri(m)
+        if round is not None:
+            mask_xyz = np.round(mask_xyz, round)
         mask_v_all.append(mask_v)
         mask_xyz_all.append(mask_xyz[:, (mask_v == 1).flatten()])
 
@@ -56,7 +65,7 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
     if voxel_consistency:
         roi_flag = np.vstack(mask_v_all)
     else:
-        roi_flag = get_roiflag(mask_xyz_all, voxel_xyz)
+        roi_flag = get_roiflag(mask_xyz_all, voxel_xyz, verbose=verbose)
 
     # Add the ROI flag as metadata in `bdata`
     md_keys = []
@@ -69,9 +78,9 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
             roi_md5 = hashlib.md5(f.read()).hexdigest()
 
         roi_desc = '1 = ROI %s (source file: %s; md5: %s)' % (roi_name, roi, roi_md5)
-
-        print('Adding %s' % roi_name)
-        print('  %s' % roi_desc)
+        if verbose:
+            print('Adding %s' % roi_name)
+            print('  %s' % roi_desc)
         md_keys.append(roi_name)
         md_descs.append(roi_desc)
 
@@ -92,8 +101,7 @@ def add_roimask(bdata, roi_mask, roi_prefix='',
 
 
 def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
-    """
-    Get ROI flags
+    '''Get ROI flags.
 
     Parameters
     ----------
@@ -109,7 +117,7 @@ def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
     -------
     roi_flag : array, shape = (n_rois, n_voxels)
         ROI flag array
-    """
+    '''
 
     epi_voxel_size = epi_xyz_array.shape[1]
 
@@ -227,7 +235,7 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
     return bdata
 
 
-def add_rois(bdata, roi_files, data_type='volume', prefix_map={}):
+def add_rois(bdata, roi_files, data_type='volume', prefix_map={}, remove_voxel=True):
     '''Add ROIs in bdata from files.'''
 
     roi_prefix_from_annot = {'lh.aparc.a2009s.annot': 'freesurfer_destrieux',
@@ -259,14 +267,15 @@ def add_rois(bdata, roi_files, data_type='volume', prefix_map={}):
         print('')
 
         # Remove voxels out of ROIs
-        roi_flag_all = np.vstack(roi_flag_all)
-        remove_voxel_ind = np.sum(roi_flag_all, axis=0) == 0
-        _, voxel_ind = bdata.select('VoxelData = 1', return_index=True)
-        remove_column_ind = np.where(voxel_ind)[0][remove_voxel_ind]
+        if remove_voxel:
+            roi_flag_all = np.vstack(roi_flag_all)
+            remove_voxel_ind = np.sum(roi_flag_all, axis=0) == 0
+            _, voxel_ind = bdata.select('VoxelData = 1', return_index=True)
+            remove_column_ind = np.where(voxel_ind)[0][remove_voxel_ind]
 
-        bdata.dataset = np.delete(bdata.dataset, remove_column_ind, 1)
-        bdata.metadata.value = np.delete(bdata.metadata.value, remove_column_ind, 1)
-        # FIXME: needs cleaning
+            bdata.dataset = np.delete(bdata.dataset, remove_column_ind, 1)
+            bdata.metadata.value = np.delete(bdata.metadata.value, remove_column_ind, 1)
+            # FIXME: needs cleaning
 
     elif data_type == 'surface':
         # List all ROI labels files
@@ -319,8 +328,12 @@ def merge_rois(bdata, roi_name, merge_expr):
         if tkn == '+' or tkn == '-':
             tokens.append(tkn)
         else:
+            # FIXME: dirty solution
+            tkn = tkn.replace('"', '')
+            tkn = tkn.replace("'", '')
             tkn_e = re.escape(tkn)
             tkn_e = tkn_e.replace('\*', '.*')
+            tkn_e = tkn_e + '$'  # To mimic `fullmatch` that is available in Python >= 3.4
 
             mks = [k for k in bdata.metadata.key if re.match(tkn_e, k)]
             if len(mks) == 0:
@@ -370,5 +383,117 @@ def merge_rois(bdata, roi_name, merge_expr):
 
     num_voxels = np.nansum(merged_roi_mv).astype(int)
     print('Num voxels or vertexes: %d' % num_voxels)
+
+    return bdata
+
+
+def add_hcp_rois(bdata, overwrite=False):
+    '''Add HCP ROIs in `bdata`.
+
+    Note
+    ----
+    This function assumes that the HCP ROIs (splitted by left and right) are
+    named as "hcp180_r_lh.L_{}__*_ROI" and "hcp180_r_rh.R_{}__*_ROI".
+    '''
+
+    hcp180_rois = [
+        '1', '10d', '10pp', '10r', '10v', '11l', '13l', '2', '23c', '23d',
+        '24dd', '24dv', '25', '31a', '31pd', '31pv', '33pr', '3a', '3b', '4',
+        '43', '44', '45', '46', '47l', '47m', '47s', '52', '55b', '5L', '5m',
+        '5mv', '6a', '6d', '6ma', '6mp', '6r', '6v', '7AL', '7Am', '7PC',
+        '7PL', '7Pm', '7m', '8Ad', '8Av', '8BL', '8BM', '8C', '9-46d', '9a',
+        '9m', '9p', 'A1', 'A4', 'A5', 'AAIC', 'AIP', 'AVI', 'DVT', 'EC',
+        'FEF', 'FFC', 'FOP1', 'FOP2', 'FOP3', 'FOP4', 'FOP5', 'FST', 'H',
+        'IFJa', 'IFJp', 'IFSa', 'IFSp', 'IP0', 'IP1', 'IP2', 'IPS1', 'Ig',
+        'LBelt', 'LIPd', 'LIPv', 'LO1', 'LO2', 'LO3', 'MBelt', 'MI', 'MIP',
+        'MST', 'MT', 'OFC', 'OP1', 'OP2-3', 'OP4', 'PBelt', 'PCV', 'PEF',
+        'PF', 'PFcm', 'PFm', 'PFop', 'PFt', 'PGi', 'PGp', 'PGs', 'PH', 'PHA1',
+        'PHA2', 'PHA3', 'PHT', 'PI', 'PIT', 'POS1', 'POS2', 'PSL', 'PeEc',
+        'Pir', 'PoI1', 'PoI2', 'PreS', 'ProS', 'RI', 'RSC', 'SCEF', 'SFL',
+        'STGa', 'STSda', 'STSdp', 'STSva', 'STSvp', 'STV', 'TA2', 'TE1a',
+        'TE1m', 'TE1p', 'TE2a', 'TE2p', 'TF', 'TGd', 'TGv', 'TPOJ1', 'TPOJ2',
+        'TPOJ3', 'V1', 'V2', 'V3', 'V3A', 'V3B', 'V3CD', 'V4', 'V4t', 'V6',
+        'V6A', 'V7', 'V8', 'VIP', 'VMV1', 'VMV2', 'VMV3', 'VVC', 'a10p',
+        'a24', 'a24pr', 'a32pr', 'a47r', 'a9-46v', 'd23ab', 'd32', 'i6-8',
+        'p10p', 'p24', 'p24pr', 'p32', 'p32pr', 'p47r', 'p9-46v', 'pOFC',
+        's32', 's6-8', 'v23ab'
+    ]
+
+    hcp_22_regions = {
+        'PVC': ['V1'],
+        'EVC': ['V2', 'V3', 'V4'],
+        'DSVC': ['V3A', 'V7', 'V3B', 'V6', 'V6A', 'IPS1'],
+        'VSVC': ['V8', 'VVC', 'VMV1', 'VMV2', 'VMV3', 'PIT', 'FFC'],
+        'MTcVA': ['V3CD', 'LO1', 'LO2', 'LO3', 'MT', 'MST', 'V4t', 'FST', 'PH'],
+        'SMC': ['4', '3a', '3b', '1', '2'],
+        'PCL_MCC': ['5L', '5m', '5mv', '24dd', '24dv', '6mp', '6ma', 'SCEF'],
+        'PMC': ['6a', '6d', 'FEF', 'PEF', '55b', '6v', '6r'],
+        'POC': ['43', 'FOP1', 'OP4', 'OP2-3', 'OP1', 'PFcm'],
+        'EAC': ['A1', 'MBelt', 'LBelt', 'PBelt', 'RI'],
+        'AAC': ['A4', 'A5', 'STSdp', 'STSda', 'STSvp', 'STSva', 'TA2', 'STGa'],
+        'IFOC': ['52', 'PI', 'Ig', 'PoI1', 'PoI2', 'FOP2', 'Pir', 'AAIC', 'MI', 'FOP3', 'FOP4', 'FOP5', 'AVI'],
+        'MTC': ['H', 'PreS', 'EC', 'PeEc', 'PHA1', 'PHA2', 'PHA3'],
+        'LTC': ['TGd', 'TGv', 'TF', 'TE2a', 'TE2p', 'TE1a', 'TE1m', 'TE1p', 'PHT'],
+        'TPOJ': ['TPOJ2', 'TPOJ3', 'TPOJ1', 'STV', 'PSL'],
+        'SPC': ['MIP', 'LIPv', 'VIP', 'LIPd', 'AIP', '7PC', '7Am', '7AL', '7Pm', '7PL'],
+        'IPC': ['PGp', 'IP0', 'IP1', 'IP2', 'PF', 'PFt', 'PFop', 'PFm', 'PGi', 'PGs'],
+        'PCC': ['DVT', 'ProS', 'POS2', 'POS1', 'RSC', '7m', 'PCV', 'v23ab', 'd23ab', '31pv', '31pd', '31a', '23c', '23d'],
+        'ACC_mPFC': ['33pr', 'a24pr', 'p24pr', 'p24', 'a24', 'p32pr', 'a32pr', 'd32', 'p32', 's32', '8BM', '9m', '10r', '10v', '25'],
+        'OPFC': ['OFC', 'pOFC', '13l', '11l', '47s', '47m', 'a47r', '10pp', 'a10p', 'p10p', '10d'],
+        'IFC': ['44', '45', '47l', 'IFJp', 'IFJa', 'IFSp', 'IFSa', 'p47r'],
+        'DLPFC': ['SFL', 's6-8', 'i6-8', '8BL', '8Ad', '8Av', '8C', '9p', '9a', '9-46d', 'a9-46v', 'p9-46v', '46'],
+    }
+
+    # Merge left and right ROIs
+    for roi in hcp180_rois:
+        name = 'hcp180_{}'.format(roi)
+        if not overwrite and name in bdata.metadata.key:
+            continue
+        select = '"hcp180_r_lh.L_{}_ROI" + "hcp180_r_rh.R_{}_ROI"'.format(roi, roi)
+        print('{}: {}'.format(name, select))
+        bdata = merge_rois(bdata, name, select)
+
+    # Merge HCP ROI groups
+    # See "Supplementary Neuroanatomical Results" of Glasser et al. (2016)
+    # https://www.nature.com/articles/nature18933
+    for name, rois in hcp_22_regions.items():
+        name = 'hcp180_reg_{}'.format(name)
+        if not overwrite and name in bdata.metadata.key:
+            continue
+        select = ' + '.join(['"hcp180_{}"'.format(a) for a in rois])
+        bdata = merge_rois(bdata, name, select)
+
+    return bdata
+
+
+def add_hcp_visual_cortex(bdata, overwrite=False):
+    '''Add HCP-based visual cortex in `bdata`.'''
+
+    # Whole VC
+    vc_rois = [
+        'V1', 'V2', 'V3', 'V4',
+        'V3A', 'V3B', 'V6', 'V6A', 'V7', 'IPS1',
+        'V8', 'VVC', 'VMV1', 'VMV2', 'VMV3', 'PIT', 'FFC',
+        'V3CD', 'LO1', 'LO2', 'LO3', 'MT', 'MST', 'V4t', 'FST', 'PH',
+        'MIP', 'AIP', 'VIP', 'LIPv', 'LIPd', '7PC', '7Am', '7AL', '7Pm', '7PL',
+        'PHA1', 'PHA2', 'PHA3',
+        'IP0', 'IP1', 'IP2', 'PGp',
+        'TPOJ2', 'TPOJ3',
+        'DVT', 'ProS', 'POS1', 'POS2'
+    ]
+    select = ' + '.join(['"hcp180_{}"'.format(a) for a in vc_rois])
+
+    if overwrite or 'hcp180_hcpVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_hcpVC', select)
+
+    # Early, Ventral, Dorsal, and MT VC
+    if overwrite or 'hcp180_EarlyVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_EarlyVC',   'hcp180_V1 + hcp180_V2 + hcp180_V3')
+    if overwrite or 'hcp180_MTVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_MTVC',      'hcp180_reg_MTcVA + hcp180_TPOJ2 + hcp180_TPOJ3 - hcp180_EarlyVC')
+    if overwrite or 'hcp180_VentralVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_VentralVC', 'hcp180_V4 + hcp180_reg_VSVC + hcp180_PHA1 + hcp180_PHA2 + hcp180_PHA3 - hcp180_EarlyVC - hcp180_MTVC')
+    if overwrite or 'hcp180_DorsalVC' not in bdata.metadata.key:
+        bdata = merge_rois(bdata, 'hcp180_DorsalVC',  'hcp180_reg_DSVC + hcp180_reg_SPC + hcp180_PGp + hcp180_IP0 + hcp180_IP1 + hcp180_IP2 - hcp180_EarlyVC - hcp180_MTVC - hcp180_VentralVC')
 
     return bdata

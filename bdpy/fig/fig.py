@@ -21,7 +21,6 @@ __all__ = [
 ]
 
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -30,9 +29,9 @@ import seaborn as sns
 def makefigure(figtype='a4landscape'):
     '''Create a figure'''
 
-    if figtype is 'a4landscape':
+    if figtype == 'a4landscape':
         figsize = (11.7, 8.3)
-    elif figtype is 'a4portrait':
+    elif figtype == 'a4portrait':
         figsize = (8.3, 11.7)
     else:
         raise ValueError('Unknown figure type %s' % figtype)
@@ -42,7 +41,7 @@ def makefigure(figtype='a4landscape'):
 
 def box_off(ax):
     '''Remove upper and right axes'''
-    
+
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.xaxis.set_ticks_position('bottom')
@@ -119,7 +118,7 @@ def make_violinplots(df, x=None, y=None, subplot=None, figure=None, x_list=None,
             ax.violinplot(data, xpos, showmeans=True, showextrema=False, showmedians=False, points=points)
 
             ax.text(-0.5, 0.85, sp_label, horizontalalignment='left', fontsize=fontsize)
-            
+
             ax.set_xlim([-1, len(x_list)])
             ax.set_xticks(range(len(x_list)))
             if row == 0:

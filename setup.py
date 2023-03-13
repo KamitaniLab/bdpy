@@ -8,7 +8,7 @@ This file is a part of BdPy.
 from setuptools import setup
 
 
-VERSION = '0.16'
+VERSION = '0.18'
 
 if __name__ == '__main__':
 
@@ -36,7 +36,6 @@ if __name__ == '__main__':
                     'bdpy.dl',
                     'bdpy.dl.torch',
                     'bdpy.evals',
-                    'bdpy.evals.metrics',
                     'bdpy.feature',
                     'bdpy.fig',
                     'bdpy.ml',

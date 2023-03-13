@@ -16,7 +16,7 @@ import h5py
 import hdf5storage
 
 
-__all__ = ['DataStore', 'DirStore', 'DecodedFeatures']
+__all__ = ['DataStore', 'DirStore']
 
 
 class DataStore(object):
@@ -188,10 +188,13 @@ class DirStore(object):
                  variable=None,
                  squeeze=False):
         self.__dpath = dpath
+        self._dpath = dpath
         self.__dirs_pattern = dirs_pattern
         self.__file_pattern = file_pattern
         self.__variable = variable
         self.__squeeze = squeeze
+
+        self._file_names = []
 
     def get(self, **kargs):
         '''Returns data specified by kargs.
@@ -221,18 +224,35 @@ class DirStore(object):
         # File name
         file_name = self.__file_pattern
         match = re.findall('<(.*?)>', file_name)
-        replace_dict = {'<' + m + '>': kargs[m] for m in match}
-        for k, v in replace_dict.items():
-            file_name = file_name.replace(k, v)
+        replace_dict = {}
+        for m in match:
+            if m in kargs:
+                replace_dict.update({'<' + m + '>': kargs[m]})
+
+        if not replace_dict:
+            match = re.findall('<.*>(.*)', file_name)
+            # FXIME
+            file_path = os.path.join(self.__dpath, subdir_path, '*' + match[0])
+        else:
+            for k, v in replace_dict.items():
+                file_name = file_name.replace(k, v)
+                file_path = os.path.join(self.__dpath, subdir_path, file_name)
 
         # Get files
-        file_path = os.path.join(self.__dpath, subdir_path, file_name)
         files = sorted(glob.glob(file_path))
 
         if len(files) == 0:
             raise RuntimeError('File not found: %s' % file_path)
         elif len(files) >= 2:
-            raise RuntimeError('%d files were found but multiple files are not supported yet.' % len(files))
+            # FIXME
+            dat = np.vstack([
+                self.__load_feature(f)
+                for f in files
+            ])
+            self._file_names = [
+                os.path.splitext(os.path.basename(f))[0]
+                for f in files
+            ]
         else:
             dat = self.__load_feature(files[0])
 
@@ -243,16 +263,3 @@ class DirStore(object):
         if self.__squeeze:
             r = np.squeeze(r)
         return r
-
-
-##############################################################################
-# Interfaces
-##############################################################################
-
-class DecodedFeatures(DirStore):
-    def __init__(self, dpath, squeeze=False):
-        DirStore.__init__(self, dpath,
-                          dirs_pattern=['layer', 'subject', 'roi'],
-                          file_pattern='<image>.mat',
-                          variable='feat',
-                          squeeze=squeeze)

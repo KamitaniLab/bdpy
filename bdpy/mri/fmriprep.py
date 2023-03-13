@@ -660,7 +660,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
                         label_vals.append(v)
                     else:
                         label_vals.append(row[p])
-                label_vals = np.array([np.nan if x == 'n/a' else np.float(x)
+                label_vals = np.array([np.nan if x == 'n/a' else float(x)
                                        for x in label_vals])
                 label_mat = np.tile(label_vals, (nsmp, 1))
                 labels.append(label_mat)

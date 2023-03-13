@@ -71,7 +71,7 @@ $ pip install git+https://github.com/KamitaniLab/bdpy.git
 
 BdPy data format (or BrainDecoderToolbox2 data format; BData) consists of two variables: dataset and metadata. **dataset** stores brain activity data (e.g., voxel signal value for fMRI data), target variables (e.g., ID of stimuli for vision experiments), and additional information specifying experimental design (e.g., run and block numbers for fMRI experiments). Each row corresponds to a single 'sample', and each column representes either single feature (voxel), target, or experiment design information. **metadata** contains data describing meta-information for each column in dataset.
 
-See [BData API examples](https://github.com/KamitaniLab/bdpy/blob/master/docs/bdata_api_examples.md) for useage of BData.
+See [BData API examples](https://github.com/KamitaniLab/bdpy/blob/main/docs/bdata_api_examples.md) for useage of BData.
 
 ## Developers
 

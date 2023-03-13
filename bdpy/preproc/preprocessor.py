@@ -201,7 +201,7 @@ class Regressout(Preprocessor):
         dc_cmp = np.ones((n_smp, 1))  # DC component (mean)
 
         if linear_detrend:
-            ln_cmp = np.c_[(np.arange(n_smp) + 1) / np.float(n_smp)]
+            ln_cmp = np.c_[(np.arange(n_smp) + 1) / float(n_smp)]
             regmat = np.hstack([dc_cmp, ln_cmp, regressor])
         else:
             regmat = np.hstack([dc_cmp, regressor])
