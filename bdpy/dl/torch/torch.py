@@ -19,6 +19,23 @@ class FeatureExtractor(object):
             self, encoder: nn.Module, layers: Iterable[str],
             layer_mapping: Optional[Dict[str, str]] = None,
             device: str = 'cpu', detach: bool = True):
+        '''Feature extractor.
+
+        Parameters
+        ----------
+        encoder : torch.nn.Module
+            Network model we want to extract features from.
+        layers : Iterable[str]
+            List of layer names we want to extract features from.
+        layer_mapping : Dict[str, str], optional
+            Mapping from (human-readable) layer names to layer names in the model.
+            If None, layers will be directly used as layer names in the model.
+        device : str, optional
+            Device name (default: 'cpu').
+        detach : bool, optional
+            If True, detach the feature activations from the computation graph
+        '''
+
         self._encoder = encoder
         self.__layers = layers
         self.__layer_map = layer_mapping
@@ -39,6 +56,20 @@ class FeatureExtractor(object):
         return self.run(x)
 
     def run(self, x: _tensor_t) -> Dict[str, _tensor_t]:
+        '''Extract feature activations from the specified layers.
+
+        Parameters
+        ----------
+        x : numpy.ndarray or torch.Tensor
+            Input image (numpy.ndarray or torch.Tensor).
+
+        Returns
+        -------
+        features : Dict[str, Union[numpy.ndarray, torch.Tensor]]
+            Feature activations from the specified layers.
+            Each key is the layer name and each value is the feature activation.
+        '''
+
         self._extractor.clear()
         if not isinstance(x, torch.Tensor):
             xt = torch.tensor(x[np.newaxis], device=self.__device)
