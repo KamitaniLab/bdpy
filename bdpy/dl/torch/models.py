@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union, Optional, Sequence
 
 import re
 
@@ -146,7 +146,7 @@ class VGG19(nn.Module):
             nn.Linear(in_features=4096, out_features=1000, bias=True),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
@@ -195,7 +195,9 @@ class AlexNet(nn.Module):
 
 class AlexNetGenerator(nn.Module):
 
-    def __init__(self, input_size=4096, n_out_channel=3, device=None):
+    def __init__(
+            self, input_size: int = 4096, n_out_channel: int = 3,
+            device: Optional[Union[str, Sequence[str]]] = None):
 
         super(AlexNetGenerator, self).__init__()
 
@@ -273,7 +275,7 @@ class AlexNetGenerator(nn.Module):
             self.deconv0,
         ).to(self.__device1)
 
-    def forward(self, z):
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
 
         f = self.defc(z)
         f = f.view(-1, 256, 4, 4)
