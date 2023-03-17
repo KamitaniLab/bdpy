@@ -1,8 +1,24 @@
+from typing import Dict
+
 import torch
 import torch.nn as nn
 
 
-def layer_map(net):
+def layer_map(net: str) -> Dict[str, str]:
+    '''Get layer map for a given network.
+
+    Parameters
+    ----------
+    net : str
+        Network name. Currently, 'vgg19' and 'alexnet' are supported.
+
+    Returns
+    -------
+    Dict[str, str]
+        Layer map. Keys are human-readable layer names, and values are
+        corresponding layer names in the network.
+    '''
+
     maps = {
         'vgg19': {
             'conv1_1': 'features[0]',
@@ -126,7 +142,7 @@ class AlexNet(nn.Module):
             nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2),
             nn.ReLU(inplace=False),
             nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2),
-            nn.ReLU(inplace=False), 
+            nn.ReLU(inplace=False),
             nn.MaxPool2d(kernel_size=3, stride=2),
         )
         self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
@@ -135,7 +151,7 @@ class AlexNet(nn.Module):
             nn.ReLU(inplace=False),
             nn.Linear(4096, 4096),
             nn.ReLU(inplace=False),
-            nn.Linear(4096, num_classes), 
+            nn.Linear(4096, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
