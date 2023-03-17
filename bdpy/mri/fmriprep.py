@@ -731,28 +731,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             'csf',
             'dvars',
             'std_dvars',
-            'framewise_displacement',
-            'a_comp_cor',
-            'a_comp_cor_00',
-            'a_comp_cor_01',
-            'a_comp_cor_02',
-            'a_comp_cor_03',
-            'a_comp_cor_04',
-            'a_comp_cor_05',
-            't_comp_cor',
-            't_comp_cor_00',
-            't_comp_cor_01',
-            't_comp_cor_02',
-            't_comp_cor_03',
-            't_comp_cor_04',
-            't_comp_cor_05',
-            'cosine',
-            'cosine00',
-            'cosine01',
-            'cosine02',
-            'cosine03',
-            'cosine04',
-            'cosine05',
+            'framewise_displacement'
         ]
         confounds_key_desc = {
             'global_signal':          {'key': 'GlobalSignal',          'desc': 'Confounds: Average signal in brain mask'},
@@ -761,28 +740,27 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             'dvars':                  {'key': 'DVARS',                 'desc': 'Confounds: Original DVARS'},
             'std_dvars':              {'key': 'STD_DVARS',             'desc': 'Confounds: Standardized DVARS'},
             'framewise_displacement': {'key': 'FramewiseDisplacement', 'desc': 'Confounds: Framewise displacement (bulk-head motion)'},
-            'a_comp_cor':             {'key': 'aCompCor',              'desc': 'Confounds: Anatomical CompCor'},
-            'a_comp_cor_00':          {'key': 'aCompCor_0',            'desc': 'Confounds: Anatomical CompCor'},
-            'a_comp_cor_01':          {'key': 'aCompCor_1',            'desc': 'Confounds: Anatomical CompCor'},
-            'a_comp_cor_02':          {'key': 'aCompCor_2',            'desc': 'Confounds: Anatomical CompCor'},
-            'a_comp_cor_03':          {'key': 'aCompCor_3',            'desc': 'Confounds: Anatomical CompCor'},
-            'a_comp_cor_04':          {'key': 'aCompCor_4',            'desc': 'Confounds: Anatomical CompCor'},
-            'a_comp_cor_05':          {'key': 'aCompCor_5',            'desc': 'Confounds: Anatomical CompCor'},
-            't_comp_cor':             {'key': 'tCompCor',              'desc': 'Confounds: Temporal CompCor'},
-            't_comp_cor_00':          {'key': 'tCompCor_0',            'desc': 'Confounds: Temporal CompCor'},
-            't_comp_cor_01':          {'key': 'tCompCor_1',            'desc': 'Confounds: Temporal CompCor'},
-            't_comp_cor_02':          {'key': 'tCompCor_2',            'desc': 'Confounds: Temporal CompCor'},
-            't_comp_cor_03':          {'key': 'tCompCor_3',            'desc': 'Confounds: Temporal CompCor'},
-            't_comp_cor_04':          {'key': 'tCompCor_4',            'desc': 'Confounds: Temporal CompCor'},
-            't_comp_cor_05':          {'key': 'tCompCor_5',            'desc': 'Confounds: Temporal CompCor'},
-            'cosine':                 {'key': 'Cosine',                'desc': 'Confounds: Discrete cosine-basis regressors'},
-            'cosine00':               {'key': 'Cosine_0',              'desc': 'Confounds: Discrete cosine-basis regressors'},
-            'cosine01':               {'key': 'Cosine_1',              'desc': 'Confounds: Discrete cosine-basis regressors'},
-            'cosine02':               {'key': 'Cosine_2',              'desc': 'Confounds: Discrete cosine-basis regressors'},
-            'cosine03':               {'key': 'Cosine_3',              'desc': 'Confounds: Discrete cosine-basis regressors'},
-            'cosine04':               {'key': 'Cosine_4',              'desc': 'Confounds: Discrete cosine-basis regressors'},
-            'cosine05':               {'key': 'Cosine_5',              'desc': 'Confounds: Discrete cosine-basis regressors'},
-        }
+            }
+
+        additional_confounds_series = [
+            ('a_comp_cor', 'aCompCor', 'Confounds: Anatomical CompCor'),
+            ('t_comp_cor', 'tCompCor', 'Confounds: Temporal CompCor'),
+            ('cosine',     'Cosine',   'Confounds: Discrete cosine-basis regressors'),
+        ]
+        for target_key, target_key_name, target_key_desc in additional_confounds_series:
+            default_confounds_keys.append(target_key)
+            confounds_key_desc[target_key] = {
+                'key':target_key_name, 
+                'desc':target_key_desc
+            }
+            ack_list = sorted([ack for ack in confounds.keys() if target_key in ack])
+            for ack_i, ack in enumerate(ack_list): 
+                default_confounds_keys.append(ack)
+                confounds_key_desc[ack] = {
+                    'key': '%s_%d' % (target_key_name, ack_i), 
+                    'desc':target_key_desc
+                }
+
         confounds_array = np.hstack([
             confounds[dck]
             for dck in default_confounds_keys if dck in confounds
