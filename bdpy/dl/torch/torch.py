@@ -1,6 +1,6 @@
 '''PyTorch module.'''
 
-from typing import List, Dict, Union, Tuple, Any, Callable, Optional
+from typing import Iterable, List, Dict, Union, Tuple, Any, Callable, Optional
 
 import os
 
@@ -14,7 +14,7 @@ _tensor_t = Union[np.ndarray, torch.Tensor]
 
 class FeatureExtractor(object):
     def __init__(
-            self, encoder: nn.Module, layers: List[str],
+            self, encoder: nn.Module, layers: Iterable[str],
             layer_mapping: Optional[Dict[str, str]] = None,
             device: str = 'cpu', detach: bool = True):
         self._encoder = encoder
