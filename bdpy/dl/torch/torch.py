@@ -55,7 +55,7 @@ class FeatureExtractorHandle(object):
         self.outputs = []
 
     def __call__(self, module, module_in, module_out):
-        self.outputs.append(module_out)
+        self.outputs.append(module_out.detach().clone())
 
     def clear(self):
         self.outputs = []
