@@ -1,15 +1,20 @@
 '''PyTorch module.'''
 
+from typing import List, Dict, Union, Tuple, Any, Callable, Optional
 
 import os
 
 import numpy as np
 from PIL import Image
 import torch
+import torch.nn as nn
 
 
 class FeatureExtractor(object):
-    def __init__(self, encoder, layers=None, layer_mapping=None, device='cpu', detach=True):
+    def __init__(
+            self, encoder: nn.Module, layers: List[str],
+            layer_mapping: Optional[Dict[str, str]] = None,
+            device: str = 'cpu', detach: bool = True):
         self._encoder = encoder
         self.__layers = layers
         self.__layer_map = layer_mapping
@@ -25,10 +30,10 @@ class FeatureExtractor(object):
                 layer = self.__layer_map[layer]
             eval('self._encoder.{}.register_forward_hook(self._extractor)'.format(layer))
 
-    def __call__(self, x) -> dict:
+    def __call__(self, x: Union[np.ndarray, torch.Tensor]) -> Dict[str, Union[np.ndarray, torch.Tensor]]:
         return self.run(x)
 
-    def run(self, x) -> dict:
+    def run(self, x: Union[np.ndarray, torch.Tensor]) -> Dict[str, Union[np.ndarray, torch.Tensor]]:
         self._extractor.clear()
         if not isinstance(x, torch.Tensor):
             xt = torch.tensor(x[np.newaxis], device=self.__device)
@@ -37,7 +42,7 @@ class FeatureExtractor(object):
 
         self._encoder.forward(xt)
 
-        features = {
+        features: Dict[str, Union[np.ndarray, torch.Tensor]] = {
             layer: self._extractor.outputs[i]
             for i, layer in enumerate(self.__layers)
         }
@@ -52,9 +57,9 @@ class FeatureExtractor(object):
 
 class FeatureExtractorHandle(object):
     def __init__(self):
-        self.outputs = []
+        self.outputs: List[torch.Tensor] = []
 
-    def __call__(self, module, module_in, module_out):
+    def __call__(self, module: nn.Module, module_in: Any, module_out: torch.Tensor) -> None:
         self.outputs.append(module_out.detach().clone())
 
     def clear(self):
@@ -64,13 +69,17 @@ class FeatureExtractorHandle(object):
 class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
-    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None, scale=1, rgb_mean=None, preload=False, preload_limit=np.inf):
+    def __init__(
+            self, images: List[str], labels: Optional[List[str]] = None,
+            label_dirname: bool = False, resize: Optional[Tuple[int]] = None,
+            shape: str = 'chw', transform: Optional[Callable[[Union[np.ndarray, torch.Tensor]], torch.Tensor]] = None,
+            scale: float = 1, rgb_mean: Optional[List[float]] = None, preload: bool = False, preload_limit: float = np.inf):
         '''
         Parameters
         ----------
-        images : list
+        images : List[str]
             List of image file paths.
-        labels : list, optional
+        labels : List[str], optional
             List of image labels (default: image file names).
         label_dirname : bool, optional
             Use directory names as labels if True (default: False).
@@ -86,7 +95,7 @@ class ImageDataset(torch.utils.data.Dataset):
             Image values are centered by the specified mean (after scaling) (default: None).
         preload : bool, optional
             Pre-load images (default: False).
-        preload_limit : int
+        preload_limit : float
             Memory size limit of preloading in GiB (default: unlimited).
 
         Note
@@ -126,16 +135,16 @@ class ImageDataset(torch.utils.data.Dataset):
             self.labels = image_labels
         self.n_sample = len(images)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_sample
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, str]:
         if idx in self.__data:
             data = self.__data[idx]
         else:
             data = self.__load_image(self.data_path[idx])
 
-        if not self.transform is None:
+        if self.transform is not None:
             data = self.transform(data)
         else:
             data = torch.Tensor(data)
@@ -144,7 +153,7 @@ class ImageDataset(torch.utils.data.Dataset):
 
         return data, label
 
-    def __load_image(self, fpath):
+    def __load_image(self, fpath: str) -> np.ndarray:
         img = Image.open(fpath)
 
         # CMYK, RGBA --> RGB
