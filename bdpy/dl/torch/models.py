@@ -63,19 +63,30 @@ def layer_map(net: str) -> Dict[str, str]:
 
 
 def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
-    '''Parse layer name.
+    '''Parse layer name and return the corresponding layer object.
 
     Parameters
     ----------
     model : nn.Module
         Network model.
     layer_name : str
-        Layer name.
+        Layer name. It accepts the following formats: 'layer_name', and
+        'layer_name[index]'.
 
     Returns
     -------
     nn.Module
-        Layer.
+        Layer object.
+
+    Examples
+    --------
+    >>> model = nn.Module()
+    >>> model.layer1 = nn.Linear(10, 10)
+    >>> model.layers = nn.Sequential(nn.Conv2d(3, 3, 3), nn.Conv2d(3, 3, 3))
+    >>> _parse_layer_name(model, 'layer1')
+    Linear(in_features=10, out_features=10, bias=True)
+    >>> _parse_layer_name(model, 'layers[0]')
+    Conv2d(3, 3, kernel_size=(3, 3), stride=(1, 1))
     '''
 
     if hasattr(model, layer_name):
