@@ -6,6 +6,16 @@ import torch.nn as nn
 from bdpy.dl.torch import models
 
 
+class MockModule(nn.Module):
+    def __init__(self):
+        super(MockModule, self).__init__()
+        self.layer1 = nn.Linear(10, 10)
+        self.layers = nn.Sequential(
+            nn.Conv2d(3, 3, 3),
+            nn.Conv2d(3, 3, 3)
+        )
+
+
 class TestLayerMap(unittest.TestCase):
     def setUp(self):
         self.kv_pairs = [
@@ -21,6 +31,12 @@ class TestLayerMap(unittest.TestCase):
             output = models.layer_map(kv_pair['net'])
             self.assertIsInstance(output, dict)
             self.assertEqual(output[expected['key']], expected['value'])
+
+    def test_parse_layer_name(self):
+        mock = MockModule()
+        self.assertIsInstance(models._parse_layer_name(mock, 'layer1'), nn.Linear)
+        self.assertIsInstance(models._parse_layer_name(mock, 'layers[0]'), nn.Conv2d)
+        self.assertIsInstance(models._parse_layer_name(mock, 'layers[1]'), nn.Conv2d)
 
 
 class TestVGG19(unittest.TestCase):
