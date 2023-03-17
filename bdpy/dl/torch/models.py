@@ -1,5 +1,7 @@
 from typing import Dict
 
+import re
+
 import torch
 import torch.nn as nn
 
@@ -58,6 +60,35 @@ def layer_map(net: str) -> Dict[str, str]:
         }
     }
     return maps[net]
+
+
+def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
+    '''Parse layer name.
+
+    Parameters
+    ----------
+    model : nn.Module
+        Network model.
+    layer_name : str
+        Layer name.
+
+    Returns
+    -------
+    nn.Module
+        Layer.
+    '''
+
+    if hasattr(model, layer_name):
+        return getattr(model, layer_name)
+
+    # parse layer name having index (e.g., 'features[0]')
+    pattern = re.compile(r'(?P<layer_name>\w+)\[(?P<index>\d+)\]')
+    m = pattern.match(layer_name)
+    if m is not None:
+        layer_name = m.group('layer_name')
+        index = int(m.group('index'))
+        return getattr(model, layer_name)[index]
+    raise ValueError('Invalid layer name: {}'.format(layer_name))
 
 
 class VGG19(nn.Module):
@@ -160,6 +191,7 @@ class AlexNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.classifier(x)
         return x
+
 
 class AlexNetGenerator(nn.Module):
 
