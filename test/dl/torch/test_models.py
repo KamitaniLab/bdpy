@@ -11,9 +11,15 @@ class MockModule(nn.Module):
         super(MockModule, self).__init__()
         self.layer1 = nn.Linear(10, 10)
         self.layers = nn.Sequential(
-            nn.Conv2d(3, 3, 3),
-            nn.Conv2d(3, 3, 3)
+            nn.Conv2d(1, 1, 3),
+            nn.Conv2d(1, 1, 3)
         )
+        inner_network = nn.Module()
+        inner_network.features = nn.Sequential(
+            nn.Conv2d(1, 1, 5),
+            nn.Conv2d(1, 1, 5)
+        )
+        self.layers.append(inner_network)
 
 
 class TestLayerMap(unittest.TestCase):
@@ -32,11 +38,23 @@ class TestLayerMap(unittest.TestCase):
             self.assertIsInstance(output, dict)
             self.assertEqual(output[expected['key']], expected['value'])
 
+
+class TestParseLayerName(unittest.TestCase):
+    def setUp(self):
+        self.mock = MockModule()
+        self.accessors = [
+            {'name': 'layer1', 'type': nn.Linear, 'attrs': {'in_features': 10, 'out_features': 10}},
+            {'name': 'layers[0]', 'type': nn.Conv2d, 'attrs': {'kernel_size': (3, 3)}},
+            {'name': 'layers[1]', 'type': nn.Conv2d, 'attrs': {'kernel_size': (3, 3)}},
+            {'name': 'layers[2].features[0]', 'type': nn.Conv2d, 'attrs': {'kernel_size': (5, 5)}}
+        ]
+
     def test_parse_layer_name(self):
-        mock = MockModule()
-        self.assertIsInstance(models._parse_layer_name(mock, 'layer1'), nn.Linear)
-        self.assertIsInstance(models._parse_layer_name(mock, 'layers[0]'), nn.Conv2d)
-        self.assertIsInstance(models._parse_layer_name(mock, 'layers[1]'), nn.Conv2d)
+        for accessor in self.accessors:
+            layer = models._parse_layer_name(self.mock, accessor['name'])
+            self.assertIsInstance(layer, accessor['type'])
+            for attr, value in accessor['attrs'].items():
+                self.assertEqual(getattr(layer, attr), value)
 
 
 class TestVGG19(unittest.TestCase):

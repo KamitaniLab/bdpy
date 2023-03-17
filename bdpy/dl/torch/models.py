@@ -70,8 +70,8 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
     model : nn.Module
         Network model.
     layer_name : str
-        Layer name. It accepts the following formats: 'layer_name', and
-        'layer_name[index]'.
+        Layer name. It accepts the following formats: 'layer_name',
+        'layer_name[index]', 'parent_name.child_name', and combinations of them.
 
     Returns
     -------
@@ -91,6 +91,12 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
 
     if hasattr(model, layer_name):
         return getattr(model, layer_name)
+
+    # parse layer name having parent name (e.g., 'features.conv1')
+    if '.' in layer_name:
+        top_most_layer_name, child_layer_name = layer_name.split('.', 1)
+        model = _parse_layer_name(model, top_most_layer_name)
+        return _parse_layer_name(model, child_layer_name)
 
     # parse layer name having index (e.g., 'features[0]')
     pattern = re.compile(r'(?P<layer_name>\w+)\[(?P<index>\d+)\]')
