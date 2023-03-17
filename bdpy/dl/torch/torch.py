@@ -35,10 +35,10 @@ class FeatureExtractor(object):
             layer_object = models._parse_layer_name(self._encoder, layer)
             layer_object.register_forward_hook(self._extractor)
 
-    def __call__(self, x: Union[np.ndarray, torch.Tensor]) -> Dict[str, Union[np.ndarray, torch.Tensor]]:
+    def __call__(self, x: _tensor_t) -> Dict[str, _tensor_t]:
         return self.run(x)
 
-    def run(self, x: Union[np.ndarray, torch.Tensor]) -> Dict[str, Union[np.ndarray, torch.Tensor]]:
+    def run(self, x: _tensor_t) -> Dict[str, _tensor_t]:
         self._extractor.clear()
         if not isinstance(x, torch.Tensor):
             xt = torch.tensor(x[np.newaxis], device=self.__device)
@@ -47,7 +47,7 @@ class FeatureExtractor(object):
 
         self._encoder.forward(xt)
 
-        features: Dict[str, Union[np.ndarray, torch.Tensor]] = {
+        features: Dict[str, _tensor_t] = {
             layer: self._extractor.outputs[i]
             for i, layer in enumerate(self.__layers)
         }
