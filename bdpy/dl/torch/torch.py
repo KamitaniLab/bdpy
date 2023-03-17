@@ -9,6 +9,8 @@ from PIL import Image
 import torch
 import torch.nn as nn
 
+_tensor_t = Union[np.ndarray, torch.Tensor]
+
 
 class FeatureExtractor(object):
     def __init__(
@@ -71,8 +73,8 @@ class ImageDataset(torch.utils.data.Dataset):
 
     def __init__(
             self, images: List[str], labels: Optional[List[str]] = None,
-            label_dirname: bool = False, resize: Optional[Tuple[int]] = None,
-            shape: str = 'chw', transform: Optional[Callable[[Union[np.ndarray, torch.Tensor]], torch.Tensor]] = None,
+            label_dirname: bool = False, resize: Optional[Tuple[int, int]] = None,
+            shape: str = 'chw', transform: Optional[Callable[[_tensor_t], torch.Tensor]] = None,
             scale: float = 1, rgb_mean: Optional[List[float]] = None, preload: bool = False, preload_limit: float = np.inf):
         '''
         Parameters
@@ -87,7 +89,7 @@ class ImageDataset(torch.utils.data.Dataset):
             If not None, images will be resized by the specified size.
         shape : str ({'chw', 'hwc', ...}), optional
             Specify array shape (channel, hieght, and width).
-        transform : optional
+        transform : Callable[[Union[np.ndarray, torch.Tensor]], torch.Tensor], optional
             Transformers (applied after resizing, reshaping, ans scaling to [0, 1])
         scale : optional
             Image intensity is scaled to [0, scale] (default: 1).
