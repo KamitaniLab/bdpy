@@ -99,7 +99,7 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
         return _parse_layer_name(model, child_layer_name)
 
     # parse layer name having index (e.g., 'features[0]')
-    pattern = re.compile(r'(?P<layer_name>\w+)\[(?P<index>\d+)\]')
+    pattern = re.compile(r'^(?P<layer_name>\w+)\[(?P<index>\d+)\]$')
     m = pattern.match(layer_name)
     if m is not None:
         layer_name = m.group('layer_name')
