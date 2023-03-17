@@ -9,6 +9,8 @@ from PIL import Image
 import torch
 import torch.nn as nn
 
+from . import models
+
 _tensor_t = Union[np.ndarray, torch.Tensor]
 
 
@@ -30,7 +32,8 @@ class FeatureExtractor(object):
         for layer in self.__layers:
             if self.__layer_map is not None:
                 layer = self.__layer_map[layer]
-            eval('self._encoder.{}.register_forward_hook(self._extractor)'.format(layer))
+            layer_object = models._parse_layer_name(self._encoder, layer)
+            layer_object.register_forward_hook(self._extractor)
 
     def __call__(self, x: Union[np.ndarray, torch.Tensor]) -> Dict[str, Union[np.ndarray, torch.Tensor]]:
         return self.run(x)
