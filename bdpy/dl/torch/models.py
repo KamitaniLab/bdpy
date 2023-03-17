@@ -1,8 +1,26 @@
+from typing import Dict, Union, Optional, Sequence
+
+import re
+
 import torch
 import torch.nn as nn
 
 
-def layer_map(net):
+def layer_map(net: str) -> Dict[str, str]:
+    '''Get layer map for a given network.
+
+    Parameters
+    ----------
+    net : str
+        Network name. Currently, 'vgg19' and 'alexnet' are supported.
+
+    Returns
+    -------
+    Dict[str, str]
+        Layer map. Keys are human-readable layer names, and values are
+        corresponding layer names in the network.
+    '''
+
     maps = {
         'vgg19': {
             'conv1_1': 'features[0]',
@@ -42,6 +60,52 @@ def layer_map(net):
         }
     }
     return maps[net]
+
+
+def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
+    '''Parse layer name and return the corresponding layer object.
+
+    Parameters
+    ----------
+    model : nn.Module
+        Network model.
+    layer_name : str
+        Layer name. It accepts the following formats: 'layer_name',
+        'layer_name[index]', 'parent_name.child_name', and combinations of them.
+
+    Returns
+    -------
+    nn.Module
+        Layer object.
+
+    Examples
+    --------
+    >>> model = nn.Module()
+    >>> model.layer1 = nn.Linear(10, 10)
+    >>> model.layers = nn.Sequential(nn.Conv2d(3, 3, 3), nn.Conv2d(3, 3, 3))
+    >>> _parse_layer_name(model, 'layer1')
+    Linear(in_features=10, out_features=10, bias=True)
+    >>> _parse_layer_name(model, 'layers[0]')
+    Conv2d(3, 3, kernel_size=(3, 3), stride=(1, 1))
+    '''
+
+    if hasattr(model, layer_name):
+        return getattr(model, layer_name)
+
+    # parse layer name having parent name (e.g., 'features.conv1')
+    if '.' in layer_name:
+        top_most_layer_name, child_layer_name = layer_name.split('.', 1)
+        model = _parse_layer_name(model, top_most_layer_name)
+        return _parse_layer_name(model, child_layer_name)
+
+    # parse layer name having index (e.g., 'features[0]')
+    pattern = re.compile(r'^(?P<layer_name>\w+)\[(?P<index>\d+)\]$')
+    m = pattern.match(layer_name)
+    if m is not None:
+        layer_name = m.group('layer_name')
+        index = int(m.group('index'))
+        return getattr(model, layer_name)[index]
+    raise ValueError('Invalid layer name: {}'.format(layer_name))
 
 
 class VGG19(nn.Module):
@@ -99,7 +163,7 @@ class VGG19(nn.Module):
             nn.Linear(in_features=4096, out_features=1000, bias=True),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = self.avgpool(x)
         x = torch.flatten(x, 1)
@@ -126,7 +190,7 @@ class AlexNet(nn.Module):
             nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2),
             nn.ReLU(inplace=False),
             nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2),
-            nn.ReLU(inplace=False), 
+            nn.ReLU(inplace=False),
             nn.MaxPool2d(kernel_size=3, stride=2),
         )
         self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
@@ -135,7 +199,7 @@ class AlexNet(nn.Module):
             nn.ReLU(inplace=False),
             nn.Linear(4096, 4096),
             nn.ReLU(inplace=False),
-            nn.Linear(4096, num_classes), 
+            nn.Linear(4096, num_classes),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -145,9 +209,12 @@ class AlexNet(nn.Module):
         x = self.classifier(x)
         return x
 
+
 class AlexNetGenerator(nn.Module):
 
-    def __init__(self, input_size=4096, n_out_channel=3, device=None):
+    def __init__(
+            self, input_size: int = 4096, n_out_channel: int = 3,
+            device: Optional[Union[str, Sequence[str]]] = None):
 
         super(AlexNetGenerator, self).__init__()
 
@@ -225,7 +292,7 @@ class AlexNetGenerator(nn.Module):
             self.deconv0,
         ).to(self.__device1)
 
-    def forward(self, z):
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
 
         f = self.defc(z)
         f = f.view(-1, 256, 4, 4)
