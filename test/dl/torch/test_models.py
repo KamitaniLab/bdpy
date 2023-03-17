@@ -56,6 +56,13 @@ class TestParseLayerName(unittest.TestCase):
             for attr, value in accessor['attrs'].items():
                 self.assertEqual(getattr(layer, attr), value)
 
+        # Test non-existing layer access
+        self.assertRaises(
+            ValueError, models._parse_layer_name, self.mock, 'not_existing_layer')
+        # Test invalid layer access
+        self.assertRaises(
+            ValueError, models._parse_layer_name, self.mock, 'layers["key"]')
+
 
 class TestVGG19(unittest.TestCase):
     def setUp(self):

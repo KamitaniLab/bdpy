@@ -104,8 +104,12 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
     if m is not None:
         layer_name = m.group('layer_name')
         index = int(m.group('index'))
-        return getattr(model, layer_name)[index]
-    raise ValueError('Invalid layer name: {}'.format(layer_name))
+        if hasattr(model, layer_name):
+            return getattr(model, layer_name)[index]
+
+    raise ValueError(
+        f"Invalid layer name: '{layer_name}'. Either the syntax of '{layer_name}' is not supported, "
+        f"or {type(model).__name__} object has no attribute '{layer_name}'.")
 
 
 class VGG19(nn.Module):
