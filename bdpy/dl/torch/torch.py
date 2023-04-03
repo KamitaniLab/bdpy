@@ -18,7 +18,8 @@ class FeatureExtractor(object):
     def __init__(
             self, encoder: nn.Module, layers: Iterable[str],
             layer_mapping: Optional[Dict[str, str]] = None,
-            device: str = 'cpu', detach: bool = True):
+            device: str = 'cpu', detach: bool = True
+    ):
         '''Feature extractor.
 
         Parameters
@@ -98,7 +99,11 @@ class FeatureExtractorHandle(object):
     def __init__(self):
         self.outputs: List[torch.Tensor] = []
 
-    def __call__(self, module: nn.Module, module_in: Any, module_out: torch.Tensor) -> None:
+    def __call__(
+            self,
+            module: nn.Module, module_in: Any,
+            module_out: torch.Tensor
+    ) -> None:
         self.outputs.append(module_out)
 
     def clear(self):
@@ -107,9 +112,13 @@ class FeatureExtractorHandle(object):
 
 class FeatureExtractorHandleDetach(object):
     def __init__(self):
-        self.outputs = []
+        self.outputs: List[torch.Tensor] = []
 
-    def __call__(self, module, module_in, module_out):
+    def __call__(
+            self,
+            module: nn.Module, module_in: Any,
+            module_out: torch.Tensor
+    ) -> None:
         self.outputs.append(module_out.detach().clone())
 
     def clear(self):
@@ -120,10 +129,17 @@ class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
     def __init__(
-            self, images: List[str], labels: Optional[List[str]] = None,
-            label_dirname: bool = False, resize: Optional[Tuple[int, int]] = None,
-            shape: str = 'chw', transform: Optional[Callable[[_tensor_t], torch.Tensor]] = None,
-            scale: float = 1, rgb_mean: Optional[List[float]] = None, preload: bool = False, preload_limit: float = np.inf):
+            self, images: List[str],
+            labels: Optional[List[str]] = None,
+            label_dirname: bool = False,
+            resize: Optional[Tuple[int, int]] = None,
+            shape: str = 'chw',
+            transform: Optional[Callable[[_tensor_t], torch.Tensor]] = None,
+            scale: float = 1,
+            rgb_mean: Optional[List[float]] = None,
+            preload: bool = False,
+            preload_limit: float = np.inf
+    ):
         '''
         Parameters
         ----------
