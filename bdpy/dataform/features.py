@@ -88,13 +88,15 @@ class Features(object):
     def feature_index(self):
         return self.__feature_index
 
-    def get(self, layer):
+    def get(self, layer=None, label=None):
         '''Return features in `layer`.
 
         Parameters
         ----------
         layer: str
             DNN layer
+        label: str or list
+            Sample label(s)
 
         Returns
         -------
@@ -102,7 +104,37 @@ class Features(object):
             DNN features
         '''
 
-        return self.get_features(layer)
+        if layer is None:
+            raise ValueError('`layer` is required.')
+
+        if label is None:
+            return self.get_features(layer)
+
+        if isinstance(label, str):
+            labels = [label]
+        else:
+            labels = label
+
+        try:
+            features = np.vstack(
+                [sio.loadmat(self.__feature_file_table[layer][label])['feat']
+                 for label in labels]
+            )
+        except NotImplementedError:
+            features = np.vstack(
+                [hdf5storage.loadmat(self.__feature_file_table[layer][label])['feat']
+                 for label in labels]
+            )
+
+        if self.__feat_index_table is not None:
+            # Select features by index
+            self.__feature_index = self.__feat_index_table[layer]
+            n_sample = features.shape[0]
+            n_feat = np.array(features.shape[1:]).prod()
+
+            features = features.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
+
+        return features
 
     def statistic(self, statistic='mean', layer=None):
 

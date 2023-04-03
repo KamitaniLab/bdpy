@@ -42,7 +42,10 @@ class FeatureExtractor(object):
         self.__detach = detach
         self.__device = device
 
-        self._extractor = FeatureExtractorHandle()
+        if detach:
+            self._extractor = FeatureExtractorHandleDetach()
+        else:
+            self._extractor = FeatureExtractorHandle()
 
         self._encoder.to(self.__device)
 
@@ -96,6 +99,17 @@ class FeatureExtractorHandle(object):
         self.outputs: List[torch.Tensor] = []
 
     def __call__(self, module: nn.Module, module_in: Any, module_out: torch.Tensor) -> None:
+        self.outputs.append(module_out)
+
+    def clear(self):
+        self.outputs = []
+
+
+class FeatureExtractorHandleDetach(object):
+    def __init__(self):
+        self.outputs = []
+
+    def __call__(self, module, module_in, module_out):
         self.outputs.append(module_out.detach().clone())
 
     def clear(self):
