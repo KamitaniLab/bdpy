@@ -12,14 +12,14 @@ class MockModule(nn.Module):
         self.layer1 = nn.Linear(10, 10)
         self.layers = nn.Sequential(
             nn.Conv2d(1, 1, 3),
-            nn.Conv2d(1, 1, 3)
+            nn.Conv2d(1, 1, 3),
+            nn.Module()
         )
-        inner_network = nn.Module()
+        inner_network = self.layers[-1]
         inner_network.features = nn.Sequential(
             nn.Conv2d(1, 1, 5),
             nn.Conv2d(1, 1, 5)
         )
-        self.layers.append(inner_network)
 
 
 class TestLayerMap(unittest.TestCase):
@@ -55,6 +55,13 @@ class TestParseLayerName(unittest.TestCase):
             self.assertIsInstance(layer, accessor['type'])
             for attr, value in accessor['attrs'].items():
                 self.assertEqual(getattr(layer, attr), value)
+
+        # Test non-existing layer access
+        self.assertRaises(
+            ValueError, models._parse_layer_name, self.mock, 'not_existing_layer')
+        # Test invalid layer access
+        self.assertRaises(
+            ValueError, models._parse_layer_name, self.mock, 'layers["key"]')
 
 
 class TestVGG19(unittest.TestCase):
