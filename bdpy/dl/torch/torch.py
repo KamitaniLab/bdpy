@@ -17,7 +17,7 @@ class FeatureExtractor(object):
         self.__device = device
 
         if detach:
-            self._extractor = FeatureExtractorHandle_forExtract()
+            self._extractor = FeatureExtractorHandleDetach()
         else:
             self._extractor = FeatureExtractorHandle()
 
@@ -62,8 +62,9 @@ class FeatureExtractorHandle(object):
 
     def clear(self):
         self.outputs = []
-        
-class FeatureExtractorHandle_forExtract(object):
+
+
+class FeatureExtractorHandleDetach(object):
     def __init__(self):
         self.outputs = []
 
