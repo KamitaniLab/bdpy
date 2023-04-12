@@ -57,6 +57,24 @@ def layer_map(net: str) -> Dict[str, str]:
             'fc7':   'classifier[2]',
             'relu7': 'classifier[3]',
             'fc8':   'classifier[4]',
+        },
+        
+        'reference_net': {
+            'conv1': 'features[0]',
+            'relu1': 'features[1]',
+            'conv2': 'features[4]',
+            'relu2': 'features[5]',
+            'conv3': 'features[8]',
+            'relu3': 'features[9]',
+            'conv4': 'features[10]',
+            'relu4': 'features[11]',
+            'conv5': 'features[12]',
+            'relu5': 'features[13]',
+            'fc6':   'classifier[1]',
+            'relu6': 'classifier[2]',
+            'fc7':   'classifier[4]',
+            'relu7': 'classifier[5]',
+            'fc8':   'classifier[6]',
         }
     }
     return maps[net]
@@ -206,6 +224,44 @@ class AlexNet(nn.Module):
             nn.Linear(4096, num_classes),
         )
 
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
+        x = self.classifier(x)
+        return x
+    
+class ReferenceNet(nn.Module):
+    def __init__(self, num_classes: int = 1000) -> None:
+            super(ReferenceNet, self).__init__()
+            self.features = nn.Sequential(
+                nn.Conv2d(3, 96, kernel_size=11, stride=4, padding=0),
+                nn.ReLU(inplace=False),
+                nn.MaxPool2d(kernel_size=3, stride=2),
+                nn.LocalResponseNorm(5, alpha=0.0001, beta=0.75),
+                nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2),
+                nn.ReLU(inplace=False),
+                nn.MaxPool2d(kernel_size=3, stride=2),
+                nn.LocalResponseNorm(5, alpha=0.0001, beta=0.75),
+                nn.Conv2d(256, 384, kernel_size=3, padding=1),
+                nn.ReLU(inplace=False),
+                nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2),
+                nn.ReLU(inplace=False),
+                nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2),
+                nn.ReLU(inplace=False),
+                nn.MaxPool2d(kernel_size=3, stride=2),
+            )
+            self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
+            self.classifier = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(256 * 6 * 6, 4096),
+                nn.ReLU(inplace=False),
+                nn.Dropout(),
+                nn.Linear(4096, 4096),
+                nn.ReLU(inplace=False),
+                nn.Linear(4096, num_classes),
+            )
+    
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = self.avgpool(x)
