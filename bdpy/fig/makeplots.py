@@ -31,7 +31,7 @@ def makeplots(
         swarm_violin_color='blue',
         box_color='blue', box_width=0.5, box_linewidth=1,
         box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
-        box_medianprops={},
+        box_medianprops={}, flierprops={},
         removenan=True,
         verbose=False, colors=None, reverse_x=False
 ):
@@ -46,7 +46,7 @@ def makeplots(
     subplot : list
     figure : str
     figure_list : list
-    plot_type : {'bar', 'violin', 'paired violin', 'swarm', 'swarm+box'}
+    plot_type : {'bar', 'violin', 'paired violin', 'swarm', 'box', 'swarm+box'}
     horizontal: bool
     plot_size : (width, height)
     y_lim : (y_min, y_max)
@@ -161,7 +161,7 @@ def makeplots(
             if plot_type == 'paired violin':
                 group_list = figure_instance['comparison pair']
 
-            if plot_type == "swarm+box":
+            if plot_type == "swarm+box" or plot_type == "box":
                 df_t = __strict_data(
                     df, subplot, sp_label,
                     figure, fig_label, y, removenan
@@ -227,6 +227,16 @@ def makeplots(
                     dot_size=swarm_dot_size,
                     dot_alpha=swarm_dot_alpha,
                     violin_color=swarm_violin_color,
+                )
+            elif plot_type == 'box':
+                __plot_box(
+                    ax, x, y, x_list, df_t,
+                    horizontal=horizontal, reverse_x=reverse_x,
+                    grouping=grouping, group=group, group_list=group_list,
+                    box_color=box_color, box_width=box_width,
+                    box_linewidth=box_linewidth,
+                    box_meanprops=box_meanprops,
+                    box_medianprops=box_medianprops
                 )
             elif plot_type == 'swarm+box':
                 legend_handler = __plot_swarmbox(
@@ -475,6 +485,67 @@ def __plot_swarm(
         ax.scatter(x=scatterx, y=scattery, marker=scattermark, c="red", linewidths=2, zorder=10)
 
         ax.set(xlabel=None, ylabel=None)
+
+def __plot_box(
+        ax, x, y, x_list, df_t,
+        horizontal=False, reverse_x=False,
+        grouping=False, group=None, group_list=[],
+        box_color='blue', box_width=0.5, box_linewidth=1, box_props={'alpha': .3},
+        box_meanprops=dict(linestyle='-', linewidth=1.5, color='red'),
+        box_medianprops={},
+        flierprops={}
+):
+
+    # prepare plot
+    #box_color_palette = sns.color_palette("pastel") if grouping else None
+    box_color_palette = sns.color_palette("bright") if grouping else None
+    if horizontal:
+        plotx, ploty = y, x
+    else:
+        plotx, ploty = x, y
+
+
+    # plot boxplot
+    if grouping:
+        boxax = sns.boxplot(
+            data=df_t, ax=ax,
+            x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
+            orient="h" if horizontal else "v",
+            palette=box_color_palette,
+            linewidth=box_linewidth,
+            showfliers=True,flierprops=flierprops,
+            showmeans=True, meanline=True, meanprops=box_meanprops,
+            medianprops=box_medianprops,
+            boxprops=box_props, zorder=100  # <- This zorder is very important for visualization.
+        )
+        # prepare legend
+        handlers, labels = boxax.get_legend_handles_labels()
+        handlers = handlers[:len(group_list)]
+        labels = labels[:len(group_list)]
+        if horizontal:
+            legend_handler = [handlers[::-1], labels[::-1]]
+        else:
+            legend_handler = [handlers, labels]
+        ax.get_legend().remove()
+    else:
+        sns.boxplot(
+            data=df_t, ax=ax,
+            x=plotx, y=ploty, order=x_list,
+            orient="h" if horizontal else "v",
+            color=box_color,
+            linewidth=box_linewidth,
+            width=box_width,
+            showfliers=True, flierprops=flierprops,
+            showmeans=True, meanline=True, meanprops=box_meanprops,
+            medianprops=box_medianprops,
+            boxprops=box_props, zorder=100  # <- This zorder is very important for visualization.
+        )
+        legend_handler = None
+
+    # remove label
+    ax.set(xlabel=None, ylabel=None)
+
+    return legend_handler
 
 
 def __plot_swarmbox(
