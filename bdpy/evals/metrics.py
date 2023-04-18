@@ -72,8 +72,9 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
 
     return r
 
+
 def pattern_cross_correlation(x, y, mean=None, std=None, remove_nan=True):
-    '''Pattern correlation used for computing similarity matrix.
+    '''Pattern correlation. 
      Output: cross correlation of size (n_sample, n_sample).
      The (i,j) element of r corresponds to the correlation between i-th row of x and j-th row of y.
     '''
@@ -87,9 +88,14 @@ def pattern_cross_correlation(x, y, mean=None, std=None, remove_nan=True):
     _y = y.reshape(n_sample, -1)
 
     if mean is not None and std is not None:
-        m = mean.reshape(-1)
-        s = std.reshape(-1)
-
+        if mean.shape[sample_axis] == n_sample:
+            # if mean and std are different across samples
+            m = mean.reshape(n_sample, -1)
+            s = std.reshape(n_sample, -1)
+        else:
+            m = mean.reshape(-1)
+            s = std.reshape(-1)
+        
         _x = (_x - m) / s
         _y = (_y - m) / s
 
