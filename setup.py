@@ -50,6 +50,7 @@ if __name__ == '__main__':
               'numpy',
               'scipy',
               'scikit-learn',
+              'pandas',
               'h5py',
               'hdf5storage',
               'pyyaml'
