@@ -11,6 +11,7 @@ import numpy as np
 from numpy.linalg import norm
 from scipy import stats
 from sklearn.svm import SVC
+from tqdm import tqdm
 
 
 class EnsembleClassifier(object):
@@ -59,7 +60,7 @@ class EnsembleClassifier(object):
         )  # (n_samples, n_targets)
         self._n_targets = Y.shape[1]
 
-        for i in range(self._n_targets):
+        for i in tqdm(range(self._n_targets)):
             self._estimators.update({i: {}})
             self._fit(X, Y[:, i], target=i)
 
