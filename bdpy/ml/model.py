@@ -176,6 +176,7 @@ class EnsembleClassifier(object):
         '''
 
         pred_pairs = []
+        dv_pairs = []
         for (y0, y1), estimators in self._estimators[target].items():
             dv_all = []
             for estimator in estimators:
@@ -190,8 +191,9 @@ class EnsembleClassifier(object):
                 dv = estimator['model'].decision_function(X_)
                 dv = dv.ravel()
                 dv /= norm(estimator['model'].coef_)
+                # See https://stats.stackexchange.com/questions/14876/interpreting-distance-from-hyperplane-in-svm
                 dv_all.append(dv)
-            dv_all = np.vstack(dv_all).T
+            dv_all = np.vstack(dv_all).T  # (n_samples, n_estimators)
             dv_mean = np.mean(dv_all, axis=1, keepdims=True)
 
             pred = np.zeros(dv_mean.shape)
@@ -199,11 +201,13 @@ class EnsembleClassifier(object):
             pred[dv_mean < 0] = y0
 
             pred_pairs.append(pred)
+            dv_pairs.append(dv_mean)
 
         pred_pairs = np.hstack(pred_pairs)  # (n_samples, n_pairs)
+        dv_pairs = np.hstack(dv_pairs)      # (n_samples, n_pairs)
 
         # Voting
-        y_pred = self.__voting(pred_pairs, target=target)
+        y_pred = self.__voting(pred_pairs, dv_pairs, target=target)
 
         return y_pred
 
@@ -243,25 +247,25 @@ class EnsembleClassifier(object):
         _, index = select_top(x, f, n_voxel, axis=1, verbose=False)
         return index
 
-    def __voting(self, y, target=0):
+    def __voting(self, y, dv, target=0):
         '''
         Parameters
         ----------
         y : array of (n_samples, n_pairs)
+        dv : array of (n_samples, n_pairs)
 
         Returns
         -------
         y_pred : array of (n_samples)
         '''
         vote = []  # (n_samples, n_classes)
-        for i, ps in enumerate(y):
+        dv = np.abs(dv)
+        for _y, _dv in zip(y, dv):
             vote.append([
-                np.sum(ps == c)
+                np.sum(_dv[_y == c])
                 for c in self._classes[target]
             ])
         vote = np.vstack(vote)  # (n_samples, n_classes)
-
-        # TODO: 同率首位の処理
 
         y_pred_index = np.argmax(vote, axis=1)  # (n_samples,)
         y_pred = np.zeros(y_pred_index.shape)
