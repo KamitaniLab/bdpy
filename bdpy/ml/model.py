@@ -190,8 +190,10 @@ class EnsembleClassifier(object):
 
                 dv = estimator['model'].decision_function(X_)
                 dv = dv.ravel()
-                dv /= norm(estimator['model'].coef_)
-                # See https://stats.stackexchange.com/questions/14876/interpreting-distance-from-hyperplane-in-svm
+                if isinstance(estimator['model'], SVC):
+                    print('OK')
+                    dv /= norm(estimator['model'].coef_)
+                    # See https://stats.stackexchange.com/questions/14876/interpreting-distance-from-hyperplane-in-svm
                 dv_all.append(dv)
             dv_all = np.vstack(dv_all).T  # (n_samples, n_estimators)
             dv_mean = np.mean(dv_all, axis=1, keepdims=True)
