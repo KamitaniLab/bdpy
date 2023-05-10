@@ -555,7 +555,7 @@ class ModelTest(object):
 
             y_pred = model.predict(self.X, **self.model_parameters)
 
-            if y_pred.shape[1:] != model_pickle['y_shape']:
+            if self.model_format == 'pickle' and y_pred.shape[1:] != self.__Y_shape:
                 y_pred = y_pred.reshape((y_pred.shape[0], ) + self.__Y_shape, order='F')
 
             y_pred_list.append(y_pred)
