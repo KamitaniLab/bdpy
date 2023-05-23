@@ -488,3 +488,36 @@ class FileDatabase(object):
     def show(self):
         self.__cursor.execute('SELECT * FROM files')
         print(self.__cursor.fetchall())
+
+
+def save_feature(feature: np.ndarray, base_dir: str, layer: str = None, label: str = None, verbose: bool = False):
+    '''
+    Save features.
+
+    Parameters
+    ----------
+    feature: np.ndarray
+    base_dir: str
+    layer: str
+    label: str
+    verbose: bool (default: False)
+
+    Returns
+    -------
+    None
+    '''
+
+    if layer is None or label is None:
+        raise RuntimeError('`layer` and `label` are required.')
+
+    save_file = os.path.join(base_dir, layer, label + '.mat')
+    if os.path.exists(save_file):
+        if verbose:
+            print(f'{save_file} already exists. Skipped.')
+        return None
+
+    hdf5storage.savemat(feature, 'feat', save_file)
+    if verbose:
+        print(f'Saved {save_file}.')
+
+    return None
