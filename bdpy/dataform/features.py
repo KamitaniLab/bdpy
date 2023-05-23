@@ -8,7 +8,7 @@ This file is a part of BdPy.
 from __future__ import print_function
 
 
-__all__ = ['Features', 'DecodedFeatures']
+__all__ = ['Features', 'DecodedFeatures', 'save_feature']
 
 
 import os
@@ -510,13 +510,16 @@ def save_feature(feature: np.ndarray, base_dir: str, layer: str = None, label: s
     if layer is None or label is None:
         raise RuntimeError('`layer` and `label` are required.')
 
-    save_file = os.path.join(base_dir, layer, label + '.mat')
+    save_dir = os.path.join(base_dir, layer)
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_file = os.path.join(save_dir, label + '.mat')
     if os.path.exists(save_file):
         if verbose:
             print(f'{save_file} already exists. Skipped.')
         return None
 
-    hdf5storage.savemat(feature, 'feat', save_file)
+    hdf5storage.savemat(save_file, {'feat': feature})
     if verbose:
         print(f'Saved {save_file}.')
 
