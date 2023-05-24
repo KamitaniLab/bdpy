@@ -26,7 +26,7 @@ class DnnFeatureExtractorBase(object):
 
     '''
 
-    def __init__(self, model: nn.Module = None, model_cls: Type[nn.Module] = None, layers: Iterable[str] = [], device: str = 'cpu', init_args={}):
+    def __init__(self, model: Optional[nn.Module] = None, model_cls: Optional[Type[nn.Module]] = None, layers: Iterable[str] = [], device: str = 'cpu', init_args={}):
         self.model = model
         self.model_cls = model_cls
         self.layers = layers
@@ -34,22 +34,25 @@ class DnnFeatureExtractorBase(object):
 
         self.init(**init_args)
 
+        if self.model is None:
+            raise RuntimeError('`self.model` is None. You should define it it `init()`.')
+
         self.model.to(self.device)
 
-    def init(self, **kwargs) -> None:
+    def init(self) -> None:
         '''
         Custom initialization method.
         `init_args` in `__init__()` is passed to this function.
         '''
         return None
 
-    def preprocess(self, x: Any, **kwargs) -> Any:
+    def preprocess(self, x: Any) -> Any:
         '''
         Preprocesses the input for the DNN model.
         '''
         return x
 
-    def extract_features(self, x: Any, **kwargs) -> Dict[str, _tensor_t]:
+    def extract_features(self, x: Any) -> Dict[str, np.ndarray]:
         '''
         Extracts features from the given input using the DNN model.
         '''
