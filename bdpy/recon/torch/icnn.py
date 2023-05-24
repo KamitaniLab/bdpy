@@ -382,8 +382,8 @@ def reconstruct(features,
 
             weight_j = layer_weights[lay]
 
-            masked_act_j = torch.masked_select(act_j, mask_j.bool()).view(act_j.shape)
-            masked_feat_j = torch.masked_select(feat_j, mask_j.bool()).view(feat_j.shape)
+            masked_act_j = torch.masked_select(act_j, mask_j.bool())
+            masked_feat_j = torch.masked_select(feat_j, mask_j.bool())
 
             loss_j = loss_func(masked_act_j, masked_feat_j) * weight_j
             loss += loss_j
