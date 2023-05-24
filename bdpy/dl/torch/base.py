@@ -5,6 +5,7 @@ Base classes.
 
 __all__ = [
     'DnnFeatureExtractorBase',
+    'ReconstructionBase',
 ]
 
 
@@ -62,3 +63,43 @@ class DnnFeatureExtractorBase(object):
         return self.extract_features(self.preprocess(x), **kwargs)
 
 
+class ReconstructionBase(object):
+    '''
+    Base class for reconstruction.
+
+    '''
+
+    def __init__(self, model: Optional[nn.Module] = None, model_cls: Optional[Type[nn.Module]] = None, layers: Iterable[str] = [], device: str = 'cpu', init_args={}):
+        self.model = model
+        self.model_cls = model_cls
+        self.layers = layers
+        self.device = torch.device(device)
+
+        self.init(**init_args)
+
+        if self.model is None:
+            raise RuntimeError('`self.model` is None. You should define it it `init()`.')
+
+        self.model.to(self.device)
+
+    def init(self) -> None:
+        '''
+        Custom initialization method.
+        `init_args` in `__init__()` is passed to this function.
+        '''
+        return None
+
+    def preprocess(self, x: Any) -> Any:
+        '''
+        Preprocesses the input for the DNN model.
+        '''
+        return x
+
+    def reconstruct(self, x: Any) -> Any:
+        '''
+        Reconstruction from the given input.
+        '''
+        raise NotImplementedError("Subclass must implement reconstruct method.")
+
+    def __call__(self, x: Any, **kwargs) -> Any:
+        return self.reconstruct(self.preprocess(x), **kwargs)
