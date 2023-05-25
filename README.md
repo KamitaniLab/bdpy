@@ -7,7 +7,7 @@ Python package for brain decoding analysis
 
 ## Requirements
 
-- Python 2.7, 3.6, or later
+- Python 3.8 or later
 - numpy
 - scipy
 - scikit-learn
