@@ -36,14 +36,17 @@ class BaseLearning(object):
 
     def add_preprocessing(self, func, args=None):
         '''Add preprocessing function'''
-        self._preprocessing.append({'func' : func,
-                                    'args' : args})
-
+        self._preprocessing.append({
+            'func': func,
+            'args': args
+        })
 
     def add_postprocessing(self, func, args=None):
         '''Add postprocessing function'''
-        self._postprocessing.append({'func' : func,
-                                     'args' : args})
+        self._postprocessing.append({
+            'func': func,
+            'args': args
+        })
 
 
 #-----------------------------------------------------------------------
@@ -70,7 +73,6 @@ class Classification(BaseLearning):
         Prediction accuracy
    '''
 
-
     def __init__(self, x_train=None, y_train=None, x_test=None, y_test=None,
                  classifier=None, verbose='off'):
         BaseLearning.__init__(self)
@@ -88,7 +90,6 @@ class Classification(BaseLearning):
         self.prediction = None
         self.prediction_accuracy = None
 
-
     def run(self):
         '''Run classification'''
 
@@ -98,7 +99,7 @@ class Classification(BaseLearning):
             func = p['func']
             args = p['args']
 
-            if args == None:
+            if args is None:
                 self.x_train, self.y_train, self.x_test, self.y_test \
                     = func(self.x_train, self.y_train, self.x_test, self.y_test)
             else:
@@ -109,7 +110,6 @@ class Classification(BaseLearning):
         self.prediction = self.classifier_trained.predict(self.x_test)
 
         self.prediction_accuracy = self.__calc_accuracy(self.prediction, self.y_test)
-
 
     def __calc_accuracy(self, ypred, ytest):
         return float(np.sum(ytest == ypred)) / len(ytest)
@@ -155,7 +155,6 @@ class CrossValidation(BaseLearning):
         # Results
         self.classifier_trained = []
         self.prediction_accuracy = []
-
 
     def run(self):
         '''Run cross-validation
@@ -394,8 +393,10 @@ class ModelTraining(object):
                 if not '_status' in info:
                     info.update({'_status': {}})
 
-                info['_status'].update({'computation_id':     self.id,
-                                        'computation_status': 'done'})
+                info['_status'].update({
+                    'computation_id':     self.id,
+                    'computation_status': 'done'
+                })
 
                 with open(info_file, 'w') as f:
                     f.write(yaml.dump(info, default_flow_style=False))
@@ -435,15 +436,19 @@ class ModelTraining(object):
         if self.save_format == 'pickle':
             # Save the model instance as pickle.
             if self.__chunking:
-                output_files.append({'file_path': os.path.join(self.save_path, '%08d.pkl.gz' % chunk),
-                                     'src': None,
-                                     'dst': None,
-                                     'sparse': False})
+                output_files.append({
+                    'file_path': os.path.join(self.save_path, '%08d.pkl.gz' % chunk),
+                    'src': None,
+                    'dst': None,
+                    'sparse': False
+                })
             else:
-                output_files.append({'file_path': os.path.join(self.save_path, 'model.pkl.gz'),
-                                     'src': None,
-                                     'dst': None,
-                                     'sparse': False})
+                output_files.append({
+                    'file_path': os.path.join(self.save_path, 'model.pkl.gz'),
+                    'src': None,
+                    'dst': None,
+                    'sparse': False
+                })
         elif self.save_format == 'bdmodel':
             # Save W and b for FastL2LiR model.
             # Otherwise, save everythings.
@@ -460,7 +465,8 @@ class ModelTraining(object):
                 output_files = [
                     {'file_path': save_file_W, 'src': '_FastL2LiR__W', 'dst': 'W', 'sparse': True},
                     {'file_path': save_file_b, 'src': '_FastL2LiR__b', 'dst': 'b', 'sparse': False},
-                    ]
+                ]
+
             else:
                 raise NotImplementedError('BD model current supports only FastL2LiR models.')
         else:
