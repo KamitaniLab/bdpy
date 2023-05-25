@@ -116,10 +116,10 @@ def make_feature_masks(features, masks, channels):
         elif isinstance(masks, dict) and (layer in masks.keys()) and isinstance(masks[layer], np.ndarray) and features[layer].ndim == 1 and masks[layer].ndim == 1 and masks[layer].shape[0] == features[layer].shape[0]:
             feature_masks[layer] = masks[layer]
         elif (masks is None or masks == {} or masks == [] or (layer not in masks.keys())) and isinstance(channels, dict) and (layer in channels.keys()) and isinstance(channels[layer], np.ndarray) and channels[layer].size > 0:  # select channels
-            mask_2D = np.ones_like(features[layer][0])
+            mask_2D = np.ones_like(features[layer][0][0]) 
             mask_3D = np.tile(mask_2D, [len(channels[layer]), 1, 1])
             feature_masks[layer] = np.zeros_like(features[layer])
-            feature_masks[layer][channels[layer], :, :] = mask_3D
+            feature_masks[layer][:, channels[layer], :, :] = mask_3D
         # use 2D mask select features for all channels
         elif isinstance(masks, dict) and (layer in masks.keys()) and isinstance(masks[layer], np.ndarray) and masks[layer].ndim == 2 and (channels is None or channels == {} or channels == [] or (layer not in channels.keys())):
             mask_2D_0 = masks[layer]
