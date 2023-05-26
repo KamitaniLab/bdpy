@@ -100,7 +100,7 @@ class MetaData(object):
             if updater is None:
                 self.__value[ind, :] = value
             else:
-                self.__value[ind, :] = np.array(updater(value, self.__value[ind, :]), dtype=np.float)
+                self.__value[ind, :] = np.array(updater(value, self.__value[ind, :]), dtype=float)
         else:
             # Add new metadata
             self.__key.append(key)
@@ -138,7 +138,7 @@ class MetaData(object):
             return None
 
         if field == 'value':
-            return self.__value[ind, :].astype(np.float)
+            return self.__value[ind, :].astype(float)
 
         if field == 'description':
             return self.__description[ind]

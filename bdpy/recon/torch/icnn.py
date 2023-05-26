@@ -337,7 +337,7 @@ def reconstruct(features,
             # xt.retain_grad()
 
             if generator_postproc is not None:
-                xt = generator.postproc(xt)
+                xt = generator_postproc(xt)
 
             # Crop the generated image
             if crop_generator_output:

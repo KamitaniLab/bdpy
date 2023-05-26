@@ -1,34 +1,79 @@
 '''PyTorch module.'''
 
+from typing import Iterable, List, Dict, Union, Tuple, Any, Callable, Optional
 
 import os
 
 import numpy as np
 from PIL import Image
 import torch
+import torch.nn as nn
+
+from . import models
+
+_tensor_t = Union[np.ndarray, torch.Tensor]
 
 
 class FeatureExtractor(object):
-    def __init__(self, encoder, layers=None, layer_mapping=None, device='cpu', detach=True):
+    def __init__(
+            self, encoder: nn.Module, layers: Iterable[str],
+            layer_mapping: Optional[Dict[str, str]] = None,
+            device: str = 'cpu', detach: bool = True
+    ):
+        '''Feature extractor.
+
+        Parameters
+        ----------
+        encoder : torch.nn.Module
+            Network model we want to extract features from.
+        layers : Iterable[str]
+            List of layer names we want to extract features from.
+        layer_mapping : Dict[str, str], optional
+            Mapping from (human-readable) layer names to layer names in the model.
+            If None, layers will be directly used as layer names in the model.
+        device : str, optional
+            Device name (default: 'cpu').
+        detach : bool, optional
+            If True, detach the feature activations from the computation graph
+        '''
+
         self._encoder = encoder
         self.__layers = layers
         self.__layer_map = layer_mapping
         self.__detach = detach
         self.__device = device
 
-        self._extractor = FeatureExtractorHandle()
+        if detach:
+            self._extractor = FeatureExtractorHandleDetach()
+        else:
+            self._extractor = FeatureExtractorHandle()
 
         self._encoder.to(self.__device)
 
         for layer in self.__layers:
             if self.__layer_map is not None:
                 layer = self.__layer_map[layer]
-            eval('self._encoder.{}.register_forward_hook(self._extractor)'.format(layer))
+            layer_object = models._parse_layer_name(self._encoder, layer)
+            layer_object.register_forward_hook(self._extractor)
 
-    def __call__(self, x) -> dict:
+    def __call__(self, x: _tensor_t) -> Dict[str, _tensor_t]:
         return self.run(x)
 
-    def run(self, x) -> dict:
+    def run(self, x: _tensor_t) -> Dict[str, _tensor_t]:
+        '''Extract feature activations from the specified layers.
+
+        Parameters
+        ----------
+        x : numpy.ndarray or torch.Tensor
+            Input image (numpy.ndarray or torch.Tensor).
+
+        Returns
+        -------
+        features : Dict[str, Union[numpy.ndarray, torch.Tensor]]
+            Feature activations from the specified layers.
+            Each key is the layer name and each value is the feature activation.
+        '''
+
         self._extractor.clear()
         if not isinstance(x, torch.Tensor):
             xt = torch.tensor(x[np.newaxis], device=self.__device)
@@ -37,7 +82,7 @@ class FeatureExtractor(object):
 
         self._encoder.forward(xt)
 
-        features = {
+        features: Dict[str, _tensor_t] = {
             layer: self._extractor.outputs[i]
             for i, layer in enumerate(self.__layers)
         }
@@ -52,10 +97,29 @@ class FeatureExtractor(object):
 
 class FeatureExtractorHandle(object):
     def __init__(self):
+        self.outputs: List[torch.Tensor] = []
+
+    def __call__(
+            self,
+            module: nn.Module, module_in: Any,
+            module_out: torch.Tensor
+    ) -> None:
+        self.outputs.append(module_out)
+
+    def clear(self):
         self.outputs = []
 
-    def __call__(self, module, module_in, module_out):
-        self.outputs.append(module_out)
+
+class FeatureExtractorHandleDetach(object):
+    def __init__(self):
+        self.outputs: List[torch.Tensor] = []
+
+    def __call__(
+            self,
+            module: nn.Module, module_in: Any,
+            module_out: torch.Tensor
+    ) -> None:
+        self.outputs.append(module_out.detach().clone())
 
     def clear(self):
         self.outputs = []
@@ -64,13 +128,24 @@ class FeatureExtractorHandle(object):
 class ImageDataset(torch.utils.data.Dataset):
     '''Pytoch dataset for images.'''
 
-    def __init__(self, images, labels=None, label_dirname=False, resize=None, shape='chw', transform=None, scale=1, rgb_mean=None, preload=False, preload_limit=np.inf):
+    def __init__(
+            self, images: List[str],
+            labels: Optional[List[str]] = None,
+            label_dirname: bool = False,
+            resize: Optional[Tuple[int, int]] = None,
+            shape: str = 'chw',
+            transform: Optional[Callable[[_tensor_t], torch.Tensor]] = None,
+            scale: float = 1,
+            rgb_mean: Optional[List[float]] = None,
+            preload: bool = False,
+            preload_limit: float = np.inf
+    ):
         '''
         Parameters
         ----------
-        images : list
+        images : List[str]
             List of image file paths.
-        labels : list, optional
+        labels : List[str], optional
             List of image labels (default: image file names).
         label_dirname : bool, optional
             Use directory names as labels if True (default: False).
@@ -78,7 +153,7 @@ class ImageDataset(torch.utils.data.Dataset):
             If not None, images will be resized by the specified size.
         shape : str ({'chw', 'hwc', ...}), optional
             Specify array shape (channel, hieght, and width).
-        transform : optional
+        transform : Callable[[Union[np.ndarray, torch.Tensor]], torch.Tensor], optional
             Transformers (applied after resizing, reshaping, ans scaling to [0, 1])
         scale : optional
             Image intensity is scaled to [0, scale] (default: 1).
@@ -86,7 +161,7 @@ class ImageDataset(torch.utils.data.Dataset):
             Image values are centered by the specified mean (after scaling) (default: None).
         preload : bool, optional
             Pre-load images (default: False).
-        preload_limit : int
+        preload_limit : float
             Memory size limit of preloading in GiB (default: unlimited).
 
         Note
@@ -126,16 +201,16 @@ class ImageDataset(torch.utils.data.Dataset):
             self.labels = image_labels
         self.n_sample = len(images)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.n_sample
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, str]:
         if idx in self.__data:
             data = self.__data[idx]
         else:
             data = self.__load_image(self.data_path[idx])
 
-        if not self.transform is None:
+        if self.transform is not None:
             data = self.transform(data)
         else:
             data = torch.Tensor(data)
@@ -144,7 +219,7 @@ class ImageDataset(torch.utils.data.Dataset):
 
         return data, label
 
-    def __load_image(self, fpath):
+    def __load_image(self, fpath: str) -> np.ndarray:
         img = Image.open(fpath)
 
         # CMYK, RGBA --> RGB

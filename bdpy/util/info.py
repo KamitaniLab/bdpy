@@ -6,6 +6,7 @@ import time
 import uuid
 import warnings
 import yaml
+import pwd
 
 
 def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
@@ -34,7 +35,7 @@ def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
         'os'         : os.uname()[0],
         'os_release' : os.uname()[2],
         'os_version' : os.uname()[3],
-        'user'       : os.getlogin(),
+        'user'       : pwd.getpwuid(os.geteuid())[0],
         'script_path': script_path,
         'script_txt' : script_txt,
         'script_md5' : script_md5,
