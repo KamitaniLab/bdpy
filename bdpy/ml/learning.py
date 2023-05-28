@@ -421,9 +421,9 @@ class ModelTraining(object):
         elif self.save_format == 'bdmodel':
             if not self.model.__class__.__name__ == 'FastL2LiR':
                 raise NotImplementedError('BD model current supports only FastL2LiR models.')
-
             for s in output_files:
-                if s['dst'] == "S" and (not hasattr(self.model, "S")):
+                if s['dst'] == "S" and (not hasattr(self.model, "S")): 
+                    # If the model does not have an S, skip the save operation.
                     continue
                 makedir_ifnot(os.path.dirname(s['file_path']))
                 save_array(s['file_path'], getattr(self.model, s['src']), key=s['dst'], dtype=self.dtype, sparse=s['sparse'])
@@ -452,9 +452,10 @@ class ModelTraining(object):
                     'sparse': False
                 })
         elif self.save_format == 'bdmodel':
-            # Save W and b for FastL2LiR model.
-            # Otherwise, save everythings.
-
+            # Save W, b and S for FastL2LiR model.
+            # S is a boolean matrix that specifies the voxels selected by voxel selection,
+            # and if the model does not have an S, the actual save operation is not performed. 
+            # (see __save_model function)
             if self.model.__class__.__name__ == 'FastL2LiR':
                 save_dir = os.path.splitext(self.save_path)[0]
                 if self.__chunking:
@@ -502,10 +503,7 @@ class ModelTest(object):
         self.__Y_shape = None
 
     def run(self):
-        '''Run test.'''
-        
-        print(self.model_parameters)
-
+        '''Run test.'''        
         if self.dtype is not None:
             self.X = self.X.astype(self.dtype)
 
@@ -513,9 +511,9 @@ class ModelTest(object):
             y_pred = self.model.predict(self.X, **self.model_parameters)
             return y_pred
         
-        use_feature_selector = False
-        if "use_feature_selector" in self.model_parameters:
-            use_feature_selector = self.model_parameters["use_feature_selector"]
+        save_select_feat = False
+        if "save_select_feat" in self.model_parameters:
+            save_select_feat = self.model_parameters["save_select_feat"]
             
         if self.model_format == 'pickle':
             if os.path.isfile(self.model_path):
@@ -545,8 +543,7 @@ class ModelTest(object):
                 raise RuntimeError('b not found.')
 
             # S: shape = (n_voxels, shape_features)
-            if use_feature_selector:
-                print("Load use_feature_selector files...")
+            if save_select_feat:
                 if os.path.isdir(os.path.join(self.model_path, 'S')):
                     S_files = sorted(glob.glob(os.path.join(self.model_path, 'S', '*.mat')))
                 elif os.path.isfile(os.path.join(self.model_path, 'S.mat')):
@@ -554,7 +551,7 @@ class ModelTest(object):
                 else:
                     raise RuntimeError('S not found.')
                 
-            if use_feature_selector:
+            if save_select_feat:
                 model_files = [(w, b, s) for w, b, s in zip(W_files, b_files, S_files)]
             else:
                 model_files = [(w, b) for w, b in zip(W_files, b_files)]
@@ -579,8 +576,8 @@ class ModelTest(object):
                 model = self.model
                 model.W = W
                 model.b = b
-                if use_feature_selector:
-                    S = np.asarray(load_array(model_file[2], key='S'), np.bool) # ここでbooleanにcastしておく
+                if save_select_feat:
+                    S = np.asarray(load_array(model_file[2], key='S'), np.bool) 
                     model.S = S
             else:
                 raise ValueError('Unknown model format: %s' % self.model_format)
