@@ -36,14 +36,17 @@ class BaseLearning(object):
 
     def add_preprocessing(self, func, args=None):
         '''Add preprocessing function'''
-        self._preprocessing.append({'func' : func,
-                                    'args' : args})
-
+        self._preprocessing.append({
+            'func': func,
+            'args': args
+        })
 
     def add_postprocessing(self, func, args=None):
         '''Add postprocessing function'''
-        self._postprocessing.append({'func' : func,
-                                     'args' : args})
+        self._postprocessing.append({
+            'func': func,
+            'args': args
+        })
 
 
 #-----------------------------------------------------------------------
@@ -70,7 +73,6 @@ class Classification(BaseLearning):
         Prediction accuracy
    '''
 
-
     def __init__(self, x_train=None, y_train=None, x_test=None, y_test=None,
                  classifier=None, verbose='off'):
         BaseLearning.__init__(self)
@@ -88,7 +90,6 @@ class Classification(BaseLearning):
         self.prediction = None
         self.prediction_accuracy = None
 
-
     def run(self):
         '''Run classification'''
 
@@ -98,7 +99,7 @@ class Classification(BaseLearning):
             func = p['func']
             args = p['args']
 
-            if args == None:
+            if args is None:
                 self.x_train, self.y_train, self.x_test, self.y_test \
                     = func(self.x_train, self.y_train, self.x_test, self.y_test)
             else:
@@ -109,7 +110,6 @@ class Classification(BaseLearning):
         self.prediction = self.classifier_trained.predict(self.x_test)
 
         self.prediction_accuracy = self.__calc_accuracy(self.prediction, self.y_test)
-
 
     def __calc_accuracy(self, ypred, ytest):
         return float(np.sum(ytest == ypred)) / len(ytest)
@@ -155,7 +155,6 @@ class CrossValidation(BaseLearning):
         # Results
         self.classifier_trained = []
         self.prediction_accuracy = []
-
 
     def run(self):
         '''Run cross-validation
@@ -250,18 +249,16 @@ class ModelTraining(object):
         self.chunk_axis = None         # Axis along which Y is chunked
         self.distcomp = None           # Distributed computation controller
         self.save_format = 'pickle'    # {'pickle', 'bdmodel'}
-        self.save_path = './model.pkl' # Output path
+        self.save_path = './model'     # Output path
         self.verbose = 1               # Verbosity level [0, 1]
 
         # Private members
         self.__chunking = False
+        self.__Y_shape = None
+        self.__pickle_protocol = 4
 
     def run(self):
         '''Run training.'''
-
-        if self.dtype is not None:
-            self.X = self.X.astype(self.dtype)
-            self.Y = self.Y.astype(self.dtype)
 
         # Chunking
         if self.chunk_axis is None:
@@ -344,6 +341,16 @@ class ModelTraining(object):
 
             # Training
             if self.verbose >= 1: print('Training: %s' % training_id_chunk)
+
+            self.__Y_shape = Y.shape[1:]
+
+            if self.save_format == 'pickle' and Y.ndim > 2:
+                Y = Y.reshape(Y.shape[0], -1, order='F')
+
+            if self.dtype is not None:
+                self.X = self.X.astype(self.dtype)
+                Y = Y.astype(self.dtype)
+
             self.model.fit(self.X, Y, **self.model_parameters)
 
             # Save models
@@ -386,8 +393,10 @@ class ModelTraining(object):
                 if not '_status' in info:
                     info.update({'_status': {}})
 
-                info['_status'].update({'computation_id':     self.id,
-                                        'computation_status': 'done'})
+                info['_status'].update({
+                    'computation_id':     self.id,
+                    'computation_status': 'done'
+                })
 
                 with open(info_file, 'w') as f:
                     f.write(yaml.dump(info, default_flow_style=False))
@@ -403,7 +412,11 @@ class ModelTraining(object):
 
             makedir_ifnot(os.path.dirname(save_file))
             with open(save_file, 'wb') as f:
-                pickle.dump(self.model, f, protocol=2)
+                obj = {
+                    'model': self.model,
+                    'y_shape': self.__Y_shape,
+                }
+                pickle.dump(obj, f, protocol=self.__pickle_protocol)
             if self.verbose >= 1: print('Saved %s' % save_file)
         elif self.save_format == 'bdmodel':
             if not self.model.__class__.__name__ == 'FastL2LiR':
@@ -425,16 +438,19 @@ class ModelTraining(object):
         if self.save_format == 'pickle':
             # Save the model instance as pickle.
             if self.__chunking:
-                save_dir = os.path.splitext(self.save_path)[0]
-                output_files.append({'file_path': os.path.join(save_dir, '%08d.pkl' % chunk),
-                                     'src': None,
-                                     'dst': None,
-                                     'sparse': False})
+                output_files.append({
+                    'file_path': os.path.join(self.save_path, '%08d.pkl.gz' % chunk),
+                    'src': None,
+                    'dst': None,
+                    'sparse': False
+                })
             else:
-                output_files.append({'file_path': self.save_path,
-                                     'src': None,
-                                     'dst': None,
-                                     'sparse': False})
+                output_files.append({
+                    'file_path': os.path.join(self.save_path, 'model.pkl.gz'),
+                    'src': None,
+                    'dst': None,
+                    'sparse': False
+                })
         elif self.save_format == 'bdmodel':
             # Save W and b for FastL2LiR model.
             # Otherwise, save everythings.
@@ -482,6 +498,9 @@ class ModelTest(object):
         self.chunk_axis = None
         self.verbose = 1
 
+        # Private members
+        self.__Y_shape = None
+
     def run(self):
         '''Run test.'''
         
@@ -502,7 +521,7 @@ class ModelTest(object):
             if os.path.isfile(self.model_path):
                 model_files = [self.model_path]
             elif os.path.isdir(self.model_path):
-                model_files = sorted(glob.glob(os.path.join(self.model_path, '*.pkl')))
+                model_files = sorted(glob.glob(os.path.join(self.model_path, '*.pkl.gz')))
             else:
                 raise ValueError('Invalid model path: %s' % self.model_path)
         elif self.model_format == 'bdmodel':
@@ -551,7 +570,9 @@ class ModelTest(object):
 
             if self.model_format == 'pickle':
                 with open(model_file, 'rb') as f:
-                    model = pickle.load(f)
+                    model_pickle = pickle.load(f)
+                model = model_pickle['model']
+                self.__Y_shape = model_pickle['y_shape']
             elif self.model_format == 'bdmodel':
                 W = load_array(model_file[0], key='W')
                 b = load_array(model_file[1], key='b')
@@ -565,6 +586,10 @@ class ModelTest(object):
                 raise ValueError('Unknown model format: %s' % self.model_format)
 
             y_pred = model.predict(self.X, **self.model_parameters)
+
+            if self.model_format == 'pickle' and y_pred.shape[1:] != self.__Y_shape:
+                y_pred = y_pred.reshape((y_pred.shape[0], ) + self.__Y_shape, order='F')
+
             y_pred_list.append(y_pred)
 
             print('Elapsed time: %f s' % (time() - start_time))

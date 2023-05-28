@@ -8,7 +8,7 @@ This file is a part of BdPy.
 from __future__ import print_function
 
 
-__all__ = ['Features', 'DecodedFeatures']
+__all__ = ['Features', 'DecodedFeatures', 'save_feature']
 
 
 import os
@@ -42,16 +42,14 @@ class Features(object):
        List of DNN layers
     '''
 
-    def __init__(self, dpath=[], ext='mat', feature_index=None):
+    def __init__(self, dpath=[], ext: str = 'mat', feature_index: str = None):
         if type(dpath) != list:
             dpath = [dpath]
         self.__dpath = dpath
-        self.__feat_index_table = feature_index
 
         self.__feature_file_table = {} # Stimulus feature file tables
         self.__labels = []             # Stimulus labels
         self.__index = []              # Stimulus index (one-based)
-        self.__feature_index = []      # Feature (unit) index
         self.__layers = []             # DNN layers
         self.__collect_feature_files(ext=ext)
 
@@ -59,10 +57,12 @@ class Features(object):
         self.__features = None        # Loaded features
         self.__feature_index = None   # Indexes of loaded features
 
-        if self.__feat_index_table is not None:
-            if not os.path.exists(self.__feat_index_table):
-                raise RuntimeError('%s do not exist' % self.__feat_index_table)
-            self.__feat_index_table = hdf5storage.loadmat(self.__feat_index_table)['index']
+        if feature_index is not None:
+            if not os.path.exists(feature_index):
+                raise RuntimeError('%s do not exist' % feature_index)
+            self.__feat_index_table = hdf5storage.loadmat(feature_index)['index']
+        else:
+            self.__feat_index_table = None
 
         self.__statistics = {}
         for fdir in self.__dpath:
@@ -207,16 +207,6 @@ class Features(object):
             self.__features = self.__features.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
 
         return self.__features
-
-    def save_feature_index(self, fname):
-        '''Save feature indexes in `fname`'''
-        if len(self.__feature_index) == 0:
-            raise RuntimeError('No feature index specified')
-
-        hdf5storage.savemat(fname,
-                            {'index': self.__feature_index},
-                            format='7.3', oned_as='column',
-                            store_python_metadata=True)
 
     def __collect_feature_files(self, ext='mat'):
         dpath_lst = self.__dpath
@@ -488,3 +478,39 @@ class FileDatabase(object):
     def show(self):
         self.__cursor.execute('SELECT * FROM files')
         print(self.__cursor.fetchall())
+
+
+def save_feature(feature: np.ndarray, base_dir: str, layer: str = None, label: str = None, verbose: bool = False):
+    '''
+    Save features.
+
+    Parameters
+    ----------
+    feature: np.ndarray
+    base_dir: str
+    layer: str
+    label: str
+    verbose: bool (default: False)
+
+    Returns
+    -------
+    None
+    '''
+
+    if layer is None or label is None:
+        raise RuntimeError('`layer` and `label` are required.')
+
+    save_dir = os.path.join(base_dir, layer)
+    os.makedirs(save_dir, exist_ok=True)
+
+    save_file = os.path.join(save_dir, label + '.mat')
+    if os.path.exists(save_file):
+        if verbose:
+            print(f'{save_file} already exists. Skipped.')
+        return None
+
+    hdf5storage.savemat(save_file, {'feat': feature})
+    if verbose:
+        print(f'Saved {save_file}.')
+
+    return None

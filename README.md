@@ -12,10 +12,11 @@ Python package for brain decoding analysis
 
 ## Requirements
 
-- Python 3.5, or later
+- Python 3.8 or later
 - numpy
 - scipy
 - scikit-learn
+- pandas
 - h5py
 - hdf5storage
 - pyyaml

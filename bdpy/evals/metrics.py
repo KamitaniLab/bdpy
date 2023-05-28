@@ -73,6 +73,45 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
     return r
 
 
+def pattern_cross_correlation(x, y, mean=None, std=None, remove_nan=True):
+    '''Pattern correlation. 
+     Output: cross correlation of size (n_sample, n_sample).
+     The (i,j) element of r corresponds to the correlation between i-th row of x and j-th row of y.
+    '''
+
+    sample_axis = 0
+
+    orig_shape = x.shape
+    n_sample = orig_shape[sample_axis]
+
+    _x = x.reshape(n_sample, -1)
+    _y = y.reshape(n_sample, -1)
+
+    if mean is not None and std is not None:
+        if mean.shape[sample_axis] == n_sample:
+            # if mean and std are different across samples
+            m = mean.reshape(n_sample, -1)
+            s = std.reshape(n_sample, -1)
+        else:
+            m = mean.reshape(-1)
+            s = std.reshape(-1)
+        
+        _x = (_x - m) / s
+        _y = (_y - m) / s
+
+    if remove_nan:
+        # Remove nan columns based on the decoded features
+        nan_cols = np.isnan(_x).any(axis=0) | np.isnan(_y).any(axis=0)
+        if nan_cols.any():
+            warnings.warn('NaN column removed ({})'.format(np.sum(nan_cols)))
+        _x = _x[:, ~nan_cols]
+        _y = _y[:, ~nan_cols]
+
+    r = np.corrcoef( _x, _y)[:n_sample, n_sample:]
+
+    return r
+
+
 def pairwise_identification(pred, true, metric='correlation', remove_nan=True, remove_nan_dist=True, single_trial=False, pred_labels=None, true_labels=None):
     '''Pair-wise identification.'''
 
