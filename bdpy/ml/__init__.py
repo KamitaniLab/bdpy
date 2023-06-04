@@ -11,3 +11,4 @@ from .crossvalidation import cvindex_groupwise
 from .ensemble import *
 from .regress import *
 from .searchlight import *
+from .model import EnsembleClassifier
