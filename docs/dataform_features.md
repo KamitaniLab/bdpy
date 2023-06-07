@@ -28,8 +28,8 @@ decfeat = decoded_features.get(layer='conv1', subject='sub-01', roi='VC', fold='
 
 feat_labels = features.labels
 
-decfeat_labels = decoded_features.labels           # All available labels
-decfeat_labels = decoded_features.selected_labels  # Labels assigned to decoded features previously obtained by `get` method
+decfeat_labels = decoded_features.labels          # All available labels
+decfeat_labels = decoded_features.selected_label  # Labels assigned to decoded features previously obtained by `get` method
 ```
 
 ## Feature statistics
