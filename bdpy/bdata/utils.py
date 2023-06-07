@@ -175,7 +175,7 @@ def resolve_vmap(bdata_list):
                 # If the present vmap is different from new_vmap, update it.
                 ds._BData__vmap[vmap_key] = new_vmap # BDataクラスにvmapのsetterがあると良い
         
-        return bdata_list   
+    return bdata_list   
 
 
 def concat_dataset(data_list, successive=[]):
