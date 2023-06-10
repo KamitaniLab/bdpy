@@ -10,7 +10,7 @@ from __future__ import print_function
 
 __all__ = ['Features', 'DecodedFeatures', 'save_feature']
 
-from typing import Optional, Union, List, Dict
+from typing import Any, Optional, Union, List, Dict
 
 import os
 import glob
@@ -147,7 +147,7 @@ class Features(object):
         if k in self.__statistics:
             s = self.__statistics[k]
         else:
-            f = self.get(layer)  # TODO: here, layer could be None. It will raise RuntimeError.
+            f = self.get(layer)  # NOTE: here, layer could be None. It will raise RuntimeError.
 
             if statistic == 'mean':
                 s = np.mean(f, axis=0)[np.newaxis, :]
@@ -226,7 +226,7 @@ class Features(object):
             label_dir.update({label: dpath for label in labels_in_dir})
             self.__labels += labels_in_dir
 
-        # TODO: type incompatibility here. Is it OK to cast to list?
+        # NOTE: type incompatibility here. Is it OK to cast to list?
         self.__index = np.arange(len(self.__labels)) + 1
 
         # List-up feature files
@@ -273,7 +273,9 @@ class DecodedFeatures(object):
        Path to the decoded feature directory
     '''
 
-    def __init__(self, path=None, keys=None, file_ext='mat', file_key='feat', squeeze=False):
+    def __init__(
+            self, path: Optional[str] = None, keys=None, file_ext: str = 'mat',
+            file_key: str = 'feat', squeeze: bool = False):
 
         self.__path = path          # Path to decoded feature directory
         self.__keys = keys          # Keys
@@ -286,6 +288,8 @@ class DecodedFeatures(object):
         else:
             self.__db = self.__init_db(self.__keys)
 
+        # NOTE: os.path.join(None, ...) will raise TypeError
+        # perhaps, self.__path should be initialized as '' instead of None?
         stat_file = os.path.join(self.__path, 'statistics.pkl')
 
         if os.path.exists(stat_file):
@@ -440,7 +444,7 @@ class FileDatabase(object):
     def __init__(self, keys):
         self.__keys = keys
 
-        self.__res = None
+        self.__res: Optional[List[Any]] = None
 
         self.__con = sqlite3.connect(':memory:')
         self.__cursor = self.__con.cursor()
@@ -478,6 +482,8 @@ class FileDatabase(object):
     def get_selected_values(self, key):
         if not key in self.__keys:
             return None
+        # NOTE: self.__res could be None
+        # This design forces users to call get_file() before get_selected_values()
         return [a[self.__keys.index(key)] for a in self.__res]
 
     def show(self):
@@ -485,7 +491,7 @@ class FileDatabase(object):
         print(self.__cursor.fetchall())
 
 
-def save_feature(feature: np.ndarray, base_dir: str, layer: str = None, label: str = None, verbose: bool = False):
+def save_feature(feature: np.ndarray, base_dir: str, layer: str, label: str, verbose: bool = False):
     '''
     Save features.
 
@@ -501,9 +507,6 @@ def save_feature(feature: np.ndarray, base_dir: str, layer: str = None, label: s
     -------
     None
     '''
-
-    if layer is None or label is None:
-        raise RuntimeError('`layer` and `label` are required.')
 
     save_dir = os.path.join(base_dir, layer)
     os.makedirs(save_dir, exist_ok=True)
