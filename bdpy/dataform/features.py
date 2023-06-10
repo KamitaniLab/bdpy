@@ -10,6 +10,7 @@ from __future__ import print_function
 
 __all__ = ['Features', 'DecodedFeatures', 'save_feature']
 
+from typing import Optional, Union, List
 
 import os
 import glob
@@ -88,7 +89,7 @@ class Features(object):
     def feature_index(self):
         return self.__feature_index
 
-    def get(self, layer=None, label=None):
+    def get(self, layer: str, label: Union[str, List[str], None] = None):
         '''Return features in `layer`.
 
         Parameters
@@ -103,9 +104,6 @@ class Features(object):
         numpy.ndarray, shape=(n_samples, shape_layers)
             DNN features
         '''
-
-        if layer is None:
-            raise ValueError('`layer` is required.')
 
         if label is None:
             return self.get_features(layer)
