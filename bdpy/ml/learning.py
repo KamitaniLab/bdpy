@@ -2,6 +2,7 @@
 
 
 from abc import ABCMeta, abstractmethod
+from typing import cast, Any, Protocol, Optional, Dict
 
 import os
 import warnings
@@ -18,6 +19,14 @@ import numpy as np
 from bdpy.dataform import save_array, load_array
 from bdpy.distcomp import DistComp
 from bdpy.util import makedir_ifnot
+
+
+class SupportsFit(Protocol):
+    def fit(self, X: np.ndarray, y: np.ndarray, **kwargs): ...
+
+
+class SupportsPredict(Protocol):
+    def predict(self, X: np.ndarray, **kwargs) -> np.ndarray: ...
 
 
 #-----------------------------------------------------------------------
@@ -200,15 +209,12 @@ class CrossValidation(BaseLearning):
 class ModelTraining(object):
     '''Model training with chunking and distributed computation class.
 
-    Parameters
+    Attributes
     ----------
     model
        Prediction model instance
     X, Y : array_like
        Input and target data
-
-    Attributes
-    ----------
     id : str
         Training ID
     model_parameters : dict
@@ -230,27 +236,41 @@ class ModelTraining(object):
         Verbosity level.
     '''
 
-    def __init__(self, model, X, Y):
+    def __init__(
+            self, model: SupportsFit, X: np.ndarray, Y: np.ndarray,
+            X_normalize: Optional[np.ndarray] = None,
+            Y_normalize: Optional[np.ndarray] = None,
+            X_sort: Optional[np.ndarray] = None,
+            Y_sort: Optional[np.ndarray] = None,
+            id_: Optional[str] = None,
+            model_parameters: Dict[str, Any] = {},
+            dtype: Optional[Any] = None,  # needs np.typing to annotate (numpy > 1.20)
+            chunk_axis: Optional[int] = None,
+            save_format: str = 'pickle',
+            save_path: str = './model',
+            distcomp: Optional[DistComp] = None,
+            verbose: int = 1
+        ):
         # Required properties
         self.model = model    # Model instance
         self.X = X            # Input, shape = (n_samples, n_features)
         self.Y = Y            # Target variables, shape = (n_samples, n_variables)
 
         # X and Y preprocessing parameters
-        self.X_normalize = None
-        self.Y_normalize = None
-        self.X_sort = None
-        self.Y_sort = None
+        self.X_normalize = X_normalize
+        self.Y_normalize = Y_normalize
+        self.X_sort = X_sort
+        self.Y_sort = Y_sort
 
         # Optional properties
-        self.id = str(uuid.uuid4())
-        self.model_parameters = {}     # Parameters passed to model.fit()
-        self.dtype = None              # Data type
-        self.chunk_axis = None         # Axis along which Y is chunked
-        self.distcomp = None           # Distributed computation controller
-        self.save_format = 'pickle'    # {'pickle', 'bdmodel'}
-        self.save_path = './model'     # Output path
-        self.verbose = 1               # Verbosity level [0, 1]
+        self.id = id_ if id_ else str(uuid.uuid4())
+        self.model_parameters = model_parameters  # Parameters passed to model.fit()
+        self.dtype = dtype              # Data type
+        self.chunk_axis = chunk_axis         # Axis along which Y is chunked
+        self.distcomp = distcomp           # Distributed computation controller
+        self.save_format = save_format    # {'pickle', 'bdmodel'}
+        self.save_path = save_path     # Output path
+        self.verbose = verbose               # Verbosity level [0, 1]
 
         # Private members
         self.__chunking = False
@@ -269,6 +289,7 @@ class ModelTraining(object):
             self.__chunking = True
 
         if self.__chunking:
+            assert self.chunk_axis is not None
             chunk_index = range(self.Y.shape[self.chunk_axis])
         else:
             chunk_index = [None]
@@ -319,6 +340,7 @@ class ModelTraining(object):
                 continue
 
             if self.__chunking:
+                assert i_chunk is not None
                 Y = np.take(self.Y, [i_chunk], axis=self.chunk_axis)
             else:
                 Y = self.Y
@@ -369,7 +391,8 @@ class ModelTraining(object):
                 print('')
                 print('Average computation time/chunk: %f s' % etime_ave)
                 print('Estimated remaining time:       %f s' % est_time_left)
-                print('Estimated computation end time: %s' % datetime.fromtimestamp(est_time_end).strftime('%Y-%m-%d %H:%M:%S'))
+                print('Estimated computation end time: %s' % datetime.fromtimestamp(
+                    cast(float, est_time_end)).strftime('%Y-%m-%d %H:%M:%S'))
                 print('')
 
         # Check outputs and add information
@@ -380,7 +403,7 @@ class ModelTraining(object):
                 if os.path.exists(info_file):
                     while True:
                         with open(info_file, 'r') as f:
-                            info = yaml.load(f)
+                            info = yaml.load(f)  # NOTE: this will raise an error, yaml.load() takes two arguments
                         if info is None:
                             print('Failed to load info from %s. Retrying ...' % info_file)
                             sleep(1)
@@ -424,6 +447,7 @@ class ModelTraining(object):
 
             for s in output_files:
                 makedir_ifnot(os.path.dirname(s['file_path']))
+                assert self.dtype is not None
                 save_array(s['file_path'], getattr(self.model, s['src']), key=s['dst'], dtype=self.dtype, sparse=s['sparse'])
                 if self.verbose >= 1: print('Saved %s' % s['file_path'])
         else:
@@ -482,17 +506,25 @@ class ModelTraining(object):
 class ModelTest(object):
     '''Model test (prediction) class.'''
 
-    def __init__(self, model, X):
+    def __init__(
+            self, model: SupportsPredict, X: np.ndarray,
+            id_: Optional[str] = None, model_format: str = 'pickle',
+            model_path: Optional[str] = None,
+            model_parameters: Dict[str, Any] = {},
+            dtype: Optional[Any] = None,  # needs np.typing to annotate (numpy > 1.20)
+            chunk_axis: Optional[int] = None,
+            verbose: int = 1
+        ):
         self.model = model
         self.X = X
 
-        self.id = str(uuid.uuid4())
-        self.model_format = 'pickle'
-        self.model_path = None
-        self.model_parameters = {}     # Parameters passed to model.predict()
-        self.dtype = None
-        self.chunk_axis = None
-        self.verbose = 1
+        self.id = id_ if id_ else str(uuid.uuid4())
+        self.model_format = model_format
+        self.model_path = model_path
+        self.model_parameters = model_parameters # Parameters passed to model.predict()
+        self.dtype = dtype
+        self.chunk_axis = chunk_axis
+        self.verbose = verbose
 
         # Private members
         self.__Y_shape = None
@@ -546,6 +578,7 @@ class ModelTest(object):
             start_time = time()
 
             if self.model_format == 'pickle':
+                assert isinstance(model_file, str)
                 with open(model_file, 'rb') as f:
                     model_pickle = pickle.load(f)
                 model = model_pickle['model']
