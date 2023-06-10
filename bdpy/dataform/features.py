@@ -60,11 +60,13 @@ class Features(object):
         self.__c_feature_name: Optional[str] = None  # Loaded layer
         self.__features: Optional[np.ndarray] = None  # Loaded features
         self.__feature_index = None   # Indexes of loaded features
+        # NOTE: type of self.__feature_index is ambiguous
 
         if feature_index is not None:
             if not os.path.exists(feature_index):
                 raise RuntimeError('%s do not exist' % feature_index)
             self.__feat_index_table = hdf5storage.loadmat(feature_index)['index']
+            # NOTE: type of self.__feature_index_table is ambiguous
         else:
             self.__feat_index_table = None
 
@@ -139,6 +141,7 @@ class Features(object):
         return features
 
     def statistic(self, statistic: str = 'mean', layer: Optional[str] = None):
+        # NOTE: return type is ambiguous. currently, it is inferred as Unkown | Any
 
         if statistic == 'std':
             statistic = 'std, ddof=1'
@@ -243,14 +246,14 @@ class Features(object):
 
         return None
 
-    def __get_layers(self, dpath):
+    def __get_layers(self, dpath: str):
         layers = sorted([d for d in os.listdir(dpath) if os.path.isdir(os.path.join(dpath, d))])
         if self.__layers and (layers != self.__layers):
             raise RuntimeError('Invalid layers in %s' % dpath)
         return layers
 
-    def __get_labels(self, dpath, layers, ext='mat'):
-        labels = []
+    def __get_labels(self, dpath: str, layers: List[str], ext: str = 'mat'):
+        labels: List[str] = []
         for lay in layers:
             lay_dir = os.path.join(dpath, lay)
             lay_dir = lay_dir.replace('[', '[[]') # Use glob.escape for Python 3.4 or later
@@ -274,7 +277,7 @@ class DecodedFeatures(object):
     '''
 
     def __init__(
-            self, path: Optional[str] = None, keys=None, file_ext: str = 'mat',
+            self, path: str, keys: Optional[List[str]] = None, file_ext: str = 'mat',
             file_key: str = 'feat', squeeze: bool = False):
 
         self.__path = path          # Path to decoded feature directory
@@ -283,13 +286,8 @@ class DecodedFeatures(object):
         self.__file_key = file_key  # Decoded feature data key (FIXME)
         self.__squeeze = squeeze    # Whether squeeze the output array or not
 
-        if self.__path is not None:
-            self.__db = self.__parse_dir(self.__path, self.__keys)
-        else:
-            self.__db = self.__init_db(self.__keys)
+        self.__db = self.__parse_dir(self.__path, self.__keys)
 
-        # NOTE: os.path.join(None, ...) will raise TypeError
-        # perhaps, self.__path should be initialized as '' instead of None?
         stat_file = os.path.join(self.__path, 'statistics.pkl')
 
         if os.path.exists(stat_file):
@@ -392,7 +390,7 @@ class DecodedFeatures(object):
 
         return s
 
-    def __parse_dir(self, path, keys):
+    def __parse_dir(self, path: str, keys: Optional[List[str]] = None) -> 'FileDatabase':
         # TODO: refactoring
         if keys is None:
             files = glob.glob(os.path.join(path, '*', '*', '*', '*', 'decoded_features', '*.' + self.__file_ext))
@@ -441,7 +439,7 @@ class DecodedFeatures(object):
 
 
 class FileDatabase(object):
-    def __init__(self, keys):
+    def __init__(self, keys: List[str]):
         self.__keys = keys
 
         self.__res: Optional[List[Any]] = None
@@ -462,7 +460,7 @@ class FileDatabase(object):
             )
         )
 
-    def add_file(self, path, **kargs):
+    def add_file(self, path: str, **kargs):
         key_list = ', '.join(kargs) + ', path'
         val_list = ', '.join(['"{}"'.format(s) for s in kargs.values()]) + ', "{}"'.format(path)
         self.__cursor.execute('INSERT INTO files({}) VALUES ({})'.format(key_list, val_list))
@@ -473,7 +471,7 @@ class FileDatabase(object):
         self.__res = self.__cursor.fetchall()
         return [a[-1] for a in self.__res]
 
-    def get_available_values(self, key):
+    def get_available_values(self, key: str):
         if not key in self.__keys:
             return None
         self.__cursor.execute('SELECT DISTINCT {} FROM files'.format(key))
