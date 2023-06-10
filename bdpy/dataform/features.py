@@ -10,7 +10,7 @@ from __future__ import print_function
 
 __all__ = ['Features', 'DecodedFeatures', 'save_feature']
 
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Dict
 
 import os
 import glob
@@ -43,19 +43,22 @@ class Features(object):
        List of DNN layers
     '''
 
-    def __init__(self, dpath=[], ext: str = 'mat', feature_index: str = None):
-        if type(dpath) != list:
+    def __init__(
+            self, dpath: Union[str, List[str]] = [],
+            ext: str = 'mat', feature_index: Optional[str] = None
+        ):
+        if not isinstance(dpath, list):
             dpath = [dpath]
         self.__dpath = dpath
 
-        self.__feature_file_table = {} # Stimulus feature file tables
-        self.__labels = []             # Stimulus labels
-        self.__index = []              # Stimulus index (one-based)
-        self.__layers = []             # DNN layers
+        self.__feature_file_table: Dict[str, Dict[str, str]] = {}  # Stimulus feature file tables
+        self.__labels: List[str] = []  # Stimulus labels
+        self.__index: List[int] = []  # Stimulus index (one-based)
+        self.__layers: List[str] = []  # DNN layers
         self.__collect_feature_files(ext=ext)
 
-        self.__c_feature_name = None  # Loaded layer
-        self.__features = None        # Loaded features
+        self.__c_feature_name: Optional[str] = None  # Loaded layer
+        self.__features: Optional[np.ndarray] = None  # Loaded features
         self.__feature_index = None   # Indexes of loaded features
 
         if feature_index is not None:
@@ -89,7 +92,7 @@ class Features(object):
     def feature_index(self):
         return self.__feature_index
 
-    def get(self, layer: str, label: Union[str, List[str], None] = None):
+    def get(self, layer: str, label: Union[str, List[str], None] = None) -> np.ndarray:
         '''Return features in `layer`.
 
         Parameters
@@ -113,6 +116,7 @@ class Features(object):
         else:
             labels = label
 
+        features: np.ndarray
         try:
             features = np.vstack(
                 [sio.loadmat(self.__feature_file_table[layer][label])['feat']
@@ -134,7 +138,7 @@ class Features(object):
 
         return features
 
-    def statistic(self, statistic='mean', layer=None):
+    def statistic(self, statistic: str = 'mean', layer: Optional[str] = None):
 
         if statistic == 'std':
             statistic = 'std, ddof=1'
@@ -143,7 +147,7 @@ class Features(object):
         if k in self.__statistics:
             s = self.__statistics[k]
         else:
-            f = self.get(layer)
+            f = self.get(layer)  # TODO: here, layer could be None. It will raise RuntimeError.
 
             if statistic == 'mean':
                 s = np.mean(f, axis=0)[np.newaxis, :]
@@ -159,14 +163,15 @@ class Features(object):
         if self.__feat_index_table is not None:
             # Select features by index
             self.__feature_index = self.__feat_index_table[layer]
-            n_sample = self.__features.shape[0]
+            assert isinstance(self.__features, np.ndarray)
+            n_sample = self.__features.shape[0]  # self.__features could be None
             n_feat = np.array(self.__features.shape[1:]).prod()
 
             s = s.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
 
         return s
 
-    def get_features(self, layer):
+    def get_features(self, layer: str) -> np.ndarray:
         '''Return features in `layer`.
 
         Parameters
@@ -181,7 +186,8 @@ class Features(object):
         '''
 
         if layer == self.__c_feature_name:
-            return self.__features
+            assert isinstance(self.__features, np.ndarray)
+            return self.__features  # self.__features could be None
 
         try:
             self.__features = np.vstack(
@@ -220,6 +226,7 @@ class Features(object):
             label_dir.update({label: dpath for label in labels_in_dir})
             self.__labels += labels_in_dir
 
+        # TODO: type incompatibility here. Is it OK to cast to list?
         self.__index = np.arange(len(self.__labels)) + 1
 
         # List-up feature files
