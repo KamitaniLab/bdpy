@@ -2,7 +2,7 @@
 
 
 from abc import ABCMeta, abstractmethod
-from typing import cast, Any, Protocol, Optional, Dict
+from typing import cast, Any, Protocol, Optional, Dict, TypedDict
 
 import os
 import warnings
@@ -27,6 +27,10 @@ class SupportsFit(Protocol):
 
 class SupportsPredict(Protocol):
     def predict(self, X: np.ndarray, **kwargs) -> np.ndarray: ...
+
+
+class SortIndex(TypedDict):
+    index: np.ndarray
 
 
 #-----------------------------------------------------------------------
@@ -240,8 +244,8 @@ class ModelTraining(object):
             self, model: SupportsFit, X: np.ndarray, Y: np.ndarray,
             X_normalize: Optional[np.ndarray] = None,
             Y_normalize: Optional[np.ndarray] = None,
-            X_sort: Optional[np.ndarray] = None,
-            Y_sort: Optional[np.ndarray] = None,
+            X_sort: Optional[SortIndex] = None,
+            Y_sort: Optional[SortIndex] = None,
             id_: Optional[str] = None,
             model_parameters: Dict[str, Any] = {},
             dtype: Optional[Any] = None,  # needs np.typing to annotate (numpy > 1.20)
