@@ -1,6 +1,7 @@
 from typing import Dict, Union, Optional, Sequence
 
 import re
+from functools import reduce
 
 import torch
 import torch.nn as nn
@@ -107,6 +108,9 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
     Conv2d(3, 3, kernel_size=(3, 3), stride=(1, 1))
     '''
 
+    def _get_value_by_indices(array, indices):
+        return reduce(lambda arr, index: arr[index], indices, array)
+
     if hasattr(model, layer_name):
         return getattr(model, layer_name)
 
@@ -116,14 +120,18 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
         model = _parse_layer_name(model, top_most_layer_name)
         return _parse_layer_name(model, child_layer_name)
 
-    # parse layer name having index (e.g., 'features[0]')
-    pattern = re.compile(r'^(?P<layer_name>\w+)\[(?P<index>\d+)\]$')
+    # parse layer name having index (e.g., 'features[0]', 'backbone[0][1]')
+    pattern = re.compile(r'^(?P<layer_name>\w+)(?P<index>(\[(\d+)\])+)$')
     m = pattern.match(layer_name)
     if m is not None:
         layer_name = m.group('layer_name')
-        index = int(m.group('index'))
+        index_str = m.group('index')
+
+        indeces = re.findall(r'\[(\d+)\]', index_str)
+        indeces = [int(i) for i in indeces]
+
         if hasattr(model, layer_name):
-            return getattr(model, layer_name)[index]
+            return _get_value_by_indices(getattr(model, layer_name), indeces)
 
     raise ValueError(
         f"Invalid layer name: '{layer_name}'. Either the syntax of '{layer_name}' is not supported, "
