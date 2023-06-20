@@ -11,6 +11,9 @@ from abc import ABCMeta, abstractmethod
 
 import numpy as np
 from numpy.matlib import repmat
+# NOTE: PendingDeprecationWarning: Importing from numpy.matlib is deprecated since 1.19.0.
+# repmat(a, m, n) is equivalent to tile(a, (m, n)). Use tile instead.
+# c.f. https://numpy.org/doc/stable/user/numpy-for-matlab-users.html
 
 
 ## Abstract preprocessor #######################################################
