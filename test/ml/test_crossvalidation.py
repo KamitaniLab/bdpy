@@ -98,30 +98,26 @@ class TestCVIndexGroupwise(unittest.TestCase):
 
 class TestMakeCVIndex(unittest.TestCase):
     def test_make_cvindex(self):
-        # Test data
-        x = np.array([1, 1, 2, 2, 3, 3])
+        '''Test for make_cvindex'''
+        test_input = np.array([1, 1, 2, 2, 3, 3])
 
-        # Expected output
-        train_index = np.array([
-            [False,  True,  True],
-            [False,  True,  True],
-            [ True, False,  True],
-            [ True, False,  True],
-            [ True,  True, False],
-            [ True,  True, False]])
+        exp_output_a = np.array([[False, True,  True],
+                                 [False, True,  True],
+                                 [True,  False, True],
+                                 [True,  False, True],
+                                 [True,  True,  False],
+                                 [True,  True,  False]])
+        exp_output_b = np.array([[True,  False, False],
+                                 [True,  False, False],
+                                 [False, True,  False],
+                                 [False, True,  False],
+                                 [False, False, True],
+                                 [False, False, True]])
 
-        test_index = np.array([
-            [ True, False, False],
-            [ True, False, False],
-            [False,  True, False],
-            [False,  True, False],
-            [False, False,  True],
-            [False, False,  True]])
+        test_output_a, test_output_b = make_cvindex(test_input)
 
-        result = make_cvindex(x)
-
-        self.assertTrue(np.array_equal(train_index, result[0]))
-        self.assertTrue(np.array_equal(test_index, result[1]))
+        self.assertTrue((test_output_a == exp_output_a).all())
+        self.assertTrue((test_output_b == exp_output_b).all())
 
 
 class TestMakeCVIndexGenerator(unittest.TestCase):
