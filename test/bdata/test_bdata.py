@@ -1,17 +1,15 @@
-'''Tests for bdpy.bdata'''
+'''Tests for BData'''
 
 
-from unittest import TestCase, TestLoader, TextTestRunner
-
-import copy
+import unittest
 
 import numpy as np
 from numpy.testing import assert_array_equal
 
-import bdpy
+from bdpy.bdata.bdata import BData
 
 
-class TestBdata(TestCase):
+class TestBdata(unittest.TestCase):
     '''Tests of 'bdata' module'''
 
     def __init__(self, *args, **kwargs):
@@ -23,7 +21,7 @@ class TestBdata(TestCase):
         data_y = np.random.rand(5, 8)
         data_z = np.random.rand(5, 20)
 
-        b = bdpy.BData()
+        b = BData()
 
         b.add(data_x, 'Data_X')
         b.add(data_y, 'Data_Y')
@@ -55,7 +53,7 @@ class TestBdata(TestCase):
         metadata_a = np.random.rand(n_col)
         metadata_b = np.random.rand(n_col)
 
-        b = bdpy.BData()
+        b = BData()
 
         b.add(data_x, 'Data_X')
         b.add(data_y, 'Data_Y')
@@ -77,7 +75,7 @@ class TestBdata(TestCase):
         metadata_a = np.random.rand(10)
         metadata_b = np.random.rand(8)
 
-        b = bdpy.BData()
+        b = BData()
 
         b.add(data_x, 'Data_X')
         b.add(data_y, 'Data_Y')
@@ -99,7 +97,7 @@ class TestBdata(TestCase):
         metadata_a = np.random.rand(10)
         metadata_b = np.random.rand(8)
 
-        b = bdpy.BData()
+        b = BData()
         b.add(data_x, 'Data_X')
         b.add(data_y, 'Data_Y')
         b.add_metadata('Metadata_A', metadata_a, where='Data_X')
@@ -117,7 +115,7 @@ class TestBdata(TestCase):
         data_x = np.random.rand(5, 10)
         data_y = np.random.rand(5, 5)
 
-        b = bdpy.BData()
+        b = BData()
         b.add(data_x, 'Data_X')
         b.add(data_y, 'Data_Y')
 
@@ -142,7 +140,7 @@ class TestBdata(TestCase):
 
     # Tests for vmap
     def test_vmap_add_get(self):
-        bdata = bdpy.BData()
+        bdata = BData()
         bdata.add(np.random.rand(4, 3), 'MainData')
         bdata.add(np.arange(4) + 1, 'Label')
 
@@ -159,7 +157,7 @@ class TestBdata(TestCase):
         np.testing.assert_array_equal(bdata.get_label('Label'), label)
 
     def test_vmap_add_same_map(self):
-        bdata = bdpy.BData()
+        bdata = BData()
         bdata.add(np.random.rand(4, 3), 'MainData')
         bdata.add(np.arange(4) + 1, 'Label')
 
@@ -179,7 +177,7 @@ class TestBdata(TestCase):
     def test_vmap_errorcases(self):
         n_sample = 4
 
-        bdata = bdpy.BData()
+        bdata = BData()
         bdata.add(np.random.rand(n_sample, 3), 'MainData')
         bdata.add(np.arange(n_sample) + 1, 'Label')
 
@@ -208,7 +206,7 @@ class TestBdata(TestCase):
             bdata.add_vmap('Label', label_map_inconsist)
 
     def test_vmap_add_unnecessary_vmap(self):
-        bdata = bdpy.BData()
+        bdata = BData()
         bdata.add(np.random.rand(4, 3), 'MainData')
         bdata.add(np.arange(4) + 1, 'Label')
 
@@ -226,7 +224,7 @@ class TestBdata(TestCase):
         assert bdata.get_vmap('Label') == label_map_ture
 
     def test_vmap_add_insufficient_vmap(self):
-        bdata = bdpy.BData()
+        bdata = BData()
         bdata.add(np.random.rand(4, 3), 'MainData')
         bdata.add(np.arange(4) + 1, 'Label')
 
@@ -238,7 +236,7 @@ class TestBdata(TestCase):
             bdata.add_vmap('Label', label_map)
 
     def test_vmap_add_invalid_name_vmap(self):
-        bdata = bdpy.BData()
+        bdata = BData()
         bdata.add(np.random.rand(4, 3), 'MainData')
         bdata.add(np.arange(4) + 1, 'Label')
 
@@ -252,5 +250,4 @@ class TestBdata(TestCase):
 
 
 if __name__ == "__main__":
-    test_suite = TestLoader().loadTestsFromTestCase(TestBdata)
-    TextTestRunner(verbosity=2).run(test_suite)
+    unittest.main()
