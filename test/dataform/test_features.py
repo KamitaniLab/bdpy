@@ -1,4 +1,4 @@
-from unittest import TestCase, TestLoader, TextTestRunner
+import unittest
 
 import os
 from glob import glob
@@ -7,16 +7,13 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import scipy.io as sio
 
-from bdpy.dataform import Features
+from bdpy.dataform.features import Features
 
 
-class TestDataformFeatures(TestCase):
-
-    def __init__(self, *args, **kwargs):
-        super(TestDataformFeatures, self).__init__(*args, **kwargs)
-
+class TestDataformFeatures(unittest.TestCase):
+    def setUp(self):
         # Loading test data
-
+        # TODO: Introduce mock dataset for testing
         self.feature_dir = '/home/nu/data/contents_shared/ImageNetTest/derivatives/features/caffe/bvlc_alexnet'
 
         # AlexNet, fc8, all samples
@@ -85,5 +82,4 @@ class TestDataformFeatures(TestCase):
         )
 
 if __name__ == "__main__":
-    test_suite = TestLoader().loadTestsFromTestCase(TestDataformFeatures)
-    TextTestRunner(verbosity=2).run(test_suite)
+    unittest.main()
