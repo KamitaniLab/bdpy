@@ -2,20 +2,14 @@
 '''Tests for ml'''
 
 
-import os
 import unittest
-import shutil
-import pickle
 
 import numpy as np
 
-from bdpy.ml.crossvalidation import cvindex_groupwise, make_cvindex
-
-from sklearn.linear_model import LinearRegression
-from fastl2lir import FastL2LiR
+from bdpy.ml.crossvalidation import cvindex_groupwise, make_cvindex, make_cvindex_generator
 
 
-class TestCv(unittest.TestCase):
+class TestCVIndexGroupwise(unittest.TestCase):
 
     def test_cvindex_groupwise(self):
 
@@ -102,6 +96,37 @@ class TestCv(unittest.TestCase):
             self.assertTrue(np.array_equal(test_index[i], te))
 
 
+class TestMakeCVIndex(unittest.TestCase):
+    def test_make_cvindex(self):
+        # Test data
+        x = np.array([1, 1, 2, 2, 3, 3])
+
+        # Expected output
+        train_index = np.array([
+            [False,  True,  True],
+            [False,  True,  True],
+            [ True, False,  True],
+            [ True, False,  True],
+            [ True,  True, False],
+            [ True,  True, False]])
+
+        test_index = np.array([
+            [ True, False, False],
+            [ True, False, False],
+            [False,  True, False],
+            [False,  True, False],
+            [False, False,  True],
+            [False, False,  True]])
+
+        result = make_cvindex(x)
+
+        self.assertTrue(np.array_equal(train_index, result[0]))
+        self.assertTrue(np.array_equal(test_index, result[1]))
+
+
+class TestMakeCVIndexGenerator(unittest.TestCase):
+    pass  # TODO: implement
+
+
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestCv)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
