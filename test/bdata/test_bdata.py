@@ -1,4 +1,4 @@
-'''Tests for BData'''
+'''Tests for bdpy.bdata.bdata.'''
 
 
 import unittest
