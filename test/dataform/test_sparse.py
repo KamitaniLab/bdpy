@@ -10,7 +10,7 @@ import numpy as np
 from bdpy.dataform.sparse import load_array, save_array
 
 
-class TestUtil(unittest.TestCase):
+class TestSparse(unittest.TestCase):
 
     def test_load_save_dense_array(self):
         payloads = [

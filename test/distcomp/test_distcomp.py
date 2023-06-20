@@ -8,7 +8,7 @@ import tempfile
 from bdpy.distcomp import DistComp
 
 
-class TestUtil(unittest.TestCase):
+class TestDistComp(unittest.TestCase):
     def test_distcomp_file(self):
         with tempfile.TemporaryDirectory() as lockdir:
             comp_id = 'test-distcomp-fs'

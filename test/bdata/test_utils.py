@@ -183,6 +183,8 @@ class TestVstack(unittest.TestCase):
         with self.assertRaises(ValueError):
             vstack([bdata0, bdata1], successive=['Label'])
 
+
+class TestMetadataEqual(unittest.TestCase):
     def test_metadata_equal(self):
         bdata0 = BData()
         bdata1 = BData()
