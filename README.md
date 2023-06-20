@@ -30,6 +30,8 @@ Python package for brain decoding analysis
 - `fig` module
     - matplotlib
     - Pillow
+- `bdpy.ml` module
+    - tqdm
 - `mri` module
     - nipy
     - nibabel
@@ -37,6 +39,9 @@ Python package for brain decoding analysis
 - `recon.torch` module
     - PyTorch
     - Pillow
+
+### Optional requirements for testing
+- fastl2lir
 
 ## Installation
 
