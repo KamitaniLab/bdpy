@@ -1,11 +1,11 @@
-from unittest import TestCase, TestLoader, TextTestRunner
+import unittest
 
 import numpy as np
 
 from bdpy.feature import normalize_feature
 
 
-class TestUtilFeature(TestCase):
+class TestUtilFeature(unittest.TestCase):
 
     def test_normalize_feature_1d(self):
         feat = np.random.rand(4096)
@@ -150,5 +150,4 @@ class TestUtilFeature(TestCase):
 
 
 if __name__ == '__main__':
-    suite = TestLoader().loadTestsFromTestCase(TestUtilFeature)
-    TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
