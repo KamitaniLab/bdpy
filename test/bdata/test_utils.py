@@ -1,15 +1,15 @@
 '''Test for bdpy.vstack'''
 
 
-from unittest import TestCase, TestLoader, TextTestRunner
+import unittest
 
 import numpy as np
 
-import bdpy
-from bdpy import vstack, metadata_equal
+from bdpy import BData
+from bdpy.bdata.utils import vstack, metadata_equal
 
 
-class TestVstack(TestCase):
+class TestVstack(unittest.TestCase):
 
     def test_vstack(self):
         x0_data = np.random.rand(10, 20)
@@ -18,11 +18,11 @@ class TestVstack(TestCase):
         x1_data = np.random.rand(10, 20)
         x1_label = np.random.rand(10, 1)
 
-        bdata0 = bdpy.BData()
+        bdata0 = BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
 
-        bdata1 = bdpy.BData()
+        bdata1 = BData()
         bdata1.add(x1_data, 'Data')
         bdata1.add(x1_label, 'Label')
 
@@ -42,12 +42,12 @@ class TestVstack(TestCase):
         x1_label = np.random.rand(10, 1)
         x1_run = np.arange(10).reshape(10, 1) + 1
 
-        bdata0 = bdpy.BData()
+        bdata0 = BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
         bdata0.add(x0_run, 'Run')
 
-        bdata1 = bdpy.BData()
+        bdata1 = BData()
         bdata1.add(x1_data, 'Data')
         bdata1.add(x1_label, 'Label')
         bdata1.add(x0_run, 'Run')
@@ -69,14 +69,14 @@ class TestVstack(TestCase):
         x1_data = np.random.rand(5, 10)
         x1_label = np.random.rand(5, 1)
 
-        bdata0 = bdpy.BData()
+        bdata0 = BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
         bdata0.add_metadata('key shared', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, np.nan], 'Shared meta-data')
         bdata0.add_metadata('key only in 0', np.random.rand(11), 'Meta-data only in bdata0')
 
 
-        bdata1 = bdpy.BData()
+        bdata1 = BData()
         bdata1.add(x1_data, 'Data')
         bdata1.add(x1_label, 'Label')
         bdata1.add_metadata('key shared', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, np.nan], 'Shared meta-data')
@@ -104,12 +104,12 @@ class TestVstack(TestCase):
 
         x1_label_map = {k: 'label_%04d' % k for k in x1_label.flatten()}
 
-        bdata0 = bdpy.BData()
+        bdata0 = BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
         bdata0.add_vmap('Label', x0_label_map)
 
-        bdata1 = bdpy.BData()
+        bdata1 = BData()
         bdata1.add(x1_data, 'Data')
         bdata1.add(x1_label, 'Label')
         bdata1.add_vmap('Label', x1_label_map)
@@ -136,12 +136,12 @@ class TestVstack(TestCase):
 
         x1_label_map = {k: 'label_%04d' % k for k in x1_label.flatten()}
 
-        bdata0 = bdpy.BData()
+        bdata0 = BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
         bdata0.add_vmap('Label', x0_label_map)
 
-        bdata1 = bdpy.BData()
+        bdata1 = BData()
         bdata1.add(x1_data, 'Data')
         bdata1.add(x1_label, 'Label')
         bdata1.add_vmap('Label', x1_label_map)
@@ -170,12 +170,12 @@ class TestVstack(TestCase):
 
         x1_label_map = {k: 'label_%04d_diff' % k for k in x1_label.flatten()}
 
-        bdata0 = bdpy.BData()
+        bdata0 = BData()
         bdata0.add(x0_data,  'Data')
         bdata0.add(x0_label, 'Label')
         bdata0.add_vmap('Label', x0_label_map)
 
-        bdata1 = bdpy.BData()
+        bdata1 = BData()
         bdata1.add(x1_data, 'Data')
         bdata1.add(x1_label, 'Label')
         bdata1.add_vmap('Label', x1_label_map)
@@ -184,8 +184,8 @@ class TestVstack(TestCase):
             vstack([bdata0, bdata1], successive=['Label'])
 
     def test_metadata_equal(self):
-        bdata0 = bdpy.BData()
-        bdata1 = bdpy.BData()
+        bdata0 = BData()
+        bdata1 = BData()
 
         bdata0.add_metadata('key 0', [1, 1, 0], 'Test key 0')
         bdata1.add_metadata('key 0', [1, 1, 0], 'Test key 0')
@@ -198,8 +198,8 @@ class TestVstack(TestCase):
         self.assertTrue(metadata_equal(bdata0, bdata1, strict=True))
 
     def test_metadata_equal_notequal_key(self):
-        bdata0 = bdpy.BData()
-        bdata1 = bdpy.BData()
+        bdata0 = BData()
+        bdata1 = BData()
 
         bdata0.add_metadata('key 0', [1, 1, 0], 'Test key 0')
         bdata1.add_metadata('key 0', [1, 1, 0], 'Test key 0')
@@ -212,8 +212,8 @@ class TestVstack(TestCase):
         self.assertFalse(metadata_equal(bdata0, bdata1, strict=False))
 
     def test_metadata_equal_notequal_value(self):
-        bdata0 = bdpy.BData()
-        bdata1 = bdpy.BData()
+        bdata0 = BData()
+        bdata1 = BData()
 
         bdata0.add_metadata('key 0', [1, 1, 0], 'Test key 0')
         bdata1.add_metadata('key 0', [1, 1, 0], 'Test key 0')
@@ -226,8 +226,8 @@ class TestVstack(TestCase):
         self.assertFalse(metadata_equal(bdata0, bdata1, strict=False))
 
     def test_metadata_equal_loose(self):
-        bdata0 = bdpy.BData()
-        bdata1 = bdpy.BData()
+        bdata0 = BData()
+        bdata1 = BData()
 
         bdata0.add_metadata('key 0', [1, 1, 0], 'Test key 0')
         bdata0.add_metadata('key 1', [0, 0, 1], 'Test key 1')
@@ -240,8 +240,8 @@ class TestVstack(TestCase):
         self.assertFalse(metadata_equal(bdata0, bdata1, strict=True))
 
     def test_metadata_equal_loose_notequal_key(self):
-        bdata0 = bdpy.BData()
-        bdata1 = bdpy.BData()
+        bdata0 = BData()
+        bdata1 = BData()
 
         bdata0.add_metadata('key 0', [1, 1, 0], 'Test key 0')
         bdata0.add_metadata('key 1', [0, 0, 1], 'Test key 1')
@@ -254,8 +254,8 @@ class TestVstack(TestCase):
         self.assertFalse(metadata_equal(bdata0, bdata1, strict=False))
 
     def test_metadata_equal_loose_notequal_value(self):
-        bdata0 = bdpy.BData()
-        bdata1 = bdpy.BData()
+        bdata0 = BData()
+        bdata1 = BData()
 
         bdata0.add_metadata('key 0', [1, 1, 0], 'Test key 0')
         bdata0.add_metadata('key 1', [0, 0, 1], 'Test key 1')
@@ -269,5 +269,4 @@ class TestVstack(TestCase):
 
 
 if __name__ == "__main__":
-    test_suite = TestLoader().loadTestsFromTestCase(TestVstack)
-    TextTestRunner(verbosity=2).run(test_suite)
+    unittest.main()
