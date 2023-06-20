@@ -125,7 +125,9 @@ class TestMakeCVIndex(unittest.TestCase):
 
 
 class TestMakeCVIndexGenerator(unittest.TestCase):
-    pass  # TODO: implement
+    def test_make_cvindex_generator(self):
+        raise NotImplementedError(
+            'TestMakeCVIndexGenerator.test_make_cvindex_generator is not implemented yet.')
 
 
 if __name__ == '__main__':
