@@ -1,13 +1,13 @@
-from bdpy.evals.metrics import profile_correlation, pattern_correlation, pairwise_identification
-
+import unittest
 
 import pickle
-import unittest
 
 import numpy as np
 
+from bdpy.evals.metrics import profile_correlation, pattern_correlation, pairwise_identification
 
-class TestEval(unittest.TestCase):
+
+class TestMetrics(unittest.TestCase):
     def test_profile_correlation(self):
         # 2-d array
         n = 30
@@ -101,5 +101,4 @@ class TestEval(unittest.TestCase):
         ))
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestEval)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
