@@ -1,23 +1,23 @@
 '''Tests for bdpy.bdata.metadata.'''
 
 
-from unittest import TestCase, TestLoader, TextTestRunner
+import unittest
 
 import numpy as np
 from numpy.testing import assert_array_equal
 
-import bdpy
+from bdpy.bdata import metadata
 
 
-class TestBdataMetadata(TestCase):
+class TestMetadata(unittest.TestCase):
     '''Tests for bdpy.bdata.metadata.'''
 
     def __init__(self, *args, **kwargs):
-        super(TestBdataMetadata, self).__init__(*args, **kwargs)
+        super(TestMetadata, self).__init__(*args, **kwargs)
 
     def test_set_get(self):
         '''Test for MetaData.set() and MetaData.get().'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
         md.set('MetaData_B', [0] * 10 + [1] * 5, 'Test metadata B')
 
@@ -28,7 +28,7 @@ class TestBdataMetadata(TestCase):
 
     def test_set_get_resize(self):
         '''Test for MetaData.set() and MetaData.get(); resizing values.'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
         md.set('MetaData_B', [0] * 10 + [1] * 5, 'Test metadata B')
         md.set('MetaData_C', [0] * 15 + [1] * 3, 'Test metadata C')
@@ -42,7 +42,7 @@ class TestBdataMetadata(TestCase):
 
     def test_set_get_overwrite(self):
         '''Test for MetaData.set() and MetaData.get(); overwriting values.'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
         md.set('MetaData_B', [0] * 10 + [1] * 5, 'Test metadata B')
 
@@ -55,7 +55,7 @@ class TestBdataMetadata(TestCase):
 
     def test_set_get_overwrite_resize(self):
         '''Test for MetaData.set() and MetaData.get(); overwriting and resizing values.'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1, 1, 1, 0, 0], 'Test metadata A')
         md.set('MetaData_B', [0, 0, 0, 1, 1], 'Test metadata B')
 
@@ -68,7 +68,7 @@ class TestBdataMetadata(TestCase):
 
     def test_set_get_update(self):
         '''Test for MetaData.set() and MetaData.get(); updating values.'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
         md.set('MetaData_B', [0] * 10 + [1] * 5, 'Test metadata B')
 
@@ -81,7 +81,7 @@ class TestBdataMetadata(TestCase):
 
     def test_get_notfound(self):
         '''Test for MetaData.get(); key not found case.'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
         md.set('MetaData_B', [0] * 10 + [1] * 5, 'Test metadata B')
 
@@ -90,7 +90,7 @@ class TestBdataMetadata(TestCase):
 
     def test_get_value_len(self):
         '''Test for get_value_len().'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
         md.set('MetaData_B', [0] * 10 + [1] * 5, 'Test metadata B')
 
@@ -98,7 +98,7 @@ class TestBdataMetadata(TestCase):
 
     def test_keylist(self):
         '''Test for keylist().'''
-        md = bdpy.bdata.metadata.MetaData()
+        md = metadata.MetaData()
         md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
         md.set('MetaData_B', [0] * 10 + [1] * 5, 'Test metadata B')
 
@@ -106,5 +106,4 @@ class TestBdataMetadata(TestCase):
 
 
 if __name__ == '__main__':
-    test_suite = TestLoader().loadTestsFromTestCase(TestBdataMetadata)
-    TextTestRunner(verbosity=2).run(test_suite)
+    unittest.main()
