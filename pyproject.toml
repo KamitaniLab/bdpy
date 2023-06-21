@@ -50,11 +50,7 @@ all = [
 ]
 dev = [
     "bdpy[all]",
-    "fastl2lir",
-    "pytest",
-    "pytest-cov",
-    "flake8",
-    "mypy",
+    "fastl2lir"
 ]
 
 [project.urls]
@@ -64,7 +60,14 @@ Repository = "https://github.com/KamitaniLab/bdpy"
 
 [tool.rye]
 managed = true
-dev-dependencies = ["bdpy[dev]", "jupyter"]
+dev-dependencies = [
+    "bdpy[dev]",
+    "jupyter",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy"
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true
