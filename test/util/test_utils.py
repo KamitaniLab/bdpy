@@ -1,15 +1,15 @@
 '''Tests for bdpy.util'''
 
 
-from unittest import TestCase, TestLoader, TextTestRunner
+import unittest
 
 import numpy as np
 
-import bdpy
+from bdpy.util import utils
 
 
-class TestUtil(TestCase):
-    '''Tests for 'util' module'''
+class TestCreateGroupVector(unittest.TestCase):
+    '''Tests for 'utils.create_groupvector'''
 
     def test_create_groupvector_pass0001(self):
         '''Test for create_groupvector (list and scalar inputs).'''
@@ -19,7 +19,7 @@ class TestUtil(TestCase):
 
         exp_output = [1, 1, 2, 2, 3, 3]
 
-        test_output = bdpy.create_groupvector(x, y)
+        test_output = utils.create_groupvector(x, y)
 
         self.assertTrue((test_output == exp_output).all())
 
@@ -31,7 +31,7 @@ class TestUtil(TestCase):
 
         exp_output = [1, 1, 2, 2, 2, 2, 3, 3]
 
-        test_output = bdpy.create_groupvector(x, y)
+        test_output = utils.create_groupvector(x, y)
 
         self.assertTrue((test_output == exp_output).all())
 
@@ -43,7 +43,7 @@ class TestUtil(TestCase):
 
         exp_output = np.array([1, 1, 2, 2, 3, 3])
 
-        test_output = bdpy.create_groupvector(x, y)
+        test_output = utils.create_groupvector(x, y)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
@@ -55,7 +55,7 @@ class TestUtil(TestCase):
 
         exp_output = np.array([1, 1, 2, 2, 2, 2, 3, 3])
 
-        test_output = bdpy.create_groupvector(x, y)
+        test_output = utils.create_groupvector(x, y)
 
         np.testing.assert_array_equal(test_output, exp_output)
 
@@ -65,7 +65,10 @@ class TestUtil(TestCase):
         x = [1, 2, 3]
         y = [0]
 
-        self.assertRaises(ValueError, bdpy.create_groupvector, x, y)
+        self.assertRaises(ValueError, utils.create_groupvector, x, y)
+
+
+class TestDivideChunks(unittest.TestCase):
 
     def test_divide_chunks(self):
         '''Test for divide_chunks.'''
@@ -75,17 +78,16 @@ class TestUtil(TestCase):
         # Test 1
         expected = [[1, 2, 3, 4],
                     [5, 6, 7]]
-        actual = bdpy.divide_chunks(a, chunk_size=4)
+        actual = utils.divide_chunks(a, chunk_size=4)
         self.assertEqual(actual, expected)
 
         # Test 2
         expected = [[1, 2, 3],
                     [4, 5, 6],
                     [7]]
-        actual = bdpy.divide_chunks(a, chunk_size=3)
+        actual = utils.divide_chunks(a, chunk_size=3)
         self.assertEqual(actual, expected)
 
 
 if __name__ == '__main__':
-    suite = TestLoader().loadTestsFromTestCase(TestUtil)
-    TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
