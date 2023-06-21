@@ -55,7 +55,6 @@ dev = [
     "pytest-cov",
     "flake8",
     "mypy",
-    "jupyter"
 ]
 
 [project.urls]
@@ -65,7 +64,7 @@ Repository = "https://github.com/KamitaniLab/bdpy"
 
 [tool.rye]
 managed = true
-dev-dependencies = ["bdpy[dev]"]
+dev-dependencies = ["bdpy[dev]", "jupyter"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
