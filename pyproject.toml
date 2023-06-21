@@ -10,7 +10,7 @@ authors = [
     { name = "Shuntaro C. Aoki", email = "s_aoki@i.kyoto-u.ac.jp" }
 ]
 readme = "README.md"
-requires-python = ">= 3.8"
+requires-python = ">= 3.8, < 3.12"
 license = { file = "LICENSE" }
 keywords = ["neuroscience", "neuroimaging", "brain decoding", "fmri", "machine learning"]
 
@@ -61,6 +61,7 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/KamitaniLab/bdpy"
 Repository = "https://github.com/KamitaniLab/bdpy"
+"Bug Tracker" = "https://github.com/KamitaniLab/bdpy/issues"
 
 [tool.rye]
 managed = true
