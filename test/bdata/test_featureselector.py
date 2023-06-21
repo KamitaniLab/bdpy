@@ -1,12 +1,12 @@
 '''Tests for FeatureSelector'''
 
 
-from unittest import TestCase, TestLoader, TextTestRunner
+import unittest
 
 from bdpy.bdata.featureselector import FeatureSelector
 
 
-class TestFeatureSelector(TestCase):
+class TestFeatureSelector(unittest.TestCase):
     '''Tests for FeatureSelector'''
 
     def test_lexical_analysis_0001(self):
@@ -123,5 +123,4 @@ class TestFeatureSelector(TestCase):
 
 
 if __name__ == '__main__':
-    test_suite = TestLoader().loadTestsFromTestCase(TestFeatureSelector)
-    TextTestRunner(verbosity=2).run(test_suite)
+    unittest.main()
