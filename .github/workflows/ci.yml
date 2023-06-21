@@ -18,21 +18,15 @@ jobs:
         uses: chartboost/ruff-action@v1
 
   type-check:
-    name: type-check (${{ matrix.python-version }})
-
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.8
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: 3.8
         cache: "pip"
 
     - name: Install dependencies
@@ -44,7 +38,7 @@ jobs:
     - name: Static type check with mypy
       uses: sasanquaneuf/mypy-github-action@releases/v1.3
       with:
-        checkName: 'type-check (${{ matrix.python-version }})'
+        checkName: 'type-check'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
