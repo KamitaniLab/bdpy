@@ -1,14 +1,13 @@
 '''Tests for bdpy.stats'''
 
-
-from unittest import TestCase, TestLoader, TextTestRunner
+import unittest
 
 import numpy as np
 
 import bdpy.stats as bdst
 
 
-class TestStats(TestCase):
+class TestStats(unittest.TestCase):
     '''Tests for bdpy.stats'''
 
     def test_corrcoef_matrix_matrix_default(self):
@@ -146,5 +145,4 @@ class TestStats(TestCase):
 
 
 if __name__ == '__main__':
-    suite = TestLoader().loadTestsFromTestCase(TestStats)
-    TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
