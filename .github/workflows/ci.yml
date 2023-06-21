@@ -32,15 +32,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install mypy
+        python -m pip install mypy mypy-gh-action-report
         pip install .[all]
 
     - name: Static type check with mypy
-      uses: sasanquaneuf/mypy-github-action@releases/v1.3
-      with:
-        checkName: 'type-check'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        mypy . | mypy-gh-action-report
 
   test:
 
