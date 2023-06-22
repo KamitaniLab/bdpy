@@ -60,9 +60,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pytest pytest-github-actions-annotate-failures
+        python -m pip install pytest pytest-cov pytest-github-actions-annotate-failures
         pip install .[dev]
 
     - name: Test with pytest
       run: |
-        pytest .
+        pytest --junitxml=pytest.yml --cov-report=term-missing:skip-covered --cov=bdpy . | tee pytest-coverage.txt
+
+    - name: Upload coverage comment
+      uses: MishaKav/pytest-coverage-comment@v1.1.47
+      with:
+        pytest-coverage-path: pytest-coverage.txt
+        junitxml-path: pytest.yml
