@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bdpy"
+version = "0.19"
+description = "Brain decoder toolbox for Python"
+authors = [
+    { name = "Shuntaro C. Aoki", email = "s_aoki@i.kyoto-u.ac.jp" }
+]
+readme = "README.md"
+requires-python = ">= 3.8, < 3.12"
+license = { file = "LICENSE" }
+keywords = ["neuroscience", "neuroimaging", "brain decoding", "fmri", "machine learning"]
+
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "h5py",
+    "hdf5storage",
+    "pyyaml",
+    "pandas",
+]
+
+[project.optional-dependencies]
+caffe = [
+    "Pillow",
+    "tqdm"
+]
+torch = [
+    "torch",
+    "Pillow"
+]
+fig = [
+    "matplotlib",
+    "Pillow"
+]
+mri = [
+    "numpy<1.24",
+    "nibabel==3.2",
+    "nipy"
+]
+all = [
+    "bdpy[caffe]",
+    "bdpy[torch]",
+    "bdpy[fig]",
+    "bdpy[mri]"
+]
+dev = [
+    "bdpy[all]",
+    "fastl2lir"
+]
+
+[project.urls]
+Homepage = "https://github.com/KamitaniLab/bdpy"
+Repository = "https://github.com/KamitaniLab/bdpy"
+"Bug Tracker" = "https://github.com/KamitaniLab/bdpy/issues"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "bdpy[dev]",
+    "jupyter",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "mypy"
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+only-include = ["bdpy"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["bdpy"]
+
+[tool.ruff]
+select = ["E", "F", "N", "D", "ANN", "B", "NPY", "RUF"]
+line-length = 88

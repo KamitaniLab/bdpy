@@ -2,6 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/bdpy.svg)](https://badge.fury.io/py/bdpy)
 [![GitHub license](https://img.shields.io/github/license/KamitaniLab/bdpy)](https://github.com/KamitaniLab/bdpy/blob/master/LICENSE)
+[![ci](https://github.com/KamitaniLab/bdpy/actions/workflows/ci.yml/badge.svg)](https://github.com/KamitaniLab/bdpy/actions/workflows/ci.yml)
 
 Python package for brain decoding analysis
 
