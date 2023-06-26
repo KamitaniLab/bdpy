@@ -76,5 +76,5 @@ allow-direct-references = true
 exclude = ["tests", "docs", "examples"]
 
 [tool.ruff]
-select = ["E", "F", "N", "D", "YTT", "TCH", "NPY", "RUF"]
+select = ["E", "F", "N", "D", "ANN", "B", "NPY", "RUF"]
 line-length = 88
