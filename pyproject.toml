@@ -72,8 +72,11 @@ dev-dependencies = [
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[tool.hatch.build]
-exclude = ["tests", "docs", "examples"]
+[tool.hatch.build.targets.wheel]
+only-include = ["bdpy"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["bdpy"]
 
 [tool.ruff]
 select = ["E", "F", "N", "D", "ANN", "B", "NPY", "RUF"]
