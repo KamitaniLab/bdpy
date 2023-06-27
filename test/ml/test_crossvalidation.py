@@ -120,11 +120,5 @@ class TestMakeCVIndex(unittest.TestCase):
         self.assertTrue((test_output_b == exp_output_b).all())
 
 
-class TestMakeCVIndexGenerator(unittest.TestCase):
-    def test_make_cvindex_generator(self):
-        raise NotImplementedError(
-            'TestMakeCVIndexGenerator.test_make_cvindex_generator is not implemented yet.')
-
-
 if __name__ == '__main__':
     unittest.main()
