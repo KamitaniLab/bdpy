@@ -69,11 +69,13 @@ class BData(object):
     '''
 
 
-    def __init__(self, file_name=None, file_type=None):
+    def __init__(self, file_name=None, file_type=None, lazy_load=False):
         self.__dataset = np.ndarray((0, 0), dtype=float)
         self.__metadata = MetaData()
         self.__header = {}
         self.__vmap = {}
+
+        self.__lazy = lazy_load
 
         if file_name is not None:
             self.load(file_name, file_type)
@@ -208,6 +210,8 @@ class BData(object):
         None
         '''
         mdind = [a == 1 for a in self.get_metadata(key)]
+        if self.__lazy:
+            self.dataset = np.asarray(self.dataset)
         self.dataset[:, np.array(mdind)] = dat
 
 
@@ -868,9 +872,15 @@ class BData(object):
             md_values = np.asarray(dat["metadata"]['value'], dtype=np.float)
 
         if 'dataSet' in dat:
-            self.dataset = np.asarray(dat["dataSet"], dtype=np.float)
+            if self.__lazy:
+                self.dataset = dat["dataSet"]
+            else:
+                self.dataset = np.asarray(dat["dataSet"])
         else:
-            self.dataset = np.asarray(dat["dataset"], dtype=np.float)
+            if self.__lazy:
+                self.dataset = dat["dataset"]
+            else:
+                self.dataset = np.asarray(dat["dataset"])
 
         if 'header' in dat:
             for k, v in dat['header'].items():
