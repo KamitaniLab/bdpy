@@ -1,8 +1,7 @@
 '''Tests for bdpy.util'''
 
-from unittest import TestCase, TestLoader, TextTestRunner
-
 import os
+import unittest
 
 import numpy as np
 import scipy.io as sio
@@ -10,14 +9,12 @@ import scipy.io as sio
 import bdpy.mri as bmr
 
 
-class TestMri(TestCase):
+class TestMri(unittest.TestCase):
     '''Tests for 'mri' module'''
-
-    def __init__(self, *args, **kwargs):
-
-        super(TestMri, self).__init__(*args, **kwargs)
-
-        self.data_dir = './data/mri'
+    def setUp(self) -> None:
+        self.data_dir = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), 'data', 'mri'
+        ))
         self.test_files = ['epi0001.img', 'epi0002.img', 'epi0003.img',
                            'epi0004.img', 'epi0005.img']
         self.exp_file = 'epi.mat'
@@ -100,5 +97,4 @@ class TestMri(TestCase):
 
 
 if __name__ == '__main__':
-    suite = TestLoader().loadTestsFromTestCase(TestMri)
-    TextTestRunner(verbosity=2).run(suite)
+    unittest.main()
