@@ -1,9 +1,8 @@
 '''Tests for dataform'''
 
-
-import unittest
-
+import os
 import tempfile
+import unittest
 
 import numpy as np
 
@@ -44,16 +43,20 @@ class TestSparse(unittest.TestCase):
 
                 np.testing.assert_array_equal(original_data, from_file)
 
-    # TODO: test/data/{<file>.mat} is not included in the repository
     def test_load_array_jl(self):
         data = np.array([[1, 0, 0, 0],
                          [2, 2, 0, 0],
                          [3, 3, 3, 0]])
+        data_dir = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), os.pardir, 'data'
+        ))
 
-        testdata = load_array('data/array_jl_dense_v1.mat', key='a')
+        testdata = load_array(
+            os.path.join(data_dir, 'array_jl_dense_v1.mat'), key='a')
         np.testing.assert_array_equal(data, testdata)
 
-        testdata = load_array('data/array_jl_sparse_v1.mat', key='a')
+        testdata = load_array(
+            os.path.join(data_dir, 'array_jl_sparse_v1.mat'), key='a')
         np.testing.assert_array_equal(data, testdata)
 
 
