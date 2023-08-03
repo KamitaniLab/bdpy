@@ -7,7 +7,7 @@ from glob import glob
 from bdpy import makedir_ifnot
 
 
-def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./', bids_dir='bids', mri_filetype='nii', dry_run=False):
+def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./', bids_dir='bids', dry_run=False):
     '''Create BIDS dataset for OpenNeuro.'''
 
     if not source_type == 'bids_daily':
@@ -53,7 +53,8 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
         trg_anat_defaced = os.path.join(trg_anat_dir, '%s_ses-anatomy_T1w.nii.gz' % subject)
         __create_dir(trg_anat_dir)
         if not dry_run:
-            if mri_filetype == 'nii.gz':
+            ext = os.path.splitext(src_anat)[0]
+            if ext == '.nii.gz':
                 shutil.copy2(src_anat, trg_anat_raw)  # FIXME: convert to nii.gz
             else:
                 convert_command = 'mri_convert %s %s' % (src_anat, trg_anat_raw)
@@ -93,7 +94,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                 if not os.path.isdir(src_bids_path):
                     raise RuntimeError('Invalid BIDS directory: %s' % src_bids_path)
 
-                sessions = __parse_bids_dir(src_bids_path, data_info=src_info, mri_filetype=mri_filetype)
+                sessions = __parse_bids_dir(src_bids_path, data_info=src_info)
                 task_sessions.extend(sessions)
 
             print('Total sessions: %d' % len(task_sessions))
@@ -124,7 +125,9 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                                                              rename=rename_table))
                     print('Copying\n  from: %s\n  to: %s' % (src_inplane, trg_inplane))
                     if not dry_run:
-                        if mri_filetype == 'nii.gz':
+                        ext = os.path.splitext(src_inplane)[0]
+                        if ext == '.nii.gz':
+                            import pdb; pdb.set_trace()
                             shutil.copy2(src_inplane, trg_inplane)  # FIXME: convert to nii.gz
                         else:
                             convert_command = 'mri_convert %s %s' % (src_inplane, trg_inplane)
@@ -160,7 +163,9 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                     print('Copying\n  from: %s\n  to: %s' % (src_bold_json, trg_bold_json))
                     print('Copying\n  from: %s\n  to: %s' % (src_event, trg_event))
                     if not dry_run:
-                        if mri_filetype == 'nii.gz':
+                        ext = os.path.splitext(src_bold)[0]
+                        if ext == '.nii.gz':
+                            import pdb; pdb.set_trace()
                             shutil.copy2(src_bold, trg_bold)
                         else:
                             convert_command = 'mri_convert %s %s' % (src_bold, trg_bold)
@@ -171,7 +176,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
     return None
 
 
-def __parse_bids_dir(dpath, data_info=None, mri_filetype='nii'):
+def __parse_bids_dir(dpath, data_info=None):
     print('BIDS directory: %s' % dpath)
 
     sub_dirs = glob(os.path.join(dpath, 'sub-*'))
@@ -201,13 +206,13 @@ def __parse_bids_dir(dpath, data_info=None, mri_filetype='nii'):
             continue
 
         # T2 inplane image
-        inplane_file = __aggregate_mri_files(os.path.join(ses_dir, '../anat'), mri_filetype=mri_filetype)
+        inplane_file = __aggregate_mri_files(os.path.join(ses_dir, '../anat'), mri_filetype='nii') + __aggregate_mri_files(os.path.join(ses_dir, '../anat'), mri_filetype='nii.gz')
         if len(inplane_file) != 1:
             raise RuntimeError('Invalid inplane anatomy')
         inplane_file = inplane_file[0]
 
         # Functionals
-        run_files = __aggregate_runs(ses_dir, mri_filetype=mri_filetype)
+        run_files = __aggregate_runs(ses_dir, mri_filetype='nii') + __aggregate_runs(ses_dir, mri_filetype='nii.gz')
         print('Ses %02d: %d run(s) found' % (i + 1, len(run_files)))
         #print(run_files)
 
