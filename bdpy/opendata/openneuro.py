@@ -81,7 +81,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
 
             for src in srcdata:
                 if isinstance(src, dict):
-                    src_name = src.keys()[0]
+                    src_name = list(src.keys())[0]
                     src_info = src[src_name]
                 else:
                     src_name = src
@@ -127,8 +127,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                     if not dry_run and not os.path.exists(trg_inplane):
                         ext = os.path.splitext(src_inplane)[0]
                         if ext == '.nii.gz':
-                            import pdb; pdb.set_trace()
-                            shutil.copy2(src_inplane, trg_inplane)  # FIXME: convert to nii.gz
+                            shutil.copy2(src_inplane, trg_inplane)
                         else:
                             convert_command = 'mri_convert %s %s' % (src_inplane, trg_inplane)
                             os.system(convert_command)
@@ -206,7 +205,6 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                     if not dry_run and not os.path.exists(trg_bold):
                         ext = os.path.splitext(src_bold)[0]
                         if ext == '.nii.gz':
-                            import pdb; pdb.set_trace()
                             shutil.copy2(src_bold, trg_bold)
                         else:
                             convert_command = 'mri_convert %s %s' % (src_bold, trg_bold)
