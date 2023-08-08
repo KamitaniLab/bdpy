@@ -7,7 +7,7 @@ from glob import glob
 from bdpy import makedir_ifnot
 
 
-def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./', bids_dir='bids', dry_run=False):
+def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./', bids_dir='bids', fmap=False, dry_run=False):
     '''Create BIDS dataset for OpenNeuro.'''
 
     if not source_type == 'bids_daily':
@@ -132,6 +132,47 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                         else:
                             convert_command = 'mri_convert %s %s' % (src_inplane, trg_inplane)
                             os.system(convert_command)
+
+                # Field map
+                if fmap:
+                    src_fmap_dir = os.path.join(os.path.dirname(os.path.dirname(ses['inplane'])), 'fmap')
+                    trg_fmap_dir = os.path.join(session_dir, 'fmap')
+                    if not dry_run:
+                        __create_dir(os.path.join(session_dir, 'fmap'))
+
+                    for f in glob(os.path.join(src_fmap_dir, '*.nii.gz')):
+                        src_f = f
+                        trg_f = os.path.join(
+                            trg_fmap_dir,
+                            __rename_file(os.path.basename(src_f).split('.')[0] + '.nii.gz', rename=rename_table)
+                        )
+                        print('Copying\n  from: %s\n  to: %s' % (src_f, trg_f))
+                        if not dry_run and not os.path.exists(trg_f):
+                            ext = os.path.splitext(src_f)[0]
+                            if ext == '.nii.gz':
+                                shutil.copy2(src_f, trg_f)
+                            else:
+                                convert_command = 'mri_convert %s %s' % (src_f, trg_f)
+                                os.system(convert_command)
+
+                    for f in glob(os.path.join(src_fmap_dir, '*.json')):
+                        src_f = f
+                        trg_f = os.path.join(
+                            trg_fmap_dir,
+                            __rename_file(os.path.basename(src_f).split('.')[0] + '.json', rename=rename_table)
+                        )
+                        print('Copying\n  from: %s\n  to: %s' % (src_f, trg_f))
+                        if not dry_run and not os.path.exists(trg_f):
+                            with open(src_f, 'r') as f:
+                                js = json.load(f)
+                            if 'IntendedFor' in js:
+                                fs = [
+                                    __rename_file(f, rename=rename_table)
+                                    for f in js['IntendedFor']
+                                ]
+                                js['IntendedFor'] = fs
+                            with open(trg_f, 'w') as f:
+                                json.dump(js, f, indent=4)
 
                 # Functionals
                 for j, run in enumerate(ses['functionals']):
