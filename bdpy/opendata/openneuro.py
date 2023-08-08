@@ -52,7 +52,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
         trg_anat_raw = os.path.join(trg_anat_dir, '%s_ses-anatomy_T1w_raw.nii.gz' % subject)
         trg_anat_defaced = os.path.join(trg_anat_dir, '%s_ses-anatomy_T1w.nii.gz' % subject)
         __create_dir(trg_anat_dir)
-        if not dry_run:
+        if not dry_run and not os.path.exists(trg_anat_defaced):
             ext = os.path.splitext(src_anat)[0]
             if ext == '.nii.gz':
                 shutil.copy2(src_anat, trg_anat_raw)  # FIXME: convert to nii.gz
@@ -124,7 +124,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                                                __rename_file(os.path.basename(src_inplane).split('.')[0] + '.nii.gz',
                                                              rename=rename_table))
                     print('Copying\n  from: %s\n  to: %s' % (src_inplane, trg_inplane))
-                    if not dry_run:
+                    if not dry_run and not os.path.exists(trg_inplane):
                         ext = os.path.splitext(src_inplane)[0]
                         if ext == '.nii.gz':
                             import pdb; pdb.set_trace()
@@ -162,7 +162,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                     print('Copying\n  from: %s\n  to: %s' % (src_bold, trg_bold))
                     print('Copying\n  from: %s\n  to: %s' % (src_bold_json, trg_bold_json))
                     print('Copying\n  from: %s\n  to: %s' % (src_event, trg_event))
-                    if not dry_run:
+                    if not dry_run and not os.path.exists(trg_bold):
                         ext = os.path.splitext(src_bold)[0]
                         if ext == '.nii.gz':
                             import pdb; pdb.set_trace()
