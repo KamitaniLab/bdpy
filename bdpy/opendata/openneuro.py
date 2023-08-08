@@ -7,7 +7,7 @@ from glob import glob
 from bdpy import makedir_ifnot
 
 
-def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./', bids_dir='bids', mri_filetype='nii', dry_run=False):
+def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./', bids_dir='bids', fmap=False, dry_run=False):
     '''Create BIDS dataset for OpenNeuro.'''
 
     if not source_type == 'bids_daily':
@@ -52,8 +52,9 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
         trg_anat_raw = os.path.join(trg_anat_dir, '%s_ses-anatomy_T1w_raw.nii.gz' % subject)
         trg_anat_defaced = os.path.join(trg_anat_dir, '%s_ses-anatomy_T1w.nii.gz' % subject)
         __create_dir(trg_anat_dir)
-        if not dry_run:
-            if mri_filetype == 'nii.gz':
+        if not dry_run and not os.path.exists(trg_anat_defaced):
+            ext = os.path.splitext(src_anat)[0]
+            if ext == '.nii.gz':
                 shutil.copy2(src_anat, trg_anat_raw)  # FIXME: convert to nii.gz
             else:
                 convert_command = 'mri_convert %s %s' % (src_anat, trg_anat_raw)
@@ -80,7 +81,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
 
             for src in srcdata:
                 if isinstance(src, dict):
-                    src_name = src.keys()[0]
+                    src_name = list(src.keys())[0]
                     src_info = src[src_name]
                 else:
                     src_name = src
@@ -93,7 +94,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                 if not os.path.isdir(src_bids_path):
                     raise RuntimeError('Invalid BIDS directory: %s' % src_bids_path)
 
-                sessions = __parse_bids_dir(src_bids_path, data_info=src_info, mri_filetype=mri_filetype)
+                sessions = __parse_bids_dir(src_bids_path, data_info=src_info)
                 task_sessions.extend(sessions)
 
             print('Total sessions: %d' % len(task_sessions))
@@ -123,12 +124,54 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                                                __rename_file(os.path.basename(src_inplane).split('.')[0] + '.nii.gz',
                                                              rename=rename_table))
                     print('Copying\n  from: %s\n  to: %s' % (src_inplane, trg_inplane))
-                    if not dry_run:
-                        if mri_filetype == 'nii.gz':
-                            shutil.copy2(src_inplane, trg_inplane)  # FIXME: convert to nii.gz
+                    if not dry_run and not os.path.exists(trg_inplane):
+                        ext = os.path.splitext(src_inplane)[0]
+                        if ext == '.nii.gz':
+                            shutil.copy2(src_inplane, trg_inplane)
                         else:
                             convert_command = 'mri_convert %s %s' % (src_inplane, trg_inplane)
                             os.system(convert_command)
+
+                # Field map
+                if fmap:
+                    src_fmap_dir = os.path.join(os.path.dirname(os.path.dirname(ses['inplane'])), 'fmap')
+                    trg_fmap_dir = os.path.join(session_dir, 'fmap')
+                    if not dry_run:
+                        __create_dir(os.path.join(session_dir, 'fmap'))
+
+                    for f in glob(os.path.join(src_fmap_dir, '*.nii.gz')):
+                        src_f = f
+                        trg_f = os.path.join(
+                            trg_fmap_dir,
+                            __rename_file(os.path.basename(src_f).split('.')[0] + '.nii.gz', rename=rename_table)
+                        )
+                        print('Copying\n  from: %s\n  to: %s' % (src_f, trg_f))
+                        if not dry_run and not os.path.exists(trg_f):
+                            ext = os.path.splitext(src_f)[0]
+                            if ext == '.nii.gz':
+                                shutil.copy2(src_f, trg_f)
+                            else:
+                                convert_command = 'mri_convert %s %s' % (src_f, trg_f)
+                                os.system(convert_command)
+
+                    for f in glob(os.path.join(src_fmap_dir, '*.json')):
+                        src_f = f
+                        trg_f = os.path.join(
+                            trg_fmap_dir,
+                            __rename_file(os.path.basename(src_f).split('.')[0] + '.json', rename=rename_table)
+                        )
+                        print('Copying\n  from: %s\n  to: %s' % (src_f, trg_f))
+                        if not dry_run and not os.path.exists(trg_f):
+                            with open(src_f, 'r') as f:
+                                js = json.load(f)
+                            if 'IntendedFor' in js:
+                                fs = [
+                                    __rename_file(f, rename=rename_table)
+                                    for f in js['IntendedFor']
+                                ]
+                                js['IntendedFor'] = fs
+                            with open(trg_f, 'w') as f:
+                                json.dump(js, f, indent=4)
 
                 # Functionals
                 for j, run in enumerate(ses['functionals']):
@@ -159,8 +202,9 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                     print('Copying\n  from: %s\n  to: %s' % (src_bold, trg_bold))
                     print('Copying\n  from: %s\n  to: %s' % (src_bold_json, trg_bold_json))
                     print('Copying\n  from: %s\n  to: %s' % (src_event, trg_event))
-                    if not dry_run:
-                        if mri_filetype == 'nii.gz':
+                    if not dry_run and not os.path.exists(trg_bold):
+                        ext = os.path.splitext(src_bold)[0]
+                        if ext == '.nii.gz':
                             shutil.copy2(src_bold, trg_bold)
                         else:
                             convert_command = 'mri_convert %s %s' % (src_bold, trg_bold)
@@ -171,7 +215,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
     return None
 
 
-def __parse_bids_dir(dpath, data_info=None, mri_filetype='nii'):
+def __parse_bids_dir(dpath, data_info=None):
     print('BIDS directory: %s' % dpath)
 
     sub_dirs = glob(os.path.join(dpath, 'sub-*'))
@@ -201,13 +245,13 @@ def __parse_bids_dir(dpath, data_info=None, mri_filetype='nii'):
             continue
 
         # T2 inplane image
-        inplane_file = __aggregate_mri_files(os.path.join(ses_dir, '../anat'), mri_filetype=mri_filetype)
+        inplane_file = __aggregate_mri_files(os.path.join(ses_dir, '../anat'), mri_filetype='nii') + __aggregate_mri_files(os.path.join(ses_dir, '../anat'), mri_filetype='nii.gz')
         if len(inplane_file) != 1:
             raise RuntimeError('Invalid inplane anatomy')
         inplane_file = inplane_file[0]
 
         # Functionals
-        run_files = __aggregate_runs(ses_dir, mri_filetype=mri_filetype)
+        run_files = __aggregate_runs(ses_dir, mri_filetype='nii') + __aggregate_runs(ses_dir, mri_filetype='nii.gz')
         print('Ses %02d: %d run(s) found' % (i + 1, len(run_files)))
         #print(run_files)
 
