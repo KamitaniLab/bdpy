@@ -53,8 +53,8 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
         trg_anat_defaced = os.path.join(trg_anat_dir, '%s_ses-anatomy_T1w.nii.gz' % subject)
         __create_dir(trg_anat_dir)
         if not dry_run and not os.path.exists(trg_anat_defaced):
-            ext = os.path.splitext(src_anat)[0]
-            if ext == '.nii.gz':
+            ext = os.path.splitext(src_anat)[1]
+            if ext == '.gz':
                 shutil.copy2(src_anat, trg_anat_raw)  # FIXME: convert to nii.gz
             else:
                 convert_command = 'mri_convert %s %s' % (src_anat, trg_anat_raw)
@@ -125,8 +125,8 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                                                              rename=rename_table))
                     print('Copying\n  from: %s\n  to: %s' % (src_inplane, trg_inplane))
                     if not dry_run and not os.path.exists(trg_inplane):
-                        ext = os.path.splitext(src_inplane)[0]
-                        if ext == '.nii.gz':
+                        ext = os.path.splitext(src_inplane)[1]
+                        if ext == '.gz':
                             shutil.copy2(src_inplane, trg_inplane)
                         else:
                             convert_command = 'mri_convert %s %s' % (src_inplane, trg_inplane)
@@ -147,8 +147,8 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                         )
                         print('Copying\n  from: %s\n  to: %s' % (src_f, trg_f))
                         if not dry_run and not os.path.exists(trg_f):
-                            ext = os.path.splitext(src_f)[0]
-                            if ext == '.nii.gz':
+                            ext = os.path.splitext(src_f)[1]
+                            if ext == '.gz':
                                 shutil.copy2(src_f, trg_f)
                             else:
                                 convert_command = 'mri_convert %s %s' % (src_f, trg_f)
@@ -203,8 +203,8 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
                     print('Copying\n  from: %s\n  to: %s' % (src_bold_json, trg_bold_json))
                     print('Copying\n  from: %s\n  to: %s' % (src_event, trg_event))
                     if not dry_run and not os.path.exists(trg_bold):
-                        ext = os.path.splitext(src_bold)[0]
-                        if ext == '.nii.gz':
+                        ext = os.path.splitext(src_bold)[1]
+                        if ext == '.gz':
                             shutil.copy2(src_bold, trg_bold)
                         else:
                             convert_command = 'mri_convert %s %s' % (src_bold, trg_bold)
