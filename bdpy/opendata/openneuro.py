@@ -59,12 +59,16 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
             else:
                 convert_command = 'mri_convert %s %s' % (src_anat, trg_anat_raw)
                 os.system(convert_command)
-            deface_command = 'pydeface.py %s %s' % (trg_anat_raw, trg_anat_defaced)
+            deface_command = 'pydeface %s --outfile %s' % (trg_anat_raw, trg_anat_defaced)
             os.system(deface_command)
             os.remove(trg_anat_raw)
 
         # Functionals
         tasks = sub_data['func']
+
+        if tasks is None:
+            continue
+
         if isinstance(tasks, list):
             tasks = {'': tasks}
 
