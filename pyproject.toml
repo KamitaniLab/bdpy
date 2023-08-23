@@ -80,7 +80,7 @@ only-include = ["bdpy"]
 
 [tool.ruff]
 select = ["E", "F", "N", "D", "ANN", "B", "NPY", "RUF"]
-line-length = 88
+ignore = ["E501"]
 
 [tool.pylint]
 disable = "line-too-long"
