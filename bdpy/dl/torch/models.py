@@ -8,7 +8,7 @@ import torch.nn as nn
 
 
 def layer_map(net: str) -> Dict[str, str]:
-    '''Get layer map for a given network.
+    """Get layer map for a given network.
 
     Parameters
     ----------
@@ -20,7 +20,7 @@ def layer_map(net: str) -> Dict[str, str]:
     Dict[str, str]
         Layer map. Keys are human-readable layer names, and values are
         corresponding layer names in the network.
-    '''
+    """
 
     maps = {
         'vgg19': {
@@ -82,7 +82,7 @@ def layer_map(net: str) -> Dict[str, str]:
 
 
 def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
-    '''Parse layer name and return the corresponding layer object.
+    """Parse layer name and return the corresponding layer object.
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
     Linear(in_features=10, out_features=10, bias=True)
     >>> _parse_layer_name(model, 'layers[0]')
     Conv2d(3, 3, kernel_size=(3, 3), stride=(1, 1))
-    '''
+    """
 
     def _get_value_by_indices(array, indices):
         return reduce(lambda arr, index: arr[index], indices, array)
@@ -401,7 +401,7 @@ class AlexNetGenerator(nn.Module):
 
 
 class AlexNetPool5Generator(nn.Module):
-    """ From caffe pool5 generator of bvlc_reference_caffenet.
+    """From caffe pool5 generator of bvlc_reference_caffenet.
     The model trained by DeepSim using ILSVRC dataset.
     Provided by Alexey Dosovitskiy.
     """
@@ -487,7 +487,7 @@ class AlexNetPool5Generator(nn.Module):
 
 
 class AlexNetRelu4Generator(nn.Module):
-    """ From caffe relu4 generator of bvlc_reference_caffenet. 
+    """From caffe relu4 generator of bvlc_reference_caffenet.
     The model trained by DeepSim using ILSVRC dataset.
     Provided by Alexey Dosovitskiy.
     """
@@ -584,7 +584,7 @@ class AlexNetRelu4Generator(nn.Module):
 
 
 class AlexNetRelu3Generator(nn.Module):
-    """ From caffe relu3 generator of bvlc_reference_caffenet. 
+    """From caffe relu3 generator of bvlc_reference_caffenet.
     The model trained by DeepSim using ILSVRC dataset.
     Provided by Alexey Dosovitskiy.
     """
@@ -681,7 +681,7 @@ class AlexNetRelu3Generator(nn.Module):
 
 
 class AlexNetNorm2Generator(nn.Module):
-    """ From caffe norm2 generator of bvlc_reference_caffenet. 
+    """From caffe norm2 generator of bvlc_reference_caffenet.
     The model trained by DeepSim using ILSVRC dataset.
     Provided by Alexey Dosovitskiy.
     """
@@ -763,7 +763,7 @@ class AlexNetNorm2Generator(nn.Module):
 
 
 class AlexNetNorm1Generator(nn.Module):
-    """ From caffe norm2 generator of bvlc_reference_caffenet. 
+    """From caffe norm2 generator of bvlc_reference_caffenet.
     The model trained by DeepSim using ILSVRC dataset.
     Provided by Alexey Dosovitskiy.
     """
