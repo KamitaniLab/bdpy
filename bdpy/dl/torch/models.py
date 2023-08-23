@@ -59,7 +59,7 @@ def layer_map(net: str) -> Dict[str, str]:
             'relu7': 'classifier[3]',
             'fc8':   'classifier[4]',
         },
-        
+
         'reference_net': {
             'conv1': 'features[0]',
             'relu1': 'features[1]',
@@ -144,43 +144,64 @@ class VGG19(nn.Module):
         super(VGG19, self).__init__()
 
         self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(3, 64, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(64, 64, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-            nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0,
+                         dilation=1, ceil_mode=False),
+            nn.Conv2d(64, 128, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(128, 128, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-            nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0,
+                         dilation=1, ceil_mode=False),
+            nn.Conv2d(128, 256, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(256, 256, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(256, 256, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(256, 256, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-            nn.Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0,
+                         dilation=1, ceil_mode=False),
+            nn.Conv2d(256, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-            nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0,
+                         dilation=1, ceil_mode=False),
+            nn.Conv2d(512, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=(3, 3),
+                      stride=(1, 1), padding=(1, 1)),
             nn.ReLU(inplace=False),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0,
+                         dilation=1, ceil_mode=False),
         )
         self.avgpool = nn.AdaptiveAvgPool2d(output_size=(7, 7))
         self.classifier = nn.Sequential(
@@ -238,38 +259,39 @@ class AlexNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.classifier(x)
         return x
-    
+
+
 class ReferenceNet(nn.Module):
     def __init__(self, num_classes: int = 1000) -> None:
-            super(ReferenceNet, self).__init__()
-            self.features = nn.Sequential(
-                nn.Conv2d(3, 96, kernel_size=11, stride=4, padding=0),
-                nn.ReLU(inplace=False),
-                nn.MaxPool2d(kernel_size=3, stride=2),
-                nn.LocalResponseNorm(5, alpha=0.0001, beta=0.75),
-                nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2),
-                nn.ReLU(inplace=False),
-                nn.MaxPool2d(kernel_size=3, stride=2),
-                nn.LocalResponseNorm(5, alpha=0.0001, beta=0.75),
-                nn.Conv2d(256, 384, kernel_size=3, padding=1),
-                nn.ReLU(inplace=False),
-                nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2),
-                nn.ReLU(inplace=False),
-                nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2),
-                nn.ReLU(inplace=False),
-                nn.MaxPool2d(kernel_size=3, stride=2),
-            )
-            self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
-            self.classifier = nn.Sequential(
-                nn.Dropout(),
-                nn.Linear(256 * 6 * 6, 4096),
-                nn.ReLU(inplace=False),
-                nn.Dropout(),
-                nn.Linear(4096, 4096),
-                nn.ReLU(inplace=False),
-                nn.Linear(4096, num_classes),
-            )
-    
+        super(ReferenceNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 96, kernel_size=11, stride=4, padding=0),
+            nn.ReLU(inplace=False),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.LocalResponseNorm(5, alpha=0.0001, beta=0.75),
+            nn.Conv2d(96, 256, kernel_size=5, padding=2, groups=2),
+            nn.ReLU(inplace=False),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.LocalResponseNorm(5, alpha=0.0001, beta=0.75),
+            nn.Conv2d(256, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(384, 384, kernel_size=3, padding=1, groups=2),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1, groups=2),
+            nn.ReLU(inplace=False),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+        )
+        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
+        self.classifier = nn.Sequential(
+            nn.Dropout(),
+            nn.Linear(256 * 6 * 6, 4096),
+            nn.ReLU(inplace=False),
+            nn.Dropout(),
+            nn.Linear(4096, 4096),
+            nn.ReLU(inplace=False),
+            nn.Linear(4096, num_classes),
+        )
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.features(x)
         x = self.avgpool(x)
@@ -297,39 +319,48 @@ class AlexNetGenerator(nn.Module):
             self.__device1 = device[1]
 
         self.defc7 = nn.Linear(input_size, 4096)
-        self.relu_defc7 = nn.LeakyReLU(0.3,inplace=True)
+        self.relu_defc7 = nn.LeakyReLU(0.3, inplace=True)
 
         self.defc6 = nn.Linear(4096, 4096)
-        self.relu_defc6 = nn.LeakyReLU(0.3,inplace=True)
+        self.relu_defc6 = nn.LeakyReLU(0.3, inplace=True)
 
         self.defc5 = nn.Linear(4096, 4096)
-        self.relu_defc5 = nn.LeakyReLU(0.3,inplace=True)
+        self.relu_defc5 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.deconv5 = nn.ConvTranspose2d(256, 256, kernel_size=4, stride=2, padding=1, bias=True)
-        self.relu_deconv5 = nn.LeakyReLU(0.3,inplace=True)
+        self.deconv5 = nn.ConvTranspose2d(
+            256, 256, kernel_size=4, stride=2, padding=1, bias=True)
+        self.relu_deconv5 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.conv5_1 = nn.ConvTranspose2d(256, 512, kernel_size=3, stride=1, padding=1, bias=True)
-        self.relu_conv5_1 = nn.LeakyReLU(0.3,inplace=True)
+        self.conv5_1 = nn.ConvTranspose2d(
+            256, 512, kernel_size=3, stride=1, padding=1, bias=True)
+        self.relu_conv5_1 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.deconv4 = nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1, bias=True)
-        self.relu_deconv4 = nn.LeakyReLU(0.3,inplace=True)
+        self.deconv4 = nn.ConvTranspose2d(
+            512, 256, kernel_size=4, stride=2, padding=1, bias=True)
+        self.relu_deconv4 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.conv4_1 = nn.ConvTranspose2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True)
-        self.relu_conv4_1 = nn.LeakyReLU(0.3,inplace=True)
+        self.conv4_1 = nn.ConvTranspose2d(
+            256, 256, kernel_size=3, stride=1, padding=1, bias=True)
+        self.relu_conv4_1 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.deconv3 = nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1, bias=True)
-        self.relu_deconv3 = nn.LeakyReLU(0.3,inplace=True)
+        self.deconv3 = nn.ConvTranspose2d(
+            256, 128, kernel_size=4, stride=2, padding=1, bias=True)
+        self.relu_deconv3 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.conv3_1 = nn.ConvTranspose2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True)
-        self.relu_conv3_1 = nn.LeakyReLU(0.3,inplace=True)
+        self.conv3_1 = nn.ConvTranspose2d(
+            128, 128, kernel_size=3, stride=1, padding=1, bias=True)
+        self.relu_conv3_1 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.deconv2 = nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1, bias=True)
-        self.relu_deconv2 = nn.LeakyReLU(0.3,inplace=True)
+        self.deconv2 = nn.ConvTranspose2d(
+            128, 64, kernel_size=4, stride=2, padding=1, bias=True)
+        self.relu_deconv2 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.deconv1 = nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1, bias=True)
-        self.relu_deconv1 = nn.LeakyReLU(0.3,inplace=True)
+        self.deconv1 = nn.ConvTranspose2d(
+            64, 32, kernel_size=4, stride=2, padding=1, bias=True)
+        self.relu_deconv1 = nn.LeakyReLU(0.3, inplace=True)
 
-        self.deconv0 = nn.ConvTranspose2d(32, n_out_channel, kernel_size=4, stride=2, padding=1, bias=True)
+        self.deconv0 = nn.ConvTranspose2d(
+            32, n_out_channel, kernel_size=4, stride=2, padding=1, bias=True)
 
         self.defc = nn.Sequential(
             self.defc7,
@@ -729,8 +760,8 @@ class AlexNetNorm2Generator(nn.Module):
         g = self.deconv(f)
         g = g * 255  # conv1_1_tanh_elt layer's scaling
         return g
-    
-    
+
+
 class AlexNetNorm1Generator(nn.Module):
     """ From caffe norm2 generator of bvlc_reference_caffenet. 
     The model trained by DeepSim using ILSVRC dataset.
