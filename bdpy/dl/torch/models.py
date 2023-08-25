@@ -1,3 +1,6 @@
+"""Model definitions."""
+
+
 from typing import Dict, Union, Optional, Sequence
 
 import re
@@ -136,6 +139,33 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
     raise ValueError(
         f"Invalid layer name: '{layer_name}'. Either the syntax of '{layer_name}' is not supported, "
         f"or {type(model).__name__} object has no attribute '{layer_name}'.")
+
+
+def model_factory(name: str) -> nn.Module:
+    """Make a model instrance."""
+
+    if name == "alexnet":
+        return AlexNet()
+    elif name == "referencenet":
+        return ReferenceNet()
+    elif name == "vgg19":
+        return VGG19()
+    elif name == "relu7generator":
+        return AlexNetGenerator()
+    elif name == "relu6generator":
+        return AlexNetGenerator()
+    elif name == "pool5generator":
+        return AlexNetPool5Generator()
+    elif name == "relu4generator":
+        return AlexNetRelu4Generator()
+    elif name == "relu3generator":
+        return AlexNetRelu3Generator()
+    elif name == "norm2generator":
+        return AlexNetNorm2Generator()
+    elif name == "norm1generator":
+        return AlexNetNorm1Generator()
+    else:
+        raise ValueError(f"Unknwon model: {name}")
 
 
 class VGG19(nn.Module):
