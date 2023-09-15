@@ -249,6 +249,7 @@ class ModelTraining(object):
             id_: Optional[str] = None,
             model_parameters: Dict[str, Any] = {},
             dtype: Optional[Any] = None,  # needs np.typing to annotate (numpy > 1.20)
+            chunk_ndim: int = 2,
             chunk_axis: Optional[int] = None,
             save_format: str = 'pickle',
             save_path: str = './model',
@@ -269,12 +270,13 @@ class ModelTraining(object):
         # Optional properties
         self.id = id_ if id_ else str(uuid.uuid4())
         self.model_parameters = model_parameters  # Parameters passed to model.fit()
-        self.dtype = dtype              # Data type
-        self.chunk_axis = chunk_axis         # Axis along which Y is chunked
-        self.distcomp = distcomp           # Distributed computation controller
-        self.save_format = save_format    # {'pickle', 'bdmodel'}
-        self.save_path = save_path     # Output path
-        self.verbose = verbose               # Verbosity level [0, 1]
+        self.dtype = dtype                        # Data type
+        self.chunk_ndim = chunk_ndim              # Chunk Y if Y.ndim >= chunk_ndim + 1
+        self.chunk_axis = chunk_axis              # Axis along which Y is chunked
+        self.distcomp = distcomp                  # Distributed computation controller
+        self.save_format = save_format            # {'pickle', 'bdmodel'}
+        self.save_path = save_path                # Output path
+        self.verbose = verbose                    # Verbosity level [0, 1]
 
         # Private members
         self.__chunking = False
@@ -287,7 +289,7 @@ class ModelTraining(object):
         # Chunking
         if self.chunk_axis is None:
             self.__chunking = False
-        elif self.Y.ndim == 2:
+        elif self.Y.ndim < self.chunk_ndim + 1:
             self.__chunking = False
         else:
             self.__chunking = True
