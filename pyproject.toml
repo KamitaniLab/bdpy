@@ -10,7 +10,7 @@ authors = [
     { name = "Shuntaro C. Aoki", email = "s_aoki@i.kyoto-u.ac.jp" }
 ]
 readme = "README.md"
-requires-python = ">= 3.8, < 3.12"
+requires-python = ">= 3.6, < 3.12"
 license = { file = "LICENSE" }
 keywords = ["neuroscience", "neuroimaging", "brain decoding", "fmri", "machine learning"]
 
