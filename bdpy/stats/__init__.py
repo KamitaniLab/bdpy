@@ -1,7 +1,6 @@
-"""
-BdPy statistics package
+"""BdPy statistics package.
 
-This package is a part of BdPy
+This package is a part of BdPy.
 
 
 Functions:
@@ -11,4 +10,4 @@ Functions:
 """
 
 
-from .corr import *
+from .corr import corrcoef, corrmat

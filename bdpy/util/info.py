@@ -1,3 +1,8 @@
+"""Information module."""
+
+
+from typing import Dict, Optional
+
 import datetime
 import hashlib
 import os
@@ -9,9 +14,8 @@ import yaml
 import pwd
 
 
-def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
-    '''Dump runtime information.'''
-
+def dump_info(output_dir: str, script: Optional[str] = None, parameters: Optional[Dict] = None, info_file: str ='info.yaml') -> Dict:
+    """Dump runtime information."""
     if script is not None:
         script_path = os.path.abspath(script)
         with open(script_path, 'r') as f:
@@ -55,8 +59,7 @@ def dump_info(output_dir, script=None, parameters=None, info_file='info.yaml'):
         with open(run_info_file, 'r') as f:
             info_yaml = yaml.load(f, Loader=yaml.SafeLoader)
         while info_yaml is None:
-            warnings.warn('Failed to load info from %s. Retrying...'
-                          % run_info_file)
+            warnings.warn('Failed to load info from %s. Retrying...' % run_info_file, stacklevel=2)
             with open(run_info_file, 'r') as f:
                 info_yaml = yaml.load(f, Loader=yaml.SafeLoader)
 

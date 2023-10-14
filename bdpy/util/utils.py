@@ -1,5 +1,4 @@
-"""
-Utility functions.
+"""Utility functions.
 
 This file is a part of BdPy.
 """
@@ -14,13 +13,16 @@ __all__ = ['create_groupvector',
            'makedir_ifnot']
 
 
+from typing import List, Union
+
 import os
 import warnings
 
 import numpy as np
+from numpy.typing import ArrayLike
 
 
-def create_groupvector(group_label, group_size):
+def create_groupvector(group_label: Union[List, np.ndarray], group_size: Union[List, np.ndarray]) -> ArrayLike:
     """Create a group vector.
 
     Parameters
@@ -44,7 +46,6 @@ def create_groupvector(group_label, group_size):
         >>> bdpy.util.create_groupvector([ 1, 2, 3 ], [ 2, 4, 2 ])
         array([1, 1, 2, 2, 2, 2, 3, 3])
     """
-
     group_vector = []
 
     if isinstance(group_size, int):
@@ -66,8 +67,8 @@ def create_groupvector(group_label, group_size):
     return group_vector
 
 
-def divide_chunks(input_list, chunk_size=100):
-    '''Divide elements in the input list into groups.
+def divide_chunks(input_list: Union[List, np.ndarray], chunk_size: int = 100) -> List:
+    """Divide elements in the input list into groups.
 
     Parameters
     ----------
@@ -89,14 +90,14 @@ def divide_chunks(input_list, chunk_size=100):
         [[0, 1], [2, 3], [4, 5], [6]]
         >>> divide_chunks(a, chunk_size=3)
         [[0, 1, 2], [3, 4, 5], [6]]
-    '''
-    n_chunk = np.int(np.ceil(len(input_list) / chunk_size))
+    """
+    n_chunk = int(np.ceil(len(input_list) / chunk_size))
     chunks = [input_list[i * chunk_size:(i + 1) * chunk_size]
               for i in range(n_chunk)]
     return chunks
 
 
-def get_refdata(data, ref_key, foreign_key):
+def get_refdata(data: Union[List, np.ndarray], ref_key: Union[List, np.ndarray], foreign_key: Union[List, np.ndarray]) -> Union[List, np.ndarray]:
     """Get data referred by `foreign_key`.
 
     Parameters
@@ -113,7 +114,6 @@ def get_refdata(data, ref_key, foreign_key):
     array_like
         Referred data.
     """
-
     ind = [np.where(ref_key == i)[0][0] for i in foreign_key]
 
     if data.ndim == 1:
@@ -122,8 +122,8 @@ def get_refdata(data, ref_key, foreign_key):
         return data[ind, :]
 
 
-def makedir_ifnot(dir_path):
-    '''Make a directory if it does not exist.
+def makedir_ifnot(dir_path: str) -> None:
+    """Make a directory if it does not exist.
 
     Parameters
     ----------
@@ -134,12 +134,12 @@ def makedir_ifnot(dir_path):
     -------
     bool
         True if the directory was created.
-    '''
+    """
     if not os.path.isdir(dir_path):
         try:
             os.makedirs(dir_path)
         except OSError:
-            warnings.warn('Failed to create directory %s.' % dir_path)
+            warnings.warn('Failed to create directory %s.' % dir_path, stacklevel=2)
             return False
         return True
     else:

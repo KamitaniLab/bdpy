@@ -1,7 +1,6 @@
-"""
-BdPy: Brain decoding toolbox for Python
+"""BdPy: Brain decoding toolbox for Python.
 
-Developed by Kamitani Lab, Kyoto Univ. and ATR
+Developed by Kamitani Lab, Kyoto Univ. and ATR.
 """
 
 
@@ -9,4 +8,4 @@ Developed by Kamitani Lab, Kyoto Univ. and ATR
 # package `util`.
 from .bdata import BData
 from .bdata import vstack, metadata_equal
-from .util import *
+from .util import create_groupvector, divide_chunks, get_refdata, makedir_ifnot, dump_info, average_elemwise
