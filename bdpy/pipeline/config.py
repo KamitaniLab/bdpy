@@ -4,9 +4,10 @@
 import argparse
 from pathlib import Path
 import inspect
+from datetime import datetime, timezone
 
 from hydra.experimental import initialize_config_dir, compose
-from omegaconf import DictConfig
+from omegaconf import OmegaConf, DictConfig
 
 
 def init_hydra_cfg() -> DictConfig:
@@ -37,5 +38,18 @@ def init_hydra_cfg() -> DictConfig:
 
     initialize_config_dir(config_dir=str(config_dir), job_name=str(called_by.stem))
     cfg = compose(config_name=config_name, overrides=override)
+
+    now = datetime.now(timezone.utc).astimezone()
+    date_str = now.strftime('%Y-%m-%d %H:%M:%S.%f %Z%z')
+
+    # DictConfig of struct mode doesn't accept insertion of new keys.
+    # Dirty solution
+    OmegaConf.set_struct(cfg, False)
+    cfg._run = {
+        "name": called_by.stem,
+        "path": str(called_by.absolute()),
+        "timestamp": date_str,
+    }
+    OmegaConf.set_struct(cfg, True)
 
     return cfg
