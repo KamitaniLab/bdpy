@@ -19,10 +19,9 @@ import os
 import warnings
 
 import numpy as np
-from numpy.typing import ArrayLike
 
 
-def create_groupvector(group_label: Union[List, np.ndarray], group_size: Union[List, np.ndarray]) -> ArrayLike:
+def create_groupvector(group_label: Union[List, np.ndarray], group_size: Union[List, np.ndarray]) -> Union[List, np.ndarray]:
     """Create a group vector.
 
     Parameters
