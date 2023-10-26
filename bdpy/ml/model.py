@@ -22,13 +22,15 @@ class EnsembleClassifier(object):
             model=SVC(kernel='linear'),
             n_estimators=11,
             n_feat=100,
-            normalize_X=False
+            normalize_X=False,
+            undersampling=True
     ):
         self._classes = {}
         self._model = model
         self._estimators = {}
         self._n_estimators = n_estimators
         self._X_normalization = normalize_X
+        self._undersampling = undersampling
         self._n_feat = n_feat
         self._n_targets = 1
         self._target_shape = None
@@ -103,7 +105,10 @@ class EnsembleClassifier(object):
 
             for n in range(n_est):
                 # Undersampling
-                Xsn, ysn = self.__undersample(Xs, ys)
+                if self._undersampling:
+                    Xsn, ysn = self.__undersample(Xs, ys)
+                else:
+                    Xsn, ysn = Xs, ys
 
                 # Normalization
                 if self._X_normalization:
