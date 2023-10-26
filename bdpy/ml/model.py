@@ -12,6 +12,7 @@ from numpy.linalg import norm
 from scipy import stats
 from sklearn.svm import SVC
 from tqdm import tqdm
+import warnings
 
 
 class EnsembleClassifier(object):
@@ -193,13 +194,16 @@ class EnsembleClassifier(object):
                 if estimator['selected_features'] is not None:
                     X_ = X_[:, estimator['selected_features']]
 
-                dv = estimator['model'].decision_function(X_)
-                dv = dv.ravel()
+                dv = estimator['model'].decision_function(X_)  # Expected to be (n_samples,)
+                if dv.ndim > 1:
+                    warnings.warn(f"The return of decision_function is expected to be one-dimensional with a shape of (n_samples,), but it has two (or more) dimensions. I assume the second column represents the decision function for '{y1}' (i.e., dv = dv[:, 1]). This may be unintended behavior. Please check the returns of the decision_function of your model.")
+                    dv = dv[:, 1]
                 if isinstance(estimator['model'], SVC):
                     print('OK')
                     dv /= norm(estimator['model'].coef_)
                     # See https://stats.stackexchange.com/questions/14876/interpreting-distance-from-hyperplane-in-svm
                 dv_all.append(dv)
+            import pdb; pdb.set_trace()
             dv_all = np.vstack(dv_all).T  # (n_samples, n_estimators)
             dv_mean = np.mean(dv_all, axis=1, keepdims=True)
 
