@@ -203,7 +203,6 @@ class EnsembleClassifier(object):
                     dv /= norm(estimator['model'].coef_)
                     # See https://stats.stackexchange.com/questions/14876/interpreting-distance-from-hyperplane-in-svm
                 dv_all.append(dv)
-            import pdb; pdb.set_trace()
             dv_all = np.vstack(dv_all).T  # (n_samples, n_estimators)
             dv_mean = np.mean(dv_all, axis=1, keepdims=True)
 

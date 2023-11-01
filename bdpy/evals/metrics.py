@@ -22,8 +22,8 @@ def profile_correlation(x, y):
     r = np.array(
         [
             np.corrcoef(
-                _x[:, j].flatten(),
-                _y[:, j].flatten()
+                _x[:, j].ravel(),
+                _y[:, j].ravel()
             )[0, 1]
             for j in range(n_feat)
         ]
@@ -57,14 +57,14 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
         nan_cols = np.isnan(_x).any(axis=0) | np.isnan(_y).any(axis=0)
         if nan_cols.any():
             warnings.warn('NaN column removed ({})'.format(np.sum(nan_cols)))
-        _x = _x[:, ~nan_cols]
-        _y = _y[:, ~nan_cols]
+            _x = _x[:, ~nan_cols]
+            _y = _y[:, ~nan_cols]
 
     r = np.array(
         [
             np.corrcoef(
-                _x[i, :].flatten(),
-                _y[i, :].flatten()
+                _x[i, :].ravel(),
+                _y[i, :].ravel()
             )[0, 1]
             for i in range(n_sample)
         ]
@@ -104,8 +104,8 @@ def pattern_cross_correlation(x, y, mean=None, std=None, remove_nan=True):
         nan_cols = np.isnan(_x).any(axis=0) | np.isnan(_y).any(axis=0)
         if nan_cols.any():
             warnings.warn('NaN column removed ({})'.format(np.sum(nan_cols)))
-        _x = _x[:, ~nan_cols]
-        _y = _y[:, ~nan_cols]
+            _x = _x[:, ~nan_cols]
+            _y = _y[:, ~nan_cols]
 
     r = np.corrcoef( _x, _y)[:n_sample, n_sample:]
 
@@ -123,8 +123,8 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True, r
         nan_cols = np.isnan(p).any(axis=0) | np.isnan(t).any(axis=0)
         if nan_cols.any():
             warnings.warn('NaN column removed ({})'.format(np.sum(nan_cols)))
-        p = p[:, ~nan_cols]
-        t = t[:, ~nan_cols]
+            p = p[:, ~nan_cols]
+            t = t[:, ~nan_cols]
 
     if single_trial:
         cr = []
@@ -133,7 +133,7 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True, r
             # label の情報
             ind = np.where(np.array(true_labels) == pred_labels[i])[0][0]
 
-            s = (d - d[0, ind]).flatten()
+            s = (d - d[0, ind]).ravel()
             if remove_nan_dist and np.isnan(s).any():
                 warnings.warn('NaN value detected in the distance matrix ({}).'.format(np.sum(np.isnan(s))))
                 s = s[~np.isnan(s)]
