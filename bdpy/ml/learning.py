@@ -450,8 +450,10 @@ class ModelTraining(object):
         elif self.save_format == 'bdmodel':
             if not self.model.__class__.__name__ == 'FastL2LiR':
                 raise NotImplementedError('BD model current supports only FastL2LiR models.')
-
             for s in output_files:
+                if s['dst'] == "S" and (not hasattr(self.model, "S")): 
+                    # If the model does not have an S, skip the save operation.
+                    continue
                 makedir_ifnot(os.path.dirname(s['file_path']))
                 assert self.dtype is not None
                 save_array(s['file_path'], getattr(self.model, s['src']), key=s['dst'], dtype=self.dtype, sparse=s['sparse'])
@@ -480,23 +482,26 @@ class ModelTraining(object):
                     'sparse': False
                 })
         elif self.save_format == 'bdmodel':
-            # Save W and b for FastL2LiR model.
-            # Otherwise, save everythings.
-
+            # Save W, b and S for FastL2LiR model.
+            # S is a boolean matrix that specifies the voxels selected by voxel selection,
+            # and if the model does not have an S, the actual save operation is not performed. 
+            # (see __save_model function)
             if self.model.__class__.__name__ == 'FastL2LiR':
                 save_dir = os.path.splitext(self.save_path)[0]
                 if self.__chunking:
                     save_file_W = os.path.join(save_dir, 'W', '%08d.mat' % chunk)
                     save_file_b = os.path.join(save_dir, 'b', '%08d.mat' % chunk)
+                    save_file_S = os.path.join(save_dir, 'S', '%08d.mat' % chunk)
                 else:
                     save_file_W = os.path.join(save_dir, 'W.mat')
                     save_file_b = os.path.join(save_dir, 'b.mat')
+                    save_file_S = os.path.join(save_dir, 'S.mat')
 
                 output_files = [
                     {'file_path': save_file_W, 'src': '_FastL2LiR__W', 'dst': 'W', 'sparse': True},
                     {'file_path': save_file_b, 'src': '_FastL2LiR__b', 'dst': 'b', 'sparse': False},
-                ]
-
+                    {'file_path': save_file_S, 'src': '_FastL2LiR__S', 'dst': 'S', 'sparse': True},
+                    ]
             else:
                 raise NotImplementedError('BD model current supports only FastL2LiR models.')
         else:
@@ -536,15 +541,18 @@ class ModelTest(object):
         self.__Y_shape = None
 
     def run(self):
-        '''Run test.'''
-
+        '''Run test.'''        
         if self.dtype is not None:
             self.X = self.X.astype(self.dtype)
 
         if self.model_path is None:
             y_pred = self.model.predict(self.X, **self.model_parameters)
             return y_pred
-
+        
+        save_select_feat = False
+        if "save_select_feat" in self.model_parameters:
+            save_select_feat = self.model_parameters["save_select_feat"]
+            
         if self.model_format == 'pickle':
             if os.path.isfile(self.model_path):
                 model_files = [self.model_path]
@@ -572,7 +580,19 @@ class ModelTest(object):
             else:
                 raise RuntimeError('b not found.')
 
-            model_files = [(w, b) for w, b in zip(W_files, b_files)]
+            # S: shape = (n_voxels, shape_features)
+            if save_select_feat:
+                if os.path.isdir(os.path.join(self.model_path, 'S')):
+                    S_files = sorted(glob.glob(os.path.join(self.model_path, 'S', '*.mat')))
+                elif os.path.isfile(os.path.join(self.model_path, 'S.mat')):
+                    S_files = [os.path.join(self.model_path, 'S.mat')]
+                else:
+                    raise RuntimeError('S not found.')
+                
+            if save_select_feat:
+                model_files = [(w, b, s) for w, b, s in zip(W_files, b_files, S_files)]
+            else:
+                model_files = [(w, b) for w, b in zip(W_files, b_files)]
 
         else:
             raise ValueError('Unknown model format: %s' % self.model_format)
@@ -595,6 +615,9 @@ class ModelTest(object):
                 model = self.model
                 model.W = W
                 model.b = b
+                if save_select_feat:
+                    S = np.asarray(load_array(model_file[2], key='S'), np.bool) 
+                    model.S = S
             else:
                 raise ValueError('Unknown model format: %s' % self.model_format)
 
