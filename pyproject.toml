@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bdpy"
-version = "0.19"
+version = "0.20"
 description = "Brain decoder toolbox for Python"
 authors = [
     { name = "Shuntaro C. Aoki", email = "s_aoki@i.kyoto-u.ac.jp" }
