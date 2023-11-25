@@ -12,7 +12,6 @@ from omegaconf import OmegaConf, DictConfig
 
 def init_hydra_cfg() -> DictConfig:
     """Initialize Hydra config."""
-
     parser = argparse.ArgumentParser()
     parser.add_argument('config', type=str, default=None, help='configuration file')
     parser.add_argument('--override', type=str, nargs='+', default=[], help='configuration override(s)')
@@ -30,13 +29,14 @@ def init_hydra_cfg() -> DictConfig:
     stack = inspect.stack()
     if len(stack) >= 2:
         frame = stack[1]
-        called_by = frame.filename
+        called_by = Path(frame.filename)
+        called_by_name = called_by.stem
+        called_by_path = str(called_by.absolute())
     else:
-        called_by = 'undef'
+        called_by_name = 'undef'
+        called_by_path = 'undef'
 
-    called_by = Path(called_by)
-
-    initialize_config_dir(config_dir=str(config_dir), job_name=str(called_by.stem))
+    initialize_config_dir(config_dir=str(config_dir), job_name=str(called_by_name))
     cfg = compose(config_name=config_name, overrides=override)
 
     now = datetime.now(timezone.utc).astimezone()
@@ -46,8 +46,8 @@ def init_hydra_cfg() -> DictConfig:
     # Dirty solution
     OmegaConf.set_struct(cfg, False)
     cfg._run = {
-        "name": called_by.stem,
-        "path": str(called_by.absolute()),
+        "name": called_by_name,
+        "path": called_by_path,
         "timestamp": date_str,
     }
     OmegaConf.set_struct(cfg, True)
