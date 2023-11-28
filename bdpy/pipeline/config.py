@@ -14,7 +14,8 @@ def init_hydra_cfg() -> DictConfig:
     """Initialize Hydra config."""
     parser = argparse.ArgumentParser()
     parser.add_argument('config', type=str, default=None, help='configuration file')
-    parser.add_argument('--override', type=str, nargs='+', default=[], help='configuration override(s)')
+    parser.add_argument('-o', '--override', type=str, nargs='+', default=[], help='configuration override(s)')
+    parser.add_argument('-a', '--analysis', type=str, nargs='?', default=None, help='analysis name (default: script file name)')
     args = parser.parse_args()
 
     config_file = args.config
@@ -45,11 +46,17 @@ def init_hydra_cfg() -> DictConfig:
     # DictConfig of struct mode doesn't accept insertion of new keys.
     # Dirty solution
     OmegaConf.set_struct(cfg, False)
-    cfg._run = {
+    cfg._run_ = {
         "name": called_by_name,
         "path": called_by_path,
         "timestamp": date_str,
     }
+
+    # code = cfg.get("code", None)
+    cfg._analysis_name_ = args.analysis
+    if cfg._analysis_name_ is None:
+        cfg._analysis_name_ = called_by_name
+
     OmegaConf.set_struct(cfg, True)
 
     return cfg

@@ -42,11 +42,16 @@ mri = [
     "nibabel==3.2",
     "nipy"
 ]
+pipeline = [
+    "hydra-core",
+    "omegaconf"
+]
 all = [
     "bdpy[caffe]",
     "bdpy[torch]",
     "bdpy[fig]",
-    "bdpy[mri]"
+    "bdpy[mri]",
+    "bdpy[pipeline]"
 ]
 dev = [
     "bdpy[all]",
