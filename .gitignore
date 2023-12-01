@@ -23,3 +23,6 @@ junk
 tmp
 test_local
 test_versions
+
+/venv
+/venv-*
