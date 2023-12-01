@@ -1,7 +1,6 @@
-'''BrainDecoderToolbox2/BdPy data class
+"""BrainDecoderToolbox2/BdPy data class.
 
-This file is a part of BdPy
-
+This file is a part of BdPy.
 
 API list
 --------
@@ -20,14 +19,15 @@ API list
 - File I/O
     - load
     - save
-'''
+"""
 
 
 __all__ = ['BData']
 
 
+from typing import Optional, Tuple, Union
+
 import os
-import sys
 import warnings
 import time
 import datetime
@@ -45,7 +45,7 @@ from .featureselector import FeatureSelector
 # BData class ##########################################################
 
 class BData(object):
-    '''BrainDecoderToolbox2/BdPy data class
+    """BrainDecoderToolbox2/BdPy data class.
 
     The instance of class `BData` contains `dataset` and `metadata` as instance
     variables.
@@ -62,14 +62,14 @@ class BData(object):
 
     Attributes
     ----------
-    dataset : numpy array (dtype=float)
+    dataset : numpy.ndarray (dtype=float)
         Dataset array
-    metadata : metadata object
+    metadata : MetaData object
         Meta-data object
-    '''
+    """
 
-
-    def __init__(self, file_name=None, file_type=None):
+    def __init__(self, file_name: Optional[str] = None, file_type: Optional[str] = None) -> None:
+        """Initialize BData instance."""
         self.__dataset = np.ndarray((0, 0), dtype=float)
         self.__metadata = MetaData()
         self.__header = {}
@@ -124,14 +124,13 @@ class BData(object):
     # Misc -------------------------------------------------------------
 
     def __obsoleted_method(alternative):
-        '''Decorator for obsoleted functions'''
+        """Decorator for obsoleted functions."""
         def __obsoleted_method_in(func):
             import functools
             @functools.wraps(func)
             def wrapper(*args, **kwargs):
                 funcname = func.__name__
-                warnings.warn("'%s' is obsoleted and kept for compatibility. Use '%s' instead." % (funcname, alternative),
-                              UserWarning, stacklevel=2)
+                warnings.warn("'%s' is obsoleted and kept for compatibility. Use '%s' instead." % (funcname, alternative), UserWarning, stacklevel=2)
                 return func(*args, **kwargs)
             return wrapper
         return __obsoleted_method_in
@@ -139,12 +138,12 @@ class BData(object):
 
     # Data modification ------------------------------------------------
 
-    def add(self, x, name):
-        '''Add `x` to dataset as `name`.`
+    def add(self, x: np.ndarray, name: str) -> None:
+        """Add `x` to dataset as `name`.
 
         Parameters
         ----------
-        x : array
+        x : numpy.ndarray
             Data matrix to be added in dataset
         name : str
             Name of the data `x`
@@ -152,8 +151,7 @@ class BData(object):
         Returns
         -------
         None
-        '''
-
+        """
         if x.ndim == 1:
             x = x[:, np.newaxis]
 
@@ -174,62 +172,60 @@ class BData(object):
         self.metadata.set(name, column_value, column_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
-
     @__obsoleted_method('add')
-    def add_dataset(self, x, attribute_key):
-        '''Add `x` to dataset with attribute meta-data key `attribute_key`
+    def add_dataset(self, x: np.ndarray, attribute_key: str) -> None:
+        """Add `x` to dataset with attribute meta-data key `attribute_key`.
 
         Parameters
         ----------
-        x : array
-            Data matrix to be added in dataset
+        x : numpy.ndarray
+            Data matrix to be added in dataset.
         attribute_key : str
-            Key of attribute meta-data, which specifies the columns containing `x`
+            Key of attribute meta-data, which specifies the columns containing `x`.
 
         Returns
         -------
         None
-        '''
+        """
         return self.add(x, attribute_key)
 
-
-    def update(self, key, dat):
-        '''Update dataset
+    def update(self, key: str, dat: np.ndarray) -> None:
+        """Update dataset.
 
         Parameters
         ----------
         key : str
-           Name of columns to be updated
-        dat : array_like
-           New data array
+           Name of columns to be updated.
+        dat : np.ndarray
+           New data array.
 
         Returns
         -------
         None
-        '''
+        """
         mdind = [a == 1 for a in self.get_metadata(key)]
         self.dataset[:, np.array(mdind)] = dat
 
-
-    def add_metadata(self, key, value, description='', where=None, attribute=None):
-        '''Add meta-data with `key`, `description`, and `value` to metadata
+    def add_metadata(self, key: str, value: np.ndarray, description: str = '', where: Optional[str] = None, attribute: Optional[str] = None) -> None:
+        """Add meta-data with `key`, `description`, and `value` to metadata.
 
         Parameters
         ----------
         key : str
-            Meta-data key
-        value : array
-            Meta-data array
+            Meta-data key.
+        value : numpy.ndarray
+            Meta-data array.
         description : str, optional
-            Meta-data description
+            Meta-data description.
         where : str, optional
-            Meta-data key masking the columns in the dataset
+            Meta-data key masking the columns in the dataset.
+        attribute : str, optional
+            Meta-data key masking the columns in the dataset.
 
         Returns
         -------
         None
-        '''
-
+        """
         # TODO: Add attribute specifying
         # TODO: Add size check of metadata/value
 
@@ -251,10 +247,8 @@ class BData(object):
 
         self.metadata.set(key, add_value, description)
 
-
-    def merge_metadata(self, key, sources, description='', where=None, method='logical_or'):
-        '''Merage metadata rows.'''
-
+    def merge_metadata(self, key: str, sources, description: str = '', where: Optional[str] = None, method: str = 'logical_or') -> None:
+        """Merage metadata rows."""
         if not method == 'logical_or':
             raise NotImplementedError('Only `logical_or` is implemented')
 
@@ -267,9 +261,8 @@ class BData(object):
 
         self.add_metadata(key, mdv_new, description, where=where)
 
-
-    def rename_metadata(self, key_old, key_new):
-        '''Rename meta-data key
+    def rename_metadata(self, key_old: str, key_new: str) -> None:
+        """Rename meta-data key.
 
         Parameters
         ----------
@@ -279,13 +272,12 @@ class BData(object):
         Returns
         -------
         None
-        '''
+        """
         self.metadata.key[self.metadata.key.index(key_old)] = key_new
         return None
 
-
-    def set_metadatadescription(self, key, description):
-        '''Set description of metadata specified by `key`
+    def set_metadatadescription(self, key: str, description: str) -> None:
+        """Set description of metadata specified by `key`.
 
         Parameters
         ----------
@@ -297,15 +289,12 @@ class BData(object):
         Returns
         -------
         None
-        '''
-
-        self.metadata.set(key, None, description,
-                          lambda x, y: y)
-
+        """
+        self.metadata.set(key, None, description, lambda x, y: y)
 
     @__obsoleted_method('set_metadatadescription')
-    def edit_metadatadescription(self, metakey, description):
-        '''Set description of metadata specified by `key`
+    def edit_metadatadescription(self, metakey: str, description: str) -> None:
+        """Set description of metadata specified by `key`.
 
         Parameters
         ----------
@@ -317,16 +306,15 @@ class BData(object):
         Returns
         -------
         None
-        '''
+        """
         self.set_metadatadescription(metakey, description)
 
-    def update_header(self, header):
-        '''Update header.'''
+    def update_header(self, header) -> None:
+        """Update header."""
         self.__header.update(header)
 
     def applyfunc(self, func, where=None, **kargs):
-        '''Apply `func` to the dataset.'''
-
+        """Apply `func` to the dataset."""
         if where is None:
             # FIXME
             fout = func(self.dataset, **kargs)
@@ -369,8 +357,8 @@ class BData(object):
 
     # Data access ------------------------------------------------------
 
-    def select(self, condition, return_index=False, verbose=True):
-        '''Select data (columns) from dataset.
+    def select(self, condition: str, return_index: bool = False, verbose: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+        """Select data (columns) from dataset.
 
         Parameters
         ----------
@@ -383,7 +371,7 @@ class BData(object):
 
         Returns
         -------
-        array-like
+        numpy.ndarray
             Selected data
         list, optional
             Selected index
@@ -396,8 +384,7 @@ class BData(object):
         - & (and)
         - = (equal)
         - @ (conditional)
-        '''
-
+        """
         expr_rpn = FeatureSelector(condition).rpn
 
         stack = []
@@ -482,17 +469,16 @@ class BData(object):
             selected_index = [n < num_sel for n in selected_index]
 
         # Very dirty solution
-        selected_index = np.array(selected_index) == True
+        selected_index = np.array(selected_index) is True
 
         if return_index:
             return self.dataset[:, np.array(selected_index)], selected_index
         else:
             return self.dataset[:, np.array(selected_index)]
 
-
     @__obsoleted_method('select')
-    def select_dataset(self, condition, return_index=False, verbose=True):
-        '''Select data (columns) from dataset.
+    def select_dataset(self, condition: str, return_index: bool = False, verbose: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+        """Select data (columns) from dataset.
 
         Parameters
         ----------
@@ -505,7 +491,7 @@ class BData(object):
 
         Returns
         -------
-        array-like
+        numpy.ndarray
             Selected data
         list, optional
             Selected index
@@ -518,13 +504,12 @@ class BData(object):
         - & (and)
         - = (equal)
         - @ (conditional)
-        '''
+        """
         return self.select(condition, return_index, verbose)
 
-
     @__obsoleted_method('select')
-    def select_feature(self, condition, return_index=False, verbose=True):
-        '''Select data (columns) from dataset.
+    def select_feature(self, condition: str, return_index: bool = False, verbose: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+        """Select data (columns) from dataset.
 
         Parameters
         ----------
@@ -537,7 +522,7 @@ class BData(object):
 
         Returns
         -------
-        array-like
+        numpy.ndarray
             Selected data
         list, optional
             Selected index
@@ -550,36 +535,32 @@ class BData(object):
         - & (and)
         - = (equal)
         - @ (conditional)
-        '''
+        """
         return self.select(condition, return_index, verbose)
 
-
-    def get(self, key=None):
-        '''Get dataset
+    def get(self, key: Optional[str] = None) -> np.ndarray:
+        """Get dataset.
 
         When `key` is not given, `get_dataset` returns `dataset`. When `key` is
         given, `get_dataset` returns data specified by `key`
-        '''
-
+        """
         if key is None:
             return self.dataset
         else:
             query = '%s = 1' % key
             return self.select(query, return_index=False, verbose=False)
 
-
     @__obsoleted_method('get')
-    def get_dataset(self, key=None):
-        '''Get dataset
+    def get_dataset(self, key: Optional[str] = None) -> np.ndarray:
+        """Get dataset.
 
         When `key` is not given, `get_dataset` returns `dataset`. When `key` is
         given, `get_dataset` returns data specified by `key`
-        '''
+        """
         return self.get(key)
 
-
-    def get_metadata(self, key, where=None):
-        '''Get value of meta-data specified by `key`
+    def get_metadata(self, key: str, where: Optional[str] = None) -> np.ndarray:
+        """Get value of meta-data specified by `key`.
 
         Parameters
         ----------
@@ -591,22 +572,19 @@ class BData(object):
 
         Returns
         -------
-        array-like
-        '''
-
+        numpy.ndarray
+        """
         md = self.metadata.get(key, 'value')
 
-        if where != None:
+        if where is not None:
             # Mask the metadata array with columns specified with `where`
-            ind = self.metadata.get(where, 'value') == True
+            ind = self.metadata.get(where, 'value') is True
             md = md[ind]
 
         return md
 
-
-    def show_metadata(self):
-        '''Show all the key and description in metadata'''
-
+    def show_metadata(self) -> None:
+        """Show all the key and description in metadata."""
         # Get max length
         max_key = max([len(k) for k in self.metadata.key])
         max_desc = max([len(k) for k in self.metadata.description])
@@ -621,9 +599,9 @@ class BData(object):
 
     # Value-label map --------------------------------------------------------
 
-    def get_labels(self, key):
-        '''Get `key` as labels.'''
-        if not key in self.__vmap:
+    def get_labels(self, key: str) -> list:
+        """Get `key` as labels."""
+        if key not in self.__vmap:
             raise ValueError('Key not found in vmap: %s' % key)
         value = self.select(key).flatten()
         label = []
@@ -635,12 +613,12 @@ class BData(object):
             label.append(v)
         return label
 
-    def get_label(self, key):
-        '''Get `key` as labels.'''
+    def get_label(self, key: str) -> list:
+        """Get `key` as labels."""
         return self.get_labels(key)
 
-    def get_vmap(self, key):
-        '''Returns vmap of `key`.'''
+    def get_vmap(self, key: str) -> dict:
+        """Returns vmap of `key`."""
         if key in self.__vmap:
             return self.__vmap[key]
         else:
@@ -649,15 +627,15 @@ class BData(object):
     def get_vmap_keys(self):
         return self.__vmap.keys()
 
-    def add_vmap(self, key, vmap):
-        '''Add vmap.'''
-        if not key in self.__metadata.key:
+    def add_vmap(self, key: str, vmap: dict) -> None:
+        """Add vmap."""
+        if key not in self.__metadata.key:
             raise ValueError('%s not found in metadata.' % key)
 
-        if type(vmap) is not dict:
+        if not isinstance(vmap, dict):
             raise TypeError('`vmap` should be a dictionary.')
         for k in vmap.keys():
-            if type(k) is str:
+            if isinstance(k, str):
                 raise TypeError('Keys of `vmap` should be numerical.')
 
         if key in self.__vmap:
@@ -674,7 +652,7 @@ class BData(object):
 
         return None
 
-    def __get_act_vmap(self, key, vmap):
+    def __get_act_vmap(self, key: str, vmap: dict) -> dict:
         values = np.unique(self.get(key))
         try:
             vmap_add = {}
@@ -682,13 +660,13 @@ class BData(object):
                 if np.isnan(val):
                     continue
                 vmap_add.update({val: vmap[val]})
-        except KeyError:
-            raise ValueError('Invalid vmap: label for %f not found.' % val)
+        except KeyError as err:
+            raise ValueError('Invalid vmap: label for %f not found.' % val) from err
         return vmap_add
 
-    def __check_vmap_consistency(self, vmap_new, vmap_old):
+    def __check_vmap_consistency(self, vmap_new: dict, vmap_old: dict) -> bool:
         for key in vmap_new.keys():
-            if not key in vmap_old:
+            if key not in vmap_old:
                 continue
             if vmap_old[key] != vmap_new[key]:
                 print('Inconsistent label:')
@@ -700,9 +678,8 @@ class BData(object):
 
     # File I/O---------------------------------------------------------
 
-    def load(self, load_filename, load_type=None):
-        '''Load 'dataset' and 'metadata' from a given file'''
-
+    def load(self, load_filename: str, load_type: Optional[str] = None) -> None:
+        """Load 'dataset' and 'metadata' from a given file."""
         if load_type is None:
             load_type = self.__get_filetype(load_filename)
 
@@ -713,10 +690,8 @@ class BData(object):
         else:
             raise ValueError("Unknown file type: %s" % (load_type))
 
-
-    def save(self, file_name, file_type=None):
-        '''Save 'dataset' and 'metadata' to a file'''
-
+    def save(self, file_name: str, file_type: Optional[str] = None) -> None:
+        """Save 'dataset' and 'metadata' to a file."""
         # Store data creation information
         t_now = time.time()
         t_now_str = datetime.datetime.fromtimestamp(t_now).strftime('%Y-%m-%d %H:%M:%S')
@@ -726,7 +701,8 @@ class BData(object):
         f = inspect.currentframe()
         while True:
             f = f.f_back
-            if f is None: break
+            if f is None:
+                break
             fname = os.path.abspath(f.f_code.co_filename)
             fline = f.f_lineno
             callstack.append('%s:%d' % (fname, fline))
@@ -749,15 +725,13 @@ class BData(object):
             raise RuntimeError('Saving BData as a mat file is no longer supported. Please save the data as HDF5 (.h5).')
         elif file_type == "HDF5":
             self.__save_h5(file_name, header=self.__header)
-
         else:
             raise ValueError("Unknown file type: %s" % (file_type))
 
-
     # Private methods --------------------------------------------------
 
-    def __metadata_key_to_bool_vector(self, key):
-        '''Convert meta-dat key(s) to boolean vector.'''
+    def __metadata_key_to_bool_vector(self, key: str) -> np.ndarray:
+        """Convert meta-dat key(s) to boolean vector."""
         key_esc = re.escape(key).replace('\*', '.*') + '$'  # `fullmatch` is available in Python >= 3.4
         keys = [k for k in self.metadata.key if re.match(key_esc, k)]
         if len(keys) == 0:
@@ -769,7 +743,7 @@ class BData(object):
         vec = np.sum(vals, axis=0).astype(bool)
         return vec
 
-    def __get_order(self, v, sort_order='descend'):
+    def __get_order(self, v: np.ndarray, sort_order: str = 'descend') -> np.ndarray:
 
         # 'np.nan' comes to the last of an acending series, and thus the top of a decending series.
         # To avoid that, convert 'np.nan' to -Inf.
@@ -782,9 +756,8 @@ class BData(object):
 
         return np.array(order, dtype=float)
 
-
-    def __get_top_elm_from_order(self, order, n):
-        '''Get a boolean index of top `n` elements from `order`'''
+    def __get_top_elm_from_order(self, order: np.ndarray, n: int) -> np.ndarray:
+        """Get a boolean index of top `n` elements from `order`."""
         sorted_index = np.argsort(order)
         for i, x in enumerate(sorted_index):
             order[x] = i
@@ -793,9 +766,8 @@ class BData(object):
 
         return index
 
-
-    def __save_h5(self, file_name, header=None):
-        '''Save data in HDF5 format (*.h5)'''
+    def __save_h5(self, file_name: str, header: Optional[dict] = None) -> None:
+        """Save data in HDF5 format (*.h5)."""
         with h5py.File(file_name, 'w') as h5file:
             # dataset
             h5file.create_dataset('/dataset', data=self.dataset)
@@ -826,9 +798,8 @@ class BData(object):
                 for k, v in vm.items():
                     h5file.create_dataset('/vmap/' + mk + '/' + str(k), data=self.__to_bytes(v)) # FIXME: save unicode str as is
 
-    def __load_mat(self, load_filename):
-        '''Load dataset and metadata from Matlab file'''
-
+    def __load_mat(self, load_filename: str) -> None:
+        """Load dataset and metadata from Matlab file."""
         dat = sio.loadmat(load_filename)
 
         if 'metaData' in dat:
@@ -852,10 +823,8 @@ class BData(object):
         self.__metadata.value = md_values
         self.__metadata.description = md_descs
 
-
-    def __load_h5(self, load_filename):
-        '''Load dataset and metadata from HDF5 file'''
-
+    def __load_h5(self, load_filename: str) -> None:
+        """Load dataset and metadata from HDF5 file."""
         dat = h5py.File(load_filename, 'r')
 
         if 'metaData' in dat:
@@ -893,20 +862,19 @@ class BData(object):
         self.__metadata.description = md_descs
 
     def __to_unicode(self, s):
-        '''Convert s (bytes) to unicode str.'''
+        """Convert s (bytes) to unicode str."""
         if isinstance(s, bytes):
             return s.decode('utf-8')
         return s
 
     def __to_bytes(self, s):
-        '''Convert s (unicode str) to bytes.'''
+        """Convert s (unicode str) to bytes."""
         if isinstance(s, str):
             return s.encode('utf-8')
         return s
 
-    def __get_filetype(self, file_name):
-        '''Return the type of `file_name` based on the file extension'''
-
+    def __get_filetype(self, file_name: str):
+        """Return the type of `file_name` based on the file extension."""
         _, ext = os.path.splitext(file_name)
 
         if ext == ".mat":
