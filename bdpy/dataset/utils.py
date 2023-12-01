@@ -85,7 +85,7 @@ def download_splitted_file(file_list: List[FileDict], destination: str, progress
 
     # Merge files
     subprocess.run(f"cat {destination}-* > {destination}", shell=True)
-    print(f"File created: {bn}")
+    print(f"File created: {destination}")
 
     # Check md5sum
     if md5sum is not None:

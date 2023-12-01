@@ -886,9 +886,6 @@ class BData(object):
                 vmap = {}
                 for k in dat['vmap'][mk].keys():
                     vmap.update({float(k): self.__to_unicode(dat['vmap'][mk][k][()])})
-                # TODO: fix this dirty solution
-                if sys.version_info.major == 2:
-                    mk = mk.encode('utf-8')
                 self.__vmap.update({mk: vmap})
 
         self.__metadata.key = md_keys
@@ -897,16 +894,14 @@ class BData(object):
 
     def __to_unicode(self, s):
         '''Convert s (bytes) to unicode str.'''
-        if sys.version_info.major == 3:
-            if isinstance(s, bytes):
-                return s.decode('utf-8')
+        if isinstance(s, bytes):
+            return s.decode('utf-8')
         return s
 
     def __to_bytes(self, s):
         '''Convert s (unicode str) to bytes.'''
-        if sys.version_info.major == 3:
-            if isinstance(s, str):
-                return s.encode('utf-8')
+        if isinstance(s, str):
+            return s.encode('utf-8')
         return s
 
     def __get_filetype(self, file_name):

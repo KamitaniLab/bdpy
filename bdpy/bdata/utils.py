@@ -62,10 +62,7 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
             # vmap
             vmap_keys = ds_copy.get_vmap_keys()
             for vk in vmap_keys:
-                if sys.version_info.major == 2:
-                    dat.add_vmap(vk.encode(), ds_copy.get_vmap(vk.encode()))
-                else:
-                    dat.add_vmap(vk, ds_copy.get_vmap(vk))
+                dat.add_vmap(vk, ds_copy.get_vmap(vk))
         else:
             # Check metadata consistency
             if metadata_merge == 'strict':
@@ -102,10 +99,7 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
             # Merge vmap
             vmap_keys = ds_copy.get_vmap_keys()
             for vk in vmap_keys:
-                if sys.version_info.major == 2:
-                    dat.add_vmap(vk.encode(), ds_copy.get_vmap(vk.encode()))
-                else:
-                    dat.add_vmap(vk, ds_copy.get_vmap(vk))
+                dat.add_vmap(vk, ds_copy.get_vmap(vk))
 
         # Update the last values in sucessive columns
         for s in successive:
