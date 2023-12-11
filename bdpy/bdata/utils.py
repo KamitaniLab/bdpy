@@ -1,4 +1,4 @@
-'''Utility functions for BData'''
+"""Utility functions for BData."""
 
 
 import copy
@@ -10,7 +10,7 @@ from .bdata import BData
 
 
 def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_description=False):
-    '''Concatenate datasets vertically.
+    """Concatenate datasets vertically.
 
     Currently, `concat_dataset` does not validate the consistency of meta-data
     among data.
@@ -38,7 +38,7 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
     -------
 
         data = vstack([data0, data1, data2], successive=['Session', 'Run', 'Block'])
-    '''
+    """
 
     suc_cols = {s : 0 for s in successive}
 
@@ -110,21 +110,21 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
 
 
 def resolve_vmap(bdata_list):
-    """ Replace the conflicting vmaps for multiple bdata with non-conflicting vmaps.
+    """Replace the conflicting vmaps for multiple bdata with non-conflicting vmaps.
 
     Parameters
     ----------
     bdata_list : list of BData
         Data to be concatenated
-        
+
     Returns
-    -------        
-    bdata_list : list of BData 
+    -------
+    bdata_list : list of BData
         The vmap is fixed to avoid a collision.
     """
     # Get the vmap key list.
     vmap_keys = bdata_list[0].get_vmap_keys()
-    
+
     # Check each vmap key.
     for vmap_key in vmap_keys:
         new_vmap = {}
@@ -133,7 +133,7 @@ def resolve_vmap(bdata_list):
             vmap = ds.get_vmap(vmap_key)
             ds_values, selector = ds.select(vmap_key, return_index = True) # keep original dataset values
             new_dsvalues = copy.deepcopy(ds_values)  # to update
-            
+
             # Sanity check
             if not vmap_key in ds.metadata.key:
                 raise ValueError('%s not found in metadata.' % vmap_key)
@@ -142,7 +142,7 @@ def resolve_vmap(bdata_list):
             for vk in vmap.keys():
                 if type(vk) is str:
                     raise TypeError('Keys of `vmap` should be numerical.')
-            
+
             # Check duplicate and create new vmap
             for vk in vmap.keys():
                 if vk not in new_vmap.keys():
@@ -151,29 +151,29 @@ def resolve_vmap(bdata_list):
                 elif new_vmap[vk] != vmap[vk]:
                     # If find the exisiting key and the values are different,
                     # assign a new key by incrementing 1 to the maximum exisiting key.
-                    inflation_key_value = max(new_vmap.keys()) 
+                    inflation_key_value = max(new_vmap.keys())
                     new_vmap[inflation_key_value + 1] = vmap[vk]
                     # Update dataset values
                     new_dsvalues[ds_values == vk] = inflation_key_value + 1
                 else:
                     # If the key and value is same, nothing to do.
                     pass
-                
+
             # Update dataset
             ds.dataset[:, selector] = new_dsvalues
 
         # Update each bdata vmap.
         for ds in bdata_list:
             vmap = ds.get_vmap(vmap_key)
-            if not np.array_equal(sorted(list(vmap.keys())), sorted(list(new_vmap.keys()))): 
+            if not np.array_equal(sorted(list(vmap.keys())), sorted(list(new_vmap.keys()))):
                 # If the present vmap is different from new_vmap, update it.
                 ds._BData__vmap[vmap_key] = new_vmap # BDataクラスにvmapのsetterがあると良い
-        
-    return bdata_list   
+
+    return bdata_list
 
 
 def concat_dataset(data_list, successive=[]):
-    '''Concatenate datasets
+    """Concatenate datasets
 
     Currently, `concat_dataset` does not validate the consistency of meta-data
     among data.
@@ -195,13 +195,13 @@ def concat_dataset(data_list, successive=[]):
     -------
 
         data = concat_dataset([data0, data1, data2], successive=['Session', 'Run', 'Block'])
-    '''
+    """
 
     return vstack(data_list, successive=successive)
 
 
 def metadata_equal(d0, d1, strict=False):
-    '''Check whether `d0` and `d1` share the same meta-data.
+    """Check whether `d0` and `d1` share the same meta-data.
 
     Parameters
     ----------
@@ -211,7 +211,7 @@ def metadata_equal(d0, d1, strict=False):
     Returns
     -------
     bool
-    '''
+    """
 
     equal = True
 
