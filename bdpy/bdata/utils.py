@@ -1,8 +1,9 @@
 """Utility functions for BData."""
 
 
+from typing import List
+
 import copy
-import sys
 
 import numpy as np
 
@@ -250,3 +251,13 @@ def metadata_equal(d0, d1, strict=False):
             return False
 
     return True
+
+
+def select_data_multi_bdatas(bdatas: List[BData], roi_selector: str) -> np.ndarray:
+    """Load brain data from multiple BDatas."""
+    return np.vstack([b.select(roi_selector) for b in bdatas])
+
+
+def get_labels_multi_bdatas(bdatas: List[BData], label_name: str) -> List[str]:
+    """Load brain data from multiple BDatas."""
+    return [label for b in bdatas for label in b.get_labels(label_name)]
