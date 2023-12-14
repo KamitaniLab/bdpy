@@ -12,6 +12,7 @@ from numpy.linalg import norm
 from scipy import stats
 from sklearn.svm import SVC
 from tqdm import tqdm
+import warnings
 
 
 class EnsembleClassifier(object):
@@ -22,13 +23,15 @@ class EnsembleClassifier(object):
             model=SVC(kernel='linear'),
             n_estimators=11,
             n_feat=100,
-            normalize_X=False
+            normalize_X=False,
+            undersampling=True
     ):
         self._classes = {}
         self._model = model
         self._estimators = {}
         self._n_estimators = n_estimators
         self._X_normalization = normalize_X
+        self._undersampling = undersampling
         self._n_feat = n_feat
         self._n_targets = 1
         self._target_shape = None
@@ -103,7 +106,10 @@ class EnsembleClassifier(object):
 
             for n in range(n_est):
                 # Undersampling
-                Xsn, ysn = self.__undersample(Xs, ys)
+                if self._undersampling:
+                    Xsn, ysn = self.__undersample(Xs, ys)
+                else:
+                    Xsn, ysn = Xs, ys
 
                 # Normalization
                 if self._X_normalization:
@@ -188,8 +194,10 @@ class EnsembleClassifier(object):
                 if estimator['selected_features'] is not None:
                     X_ = X_[:, estimator['selected_features']]
 
-                dv = estimator['model'].decision_function(X_)
-                dv = dv.ravel()
+                dv = estimator['model'].decision_function(X_)  # Expected to be (n_samples,)
+                if dv.ndim > 1:
+                    warnings.warn(f"The return of decision_function is expected to be one-dimensional with a shape of (n_samples,), but it has two (or more) dimensions. I assume the second column represents the decision function for '{y1}' (i.e., dv = dv[:, 1]). This may be unintended behavior. Please check the returns of the decision_function of your model.")
+                    dv = dv[:, 1]
                 if isinstance(estimator['model'], SVC):
                     print('OK')
                     dv /= norm(estimator['model'].coef_)

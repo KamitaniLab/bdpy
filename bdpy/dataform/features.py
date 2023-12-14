@@ -12,15 +12,39 @@ __all__ = ['Features', 'DecodedFeatures', 'save_feature']
 
 from typing import Any, Optional, Union, List, Dict
 
+from functools import partial
 import os
 import glob
 import sqlite3
 import pickle
 import warnings
+from multiprocessing import Pool
 
 import numpy as np
 import scipy.io as sio
 import hdf5storage
+
+
+def _load_array_with_key(key: str, path: str) -> np.ndarray:
+    try:
+        return sio.loadmat(path)[key]
+    except NotImplementedError:
+        return hdf5storage.loadmat(path)[key]
+
+
+def _determine_num_parallel(num_files: int) -> int:
+    # NOTE: optimal number of parallel processes is not clear. It could depend
+    # on several factors such as the number of files, the size of files, the
+    # number of cores, etc. For now, we use a simple heuristic based on the
+    # number of files.
+    num_parallel: int
+    if num_files < 16:
+        num_parallel = 1
+    elif num_files < 64:
+        num_parallel = 16
+    else:
+        num_parallel = 64
+    return num_parallel
 
 
 class Features(object):
@@ -119,16 +143,11 @@ class Features(object):
             labels = label
 
         features: np.ndarray
-        try:
-            features = np.vstack(
-                [sio.loadmat(self.__feature_file_table[layer][label])['feat']
-                 for label in labels]
-            )
-        except NotImplementedError:
-            features = np.vstack(
-                [hdf5storage.loadmat(self.__feature_file_table[layer][label])['feat']
-                 for label in labels]
-            )
+        num_labels = len(labels)
+        num_parallel = _determine_num_parallel(num_labels)
+        path_iterator = map(lambda label: self.__feature_file_table[layer][label], labels)
+        with Pool(processes=num_parallel) as pool:
+            features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
 
         if self.__feat_index_table is not None:
             # Select features by index
@@ -192,16 +211,13 @@ class Features(object):
             assert isinstance(self.__features, np.ndarray)
             return self.__features  # self.__features could be None
 
-        try:
-            self.__features = np.vstack(
-                [sio.loadmat(self.__feature_file_table[layer][label])['feat']
-                 for label in self.__labels]
-            )
-        except NotImplementedError:
-            self.__features = np.vstack(
-                [hdf5storage.loadmat(self.__feature_file_table[layer][label])['feat']
-                 for label in self.__labels]
-            )
+        features: np.ndarray
+        num_labels = len(self.__labels)
+        num_parallel = _determine_num_parallel(num_labels)
+        path_iterator = map(lambda label: self.__feature_file_table[layer][label], self.__labels)
+        with Pool(processes=num_parallel) as pool:
+            features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
+        self.__features = features
 
         self.__c_feature_name = layer
 
@@ -357,14 +373,16 @@ class DecodedFeatures(object):
         if len(files) == 0:
             raise RuntimeError('No decoded feature found')
 
-        y = np.vstack(
-            [hdf5storage.loadmat(f)[self.__file_key] for f in files]
-        )
+        features: np.ndarray
+        num_files = len(files)
+        num_parallel = _determine_num_parallel(num_files)
+        with Pool(processes=num_parallel) as pool:
+            features = np.concatenate(pool.map(partial(_load_array_with_key, self.__file_key), files), axis=0)
 
         if self.__squeeze:
-            y = np.squeeze(y)
+            features = np.squeeze(features)
 
-        return y
+        return features
 
     def statistic(self, statistic='mean', layer=None, subject=None, roi=None, fold=None):
 

@@ -12,6 +12,8 @@ Developed and tested on Python 3.8 + PyTorch 1.7.1.
 '''
 
 
+from typing import Callable
+
 import os
 import warnings
 
@@ -32,6 +34,7 @@ def reconstruct(features,
                 generator=None,
                 n_iter=200,
                 loss_func=torch.nn.MSELoss(reduction='sum'),
+                custom_layer_loss_func: Callable = lambda x, y, layer: 0,
                 optimizer=optim.SGD,
                 lr=(2., 1e-10),
                 momentum=(0.9, 0.9),
@@ -382,10 +385,12 @@ def reconstruct(features,
 
             weight_j = layer_weights[lay]
 
-            masked_act_j = torch.masked_select(act_j, mask_j.bool())
-            masked_feat_j = torch.masked_select(feat_j, mask_j.bool())
+            act_j[torch.logical_not(mask_j.bool())] = 0
+            feat_j[torch.logical_not(mask_j.bool())] = 0
 
-            loss_j = loss_func(masked_act_j, masked_feat_j) * weight_j
+            loss_j = loss_func(act_j, feat_j) * weight_j
+            loss_j = loss_j + custom_layer_loss_func(x=act_j, y=feat_j, layer=lay)
+
             loss += loss_j
 
         loss.backward()

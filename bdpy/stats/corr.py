@@ -1,5 +1,4 @@
-"""
-Functions dealing with correlation
+"""Functions dealing with correlation.
 
 This file is a part of BdPy.
 """
@@ -11,9 +10,8 @@ import numpy as np
 from numpy.matlib import repmat
 
 
-def corrcoef(x, y, var='row'):
-    """
-    Returns correlation coefficients between `x` and `y`
+def corrcoef(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
+    """Return correlation coefficients between `x` and `y`.
 
     Parameters
     ----------
@@ -27,7 +25,6 @@ def corrcoef(x, y, var='row'):
     r
         Correlation coefficients
     """
-
     # Convert vectors to arrays
     if x.ndim == 1:
         x = np.array([x])
@@ -80,9 +77,8 @@ def corrcoef(x, y, var='row'):
     return r
 
 
-def corrmat(x, y, var='row'):
-    """
-    Returns correlation matrix between `x` and `y`
+def corrmat(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
+    """Return correlation matrix between `x` and `y`.
 
     Parameters
     ----------
@@ -96,7 +92,6 @@ def corrmat(x, y, var='row'):
     rmat
         Correlation matrix
     """
-
     # Fix x and y to represent variables in each row
     if var == 'row':
         pass
@@ -109,8 +104,9 @@ def corrmat(x, y, var='row'):
     nobs = x.shape[1]
 
     # Subtract mean(a, axis=1) from a
-    submean = lambda a: a - np.matrix(np.mean(a, axis=1)).T
-    
+    def submean(a: np.ndarray) -> np.ndarray:
+        return a - np.matrix(np.mean(a, axis=1)).T
+
     cmat = (np.dot(submean(x), submean(y).T) / (nobs - 1)) / np.dot(np.matrix(np.std(x, axis=1, ddof=1)).T, np.matrix(np.std(y, axis=1, ddof=1)))
     
     return np.array(cmat)

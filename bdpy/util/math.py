@@ -1,19 +1,25 @@
+"""Math utils."""
+
+
+from typing import List
+
 import numpy as np
 
 
-def average_elemwise(arrays, keepdims=False):
-    '''Return element-wise mean of arrays.
+def average_elemwise(arrays: List[np.ndarray], keepdims: bool = False) -> np.ndarray:
+    """Return element-wise mean of arrays.
 
     Parameters
     ----------
     arrays : list of ndarrays
+      List of arrays.
     keepdims : bool
+      Keep dimension in returned array or not.
 
-    Raises
+    Return
     ------
     ndarray
-    '''
-
+    """
     n_array = len(arrays)
 
     max_dim_i = np.argmax([a.ndim for a in arrays])

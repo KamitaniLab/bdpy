@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bdpy"
-version = "0.19"
+version = "0.21.1"
 description = "Brain decoder toolbox for Python"
 authors = [
     { name = "Shuntaro C. Aoki", email = "s_aoki@i.kyoto-u.ac.jp" }
 ]
 readme = "README.md"
-requires-python = ">= 3.8, < 3.12"
+requires-python = ">= 3.6, < 3.12"
 license = { file = "LICENSE" }
 keywords = ["neuroscience", "neuroimaging", "brain decoding", "fmri", "machine learning"]
 
@@ -42,11 +42,16 @@ mri = [
     "nibabel==3.2",
     "nipy"
 ]
+pipeline = [
+    "hydra-core",
+    "omegaconf"
+]
 all = [
     "bdpy[caffe]",
     "bdpy[torch]",
     "bdpy[fig]",
-    "bdpy[mri]"
+    "bdpy[mri]",
+    "bdpy[pipeline]"
 ]
 dev = [
     "bdpy[all]",
@@ -80,4 +85,14 @@ only-include = ["bdpy"]
 
 [tool.ruff]
 select = ["E", "F", "N", "D", "ANN", "B", "NPY", "RUF"]
-line-length = 88
+ignore = ["E501", "ANN101", "D213", "D203"]
+exclude = ["test"]
+
+[tool.ruff.extend-per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.flake8-annotations]
+mypy-init-return = true
+
+[tool.pylint]
+disable = "line-too-long"
