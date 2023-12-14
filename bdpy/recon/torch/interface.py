@@ -16,7 +16,7 @@ class Generator(Protocol):
     def __call__(self, latent: torch.Tensor) -> torch.Tensor:
         ...
 
-    def parameters(self) -> Iterable[torch.Tensor]:
+    def parameters(self, recurse: bool = True) -> Iterable[torch.Tensor]:
         ...
 
     def reset_state(self) -> None:
@@ -27,7 +27,7 @@ class Latent(Protocol):
     def __call__(self) -> torch.Tensor:
         ...
 
-    def parameters(self) -> Iterable[torch.Tensor]:
+    def parameters(self, recurse: bool = True) -> Iterable[torch.Tensor]:
         ...
 
     def reset_state(self) -> None:
