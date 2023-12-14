@@ -146,8 +146,11 @@ class Features(object):
         num_labels = len(labels)
         num_parallel = _determine_num_parallel(num_labels)
         path_iterator = map(lambda label: self.__feature_file_table[layer][label], labels)
-        with Pool(processes=num_parallel) as pool:
-            features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
+        if num_parallel == 1:
+            features = np.concatenate(list(map(partial(_load_array_with_key, 'feat'), path_iterator)), axis=0)
+        else:
+            with Pool(processes=num_parallel) as pool:
+                features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
 
         if self.__feat_index_table is not None:
             # Select features by index
@@ -215,8 +218,11 @@ class Features(object):
         num_labels = len(self.__labels)
         num_parallel = _determine_num_parallel(num_labels)
         path_iterator = map(lambda label: self.__feature_file_table[layer][label], self.__labels)
-        with Pool(processes=num_parallel) as pool:
-            features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
+        if num_parallel == 1:
+            features = np.concatenate(list(map(partial(_load_array_with_key, 'feat'), path_iterator)), axis=0)
+        else:
+            with Pool(processes=num_parallel) as pool:
+                features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
         self.__features = features
 
         self.__c_feature_name = layer
@@ -376,8 +382,11 @@ class DecodedFeatures(object):
         features: np.ndarray
         num_files = len(files)
         num_parallel = _determine_num_parallel(num_files)
-        with Pool(processes=num_parallel) as pool:
-            features = np.concatenate(pool.map(partial(_load_array_with_key, self.__file_key), files), axis=0)
+        if num_parallel == 1:
+            features = np.concatenate(list(map(partial(_load_array_with_key, self.__file_key), files)), axis=0)
+        else:
+            with Pool(processes=num_parallel) as pool:
+                features = np.concatenate(pool.map(partial(_load_array_with_key, self.__file_key), files), axis=0)
 
         if self.__squeeze:
             features = np.squeeze(features)
