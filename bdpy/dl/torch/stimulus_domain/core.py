@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Iterable, TYPE_CHECKING
 
 import torch.nn as nn
+
+if TYPE_CHECKING:
+    import torch
 
 
 class Domain(nn.Module, ABC):
@@ -62,7 +66,7 @@ class IrreversibleDomain(Domain):
 class ComposedDomain(Domain):
     """The domain composed of multiple domains."""
 
-    def __init__(self, domains: list[Domain]) -> None:
+    def __init__(self, domains: Iterable[Domain]) -> None:
         super().__init__()
         self.domains = nn.ModuleList(domains)
 
