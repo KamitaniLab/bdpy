@@ -188,8 +188,7 @@ class FrozenGenerator(DNNGenerator):
     ) -> None:
         """Initialize the generator."""
         super().__init__(generator_network, domain=domain, reset_fn=lambda _: None)
-        for param in self._generator_network.parameters():
-            param.requires_grad = False
+        self._generator_network.eval()
 
     def reset_states(self) -> None:
         """Reset the state of the generator."""
