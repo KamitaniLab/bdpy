@@ -24,6 +24,7 @@ class TestMri(unittest.TestCase):
         self.exp_voxdata = self.exp_dat['voxData']
         self.exp_xyz = self.exp_dat['xyz']
 
+    # NOTE: Currently, this test fails.
     def test_add_load_epi_pass0001(self):
         '''Test for load_epi (pass case 0001)'''
 
