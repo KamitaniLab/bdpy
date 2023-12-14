@@ -18,18 +18,18 @@ class EncoderBase(nn.Module):
         an image tensor and propagates it through the network.
     layer_names : list[str]
         Layer names to extract features from.
-    domain : Domain
-        Domain of the input images to receive.
-    device : torch.device
-        Device to use.
+    domain : Domain, optional
+        Domain of the input images to receive. (default: Zero2OneImageDomain())
+    device : torch.device, optional
+        Device to use. (default: "cpu").
     """
 
     def __init__(
         self,
         feature_network: nn.Module,
         layer_names: Iterable[str],
-        domain: Domain,
-        device: str | torch.device,
+        domain: Domain = image_domain.Zero2OneImageDomain(),
+        device: str | torch.device = "cpu",
     ) -> None:
         super().__init__()
         self._feature_extractor = FeatureExtractor(
