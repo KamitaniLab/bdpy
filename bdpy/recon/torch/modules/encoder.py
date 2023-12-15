@@ -22,6 +22,21 @@ class EncoderBase(nn.Module):
         Domain of the input images to receive. (default: Zero2OneImageDomain())
     device : torch.device, optional
         Device to use. (default: "cpu").
+
+    Examples
+    --------
+    >>> import torch
+    >>> import torch.nn as nn
+    >>> from bdpy.recon.torch.modules.encoder import EncoderBase
+    >>> feature_network = nn.Sequential(
+    ...     nn.Conv2d(3, 3, 3),
+    ...     nn.ReLU(),
+    ... )
+    >>> encoder = EncoderBase(feature_network, ['0'])
+    >>> image = torch.randn(1, 3, 64, 64)
+    >>> features = encoder(image)
+    >>> features['0'].shape
+    torch.Size([1, 3, 62, 62])
     """
 
     def __init__(
@@ -79,5 +94,20 @@ def build_encoder(
     -------
     EncoderBase
         Encoder network.
+
+    Examples
+    --------
+    >>> import torch
+    >>> import torch.nn as nn
+    >>> from bdpy.recon.torch.modules.encoder import build_encoder
+    >>> feature_network = nn.Sequential(
+    ...     nn.Conv2d(3, 3, 3),
+    ...     nn.ReLU(),
+    ... )
+    >>> encoder = build_encoder(feature_network, ['0'])
+    >>> image = torch.randn(1, 3, 64, 64)
+    >>> features = encoder(image)
+    >>> features['0'].shape
+    torch.Size([1, 3, 62, 62])
     """
     return EncoderBase(feature_network, layer_names, domain, device)

@@ -108,6 +108,7 @@ class DNNGenerator(GeneratorBase):
     Examples
     --------
     >>> import torch
+    >>> import torch.nn as nn
     >>> from bdpy.recon.torch.modules.generator import DNNGenerator
     >>> generator_network = nn.Sequential(
     ...     nn.ConvTranspose2d(3, 3, 3),
@@ -169,6 +170,7 @@ class FrozenGenerator(DNNGenerator):
     Examples
     --------
     >>> import torch
+    >>> import torch.nn as nn
     >>> from bdpy.recon.torch.modules.generator import FrozenGenerator
     >>> generator_network = nn.Sequential(
     ...     nn.ConvTranspose2d(3, 3, 3),
@@ -227,6 +229,7 @@ def build_generator(
     Examples
     --------
     >>> import torch
+    >>> import torch.nn as nn
     >>> from bdpy.recon.torch.modules.generator import build_generator
     >>> generator_network = nn.Sequential(
     ...     nn.ConvTranspose2d(3, 3, 3),
