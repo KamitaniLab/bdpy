@@ -16,7 +16,7 @@ def reset_all_parameters(module: nn.Module) -> None:
         module.reset_parameters()
 
 
-class GeneratorBase(nn.Module, ABC):
+class BaseGenerator(nn.Module, ABC):
     """Generator module."""
 
     @abstractmethod
@@ -41,7 +41,7 @@ class GeneratorBase(nn.Module, ABC):
         pass
 
 
-class BareGenerator(GeneratorBase):
+class BareGenerator(BaseGenerator):
     """Bare generator module.
 
     This module does not have any trainable parameters.
@@ -88,7 +88,7 @@ class BareGenerator(GeneratorBase):
         return self._domain.send(self._activation(latent))
 
 
-class DNNGenerator(GeneratorBase):
+class DNNGenerator(BaseGenerator):
     """DNN generator module.
 
     This module has the generator network as a submodule and its parameters are
@@ -206,7 +206,7 @@ def build_generator(
     domain: Domain = image_domain.Zero2OneImageDomain(),
     reset_fn: Callable[[nn.Module], None] = reset_all_parameters,
     frozen: bool = True,
-) -> GeneratorBase:
+) -> BaseGenerator:
     """Build a generator module.
 
     Parameters
@@ -224,7 +224,7 @@ def build_generator(
 
     Returns
     -------
-    GeneratorBase
+    BaseGenerator
         Generator module.
 
     Examples

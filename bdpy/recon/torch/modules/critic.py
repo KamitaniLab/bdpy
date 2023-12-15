@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 
-class CriticBase(nn.Module, ABC):
+class BaseCritic(nn.Module, ABC):
     """Critic network module."""
 
     @abstractmethod
@@ -62,7 +62,7 @@ class CriticBase(nn.Module, ABC):
         return loss / counts
 
 
-class TargetNormalizedMSE(CriticBase):
+class TargetNormalizedMSE(BaseCritic):
     """MSE loss divided by the squared norm of the target feature."""
 
     def criterion(

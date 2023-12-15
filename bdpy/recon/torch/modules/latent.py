@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 
-class LatentBase(nn.Module, ABC):
+class BaseLatent(nn.Module, ABC):
     """Latent variable module."""
 
     @abstractmethod
@@ -27,7 +27,7 @@ class LatentBase(nn.Module, ABC):
         pass
 
 
-class ArbitraryLatent(LatentBase):
+class ArbitraryLatent(BaseLatent):
     """Latent variable with arbitrary shape and initialization function.
 
     Parameters

@@ -9,7 +9,7 @@ from bdpy.dl.torch import FeatureExtractor
 from bdpy.dl.torch.stimulus_domain import Domain, image_domain
 
 
-class EncoderBase(nn.Module, ABC):
+class BaseEncoder(nn.Module, ABC):
     """Encoder network module."""
 
     @abstractmethod
@@ -29,7 +29,7 @@ class EncoderBase(nn.Module, ABC):
         pass
 
 
-class SimpleEncoder(EncoderBase):
+class SimpleEncoder(BaseEncoder):
     """Encoder network module with a naive feature extractor.
 
     Parameters
@@ -96,7 +96,7 @@ def build_encoder(
     layer_names: Iterable[str],
     domain: Domain = image_domain.Zero2OneImageDomain(),
     device: str | torch.device = "cpu",
-) -> EncoderBase:
+) -> BaseEncoder:
     """Build an encoder network with a naive feature extractor.
 
     Parameters
@@ -113,7 +113,7 @@ def build_encoder(
 
     Returns
     -------
-    EncoderBase
+    BaseEncoder
         Encoder network.
 
     Examples
