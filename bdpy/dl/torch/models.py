@@ -93,7 +93,7 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
         Network model.
     layer_name : str
         Layer name. It accepts the following formats: 'layer_name',
-        'layer_name[index]', 'parent_name.child_name', and combinations of them.
+        '[index]', 'parent_name.child_name', and combinations of them.
 
     Returns
     -------
@@ -123,18 +123,19 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
         model = _parse_layer_name(model, top_most_layer_name)
         return _parse_layer_name(model, child_layer_name)
 
-    # parse layer name having index (e.g., 'features[0]', 'backbone[0][1]')
-    pattern = re.compile(r'^(?P<layer_name>\w+)(?P<index>(\[(\d+)\])+)$')
+    # parse layer name having index (e.g., '[0]', 'features[0]', 'backbone[0][1]')
+    pattern = re.compile(r'^(?P<layer_name>[a-zA-Z_]+[a-zA-Z0-9_]*)?(?P<index>(\[(\d+)\])+)$')
     m = pattern.match(layer_name)
     if m is not None:
-        layer_name = m.group('layer_name')
+        layer_name = m.group('layer_name')  # NOTE: layer_name can be None
         index_str = m.group('index')
 
         indeces = re.findall(r'\[(\d+)\]', index_str)
         indeces = [int(i) for i in indeces]
 
-        if hasattr(model, layer_name):
-            return _get_value_by_indices(getattr(model, layer_name), indeces)
+        if isinstance(layer_name, str) and hasattr(model, layer_name):
+            model = getattr(model, layer_name)
+        return _get_value_by_indices(model, indeces)
 
     raise ValueError(
         f"Invalid layer name: '{layer_name}'. Either the syntax of '{layer_name}' is not supported, "
