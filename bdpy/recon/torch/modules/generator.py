@@ -16,7 +16,7 @@ def reset_all_parameters(module: nn.Module) -> None:
         module.reset_parameters()
 
 
-class BaseGenerator(nn.Module, ABC):
+class BaseGenerator(ABC):
     """Generator module."""
 
     @abstractmethod
@@ -25,7 +25,12 @@ class BaseGenerator(nn.Module, ABC):
         pass
 
     @abstractmethod
-    def forward(self, latent: torch.Tensor) -> torch.Tensor:
+    def parameters(self, recurse: bool = True) -> Iterator[nn.Parameter]:
+        """Return the parameters of the generator."""
+        pass
+
+    @abstractmethod
+    def __call__(self, latent: torch.Tensor) -> torch.Tensor:
         """Forward pass through the generator network.
 
         Parameters
@@ -41,7 +46,17 @@ class BaseGenerator(nn.Module, ABC):
         pass
 
 
-class BareGenerator(BaseGenerator):
+class NNModuleGenerator(BaseGenerator, nn.Module):
+    """Generator module uses __call__ method and parameters method of nn.Module."""
+
+    def parameters(self, recurse: bool = True) -> Iterator[nn.Parameter]:
+        return nn.Module.parameters(self, recurse=recurse)
+
+    def __call__(self, latent: torch.Tensor) -> torch.Tensor:
+        return nn.Module.__call__(self, latent)
+
+
+class BareGenerator(NNModuleGenerator):
     """Bare generator module.
 
     This module does not have any trainable parameters.
@@ -88,7 +103,7 @@ class BareGenerator(BaseGenerator):
         return self._domain.send(self._activation(latent))
 
 
-class DNNGenerator(BaseGenerator):
+class DNNGenerator(NNModuleGenerator):
     """DNN generator module.
 
     This module has the generator network as a submodule and its parameters are

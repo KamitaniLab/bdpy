@@ -9,11 +9,11 @@ from bdpy.dl.torch import FeatureExtractor
 from bdpy.dl.torch.stimulus_domain import Domain, image_domain
 
 
-class BaseEncoder(nn.Module, ABC):
+class BaseEncoder(ABC):
     """Encoder network module."""
 
     @abstractmethod
-    def forward(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+    def __call__(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
         """Forward pass through the encoder network.
 
         Parameters
@@ -74,7 +74,7 @@ class SimpleEncoder(BaseEncoder):
         self._domain = domain
         self._feature_network = self._feature_extractor._encoder
 
-    def forward(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+    def __call__(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
         """Forward pass through the encoder network.
 
         Parameters

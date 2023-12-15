@@ -4,7 +4,7 @@ from itertools import chain
 
 import torch
 
-from ..interface import Encoder, Generator, Latent, Critic
+from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
 
 FeatureType = Dict[str, torch.Tensor]
 
@@ -14,13 +14,13 @@ class FeatureInversionPipeline:
 
     Parameters
     ----------
-    encoder : Encoder
+    encoder : BaseEncoder
         Encoder module.
-    generator : Generator
+    generator : BaseGenerator
         Generator module.
-    latent : Latent
+    latent : BaseLatent
         Latent variable module.
-    critic : Critic
+    critic : BaseCritic
         Critic module.
     optimizer : torch.optim.Optimizer
         Optimizer.
@@ -52,10 +52,10 @@ class FeatureInversionPipeline:
 
     def __init__(
         self,
-        encoder: Encoder,
-        generator: Generator,
-        latent: Latent,
-        critic: Critic,
+        encoder: BaseEncoder,
+        generator: BaseGenerator,
+        latent: BaseLatent,
+        critic: BaseCritic,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.LRScheduler = None,
         num_iterations: int = 1,

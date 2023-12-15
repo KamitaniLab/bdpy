@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, Iterator
 
 import torch
 import torch.nn as nn
 
 
-class BaseLatent(nn.Module, ABC):
+class BaseLatent(ABC):
     """Latent variable module."""
 
     @abstractmethod
@@ -16,7 +16,12 @@ class BaseLatent(nn.Module, ABC):
         pass
 
     @abstractmethod
-    def forward(self) -> torch.Tensor:
+    def parameters(self, recurse: bool = True) -> Iterator[nn.Parameter]:
+        """Return the parameters of the latent variable."""
+        pass
+
+    @abstractmethod
+    def __call__(self) -> torch.Tensor:
         """Generate a latent variable.
 
         Returns
@@ -27,7 +32,17 @@ class BaseLatent(nn.Module, ABC):
         pass
 
 
-class ArbitraryLatent(BaseLatent):
+class NNModuleLatent(BaseLatent, nn.Module):
+    """Latent variable module uses __call__ method and parameters method of nn.Module."""
+
+    def parameters(self, recurse: bool = True) -> Iterator[nn.Parameter]:
+        return nn.Module.parameters(self, recurse=recurse)
+
+    def __call__(self) -> torch.Tensor:
+        return nn.Module.__call__(self)
+
+
+class ArbitraryLatent(NNModuleLatent):
     """Latent variable with arbitrary shape and initialization function.
 
     Parameters

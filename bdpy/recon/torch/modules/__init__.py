@@ -1,5 +1,4 @@
-from .encoder import build_encoder
-from .generator import build_generator
-from .latent import ArbitraryLatent
-from .critic import TargetNormalizedMSE
-
+from .encoder import build_encoder, BaseEncoder
+from .generator import build_generator, BaseGenerator
+from .latent import ArbitraryLatent, BaseLatent
+from .critic import TargetNormalizedMSE, BaseCritic

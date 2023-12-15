@@ -1,13 +1,34 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Dict
 
 import torch
 import torch.nn as nn
 
 
-class BaseCritic(nn.Module, ABC):
+_FeatureType = Dict[str, torch.Tensor]
+
+
+class BaseCritic(ABC):
     """Critic network module."""
+
+    @abstractmethod
+    def __call__(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
+        """Compute the total loss value given the features and the target features.
+
+        Parameters
+        ----------
+        features : dict[str, torch.Tensor]
+            Features indexed by the layer names.
+        target_features : dict[str, torch.Tensor]
+            Target features indexed by the layer names.
+
+        Returns
+        -------
+        torch.Tensor
+            Loss value.
+        """
 
     @abstractmethod
     def criterion(
@@ -31,10 +52,21 @@ class BaseCritic(nn.Module, ABC):
         """
         pass
 
+
+class NNModuleCritic(BaseCritic, nn.Module):
+    """Critic network module uses __call__ method of nn.Module."""
+
+    def __call__(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
+        return nn.Module.__call__(self, features, target_features)
+
+
+class LayerWiseAverageCritic(NNModuleCritic):
+    """Compute the average of the layer-wise loss values."""
+
     def forward(
         self,
-        features: dict[str, torch.Tensor],
-        target_features: dict[str, torch.Tensor],
+        features: _FeatureType,
+        target_features: _FeatureType,
     ) -> torch.Tensor:
         """Forward pass through the critic network.
 
@@ -62,7 +94,7 @@ class BaseCritic(nn.Module, ABC):
         return loss / counts
 
 
-class TargetNormalizedMSE(BaseCritic):
+class TargetNormalizedMSE(LayerWiseAverageCritic):
     """MSE loss divided by the squared norm of the target feature."""
 
     def criterion(
