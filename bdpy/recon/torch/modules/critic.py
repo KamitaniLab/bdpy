@@ -94,6 +94,33 @@ class LayerWiseAverageCritic(NNModuleCritic):
         return loss / counts
 
 
+class MSE(LayerWiseAverageCritic):
+    """MSE loss."""
+
+    def criterion(
+        self, feature: torch.Tensor, target_feature: torch.Tensor, layer_name: str
+    ) -> torch.Tensor:
+        """Loss function per layer.
+
+        Parameters
+        ----------
+        feature : torch.Tensor
+            Feature tensor of the layer specified by `layer_name`.
+        target_feature : torch.Tensor
+            Target feature tensor of the layer specified by `layer_name`.
+        layer_name : str
+            Layer name.
+
+        Returns
+        -------
+        torch.Tensor
+            Loss value of the layer specified by `layer_name`.
+        """
+        return ((feature - target_feature) ** 2).sum(
+            dim=tuple(range(1, feature.ndim))
+        )
+
+
 class TargetNormalizedMSE(LayerWiseAverageCritic):
     """MSE loss divided by the squared norm of the target feature."""
 
