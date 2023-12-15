@@ -125,7 +125,7 @@ def build_encoder(
     ...     nn.Conv2d(3, 3, 3),
     ...     nn.ReLU(),
     ... )
-    >>> encoder = build_encoder(feature_network, ['0'])
+    >>> encoder = build_encoder(feature_network, layer_names=['0'])
     >>> image = torch.randn(1, 3, 64, 64)
     >>> features = encoder(image)
     >>> features['0'].shape
