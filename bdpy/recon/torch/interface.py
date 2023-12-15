@@ -2,7 +2,6 @@ from typing import Dict, Protocol, Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import torch
-    import torch.nn as nn
 
     FeatureType = Dict[str, torch.Tensor]
 
