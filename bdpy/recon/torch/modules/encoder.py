@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from typing import Iterable
 
 import torch
@@ -8,8 +9,28 @@ from bdpy.dl.torch import FeatureExtractor
 from bdpy.dl.torch.stimulus_domain import Domain, image_domain
 
 
-class EncoderBase(nn.Module):
-    """Encoder network module.
+class EncoderBase(nn.Module, ABC):
+    """Encoder network module."""
+
+    @abstractmethod
+    def forward(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Forward pass through the encoder network.
+
+        Parameters
+        ----------
+        images : torch.Tensor
+            Images.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            Features indexed by the layer names.
+        """
+        pass
+
+
+class SimpleEncoder(EncoderBase):
+    """Encoder network module with a naive feature extractor.
 
     Parameters
     ----------
@@ -27,12 +48,12 @@ class EncoderBase(nn.Module):
     --------
     >>> import torch
     >>> import torch.nn as nn
-    >>> from bdpy.recon.torch.modules.encoder import EncoderBase
+    >>> from bdpy.recon.torch.modules.encoder import SimpleEncoder
     >>> feature_network = nn.Sequential(
     ...     nn.Conv2d(3, 3, 3),
     ...     nn.ReLU(),
     ... )
-    >>> encoder = EncoderBase(feature_network, ['0'])
+    >>> encoder = SimpleEncoder(feature_network, ['0'])
     >>> image = torch.randn(1, 3, 64, 64)
     >>> features = encoder(image)
     >>> features['0'].shape
@@ -76,7 +97,7 @@ def build_encoder(
     domain: Domain = image_domain.Zero2OneImageDomain(),
     device: str | torch.device = "cpu",
 ) -> EncoderBase:
-    """Build an encoder network.
+    """Build an encoder network with a naive feature extractor.
 
     Parameters
     ----------
@@ -110,4 +131,4 @@ def build_encoder(
     >>> features['0'].shape
     torch.Size([1, 3, 62, 62])
     """
-    return EncoderBase(feature_network, layer_names, domain, device)
+    return SimpleEncoder(feature_network, layer_names, domain, device)
