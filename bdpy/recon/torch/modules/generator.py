@@ -197,6 +197,7 @@ class FrozenGenerator(DNNGenerator):
         pass
 
     def parameters(self, recurse: bool = True) -> Iterator[Parameter]:
+        """Return an empty iterator."""
         return iter([])
 
 
