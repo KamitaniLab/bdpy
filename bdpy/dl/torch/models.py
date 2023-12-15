@@ -1,5 +1,6 @@
 """Model definitions."""
 
+from __future__ import annotations
 
 from typing import Dict, Union, Optional, Sequence
 
@@ -127,7 +128,7 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
     pattern = re.compile(r'^(?P<layer_name>[a-zA-Z_]+[a-zA-Z0-9_]*)?(?P<index>(\[(\d+)\])+)$')
     m = pattern.match(layer_name)
     if m is not None:
-        layer_name = m.group('layer_name')  # NOTE: layer_name can be None
+        layer_name: str | None = m.group('layer_name')  # NOTE: layer_name can be None
         index_str = m.group('index')
 
         indeces = re.findall(r'\[(\d+)\]', index_str)
