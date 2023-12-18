@@ -6,6 +6,13 @@ import torch.nn as nn
 from bdpy.dl.torch import models
 
 
+def _removeprefix(text: str, prefix: str) -> str:
+    """Remove prefix from text. (Workaround for Python 3.8)"""
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    return text
+
+
 class MockModule(nn.Module):
     def __init__(self):
         super(MockModule, self).__init__()
@@ -68,6 +75,22 @@ class TestParseLayerName(unittest.TestCase):
         # Test invalid layer access
         self.assertRaises(
             ValueError, models._parse_layer_name, self.mock, 'layers["key"]')
+
+    def test_parse_layer_name_for_sequential(self):
+        """Test _parse_layer_name for nn.Sequential.
+
+        nn.Sequential is a special case because the submodules are directly
+        accessible like a list. For example, `model[0]` will return the first
+        module in the model.
+        """
+        sequential_module = self.mock.layers
+        accessors = [accessor for accessor in self.accessors if accessor['name'].startswith('layers')]
+        for accessor in accessors:
+            accsessor_key = _removeprefix(accessor['name'], 'layers')
+            layer = models._parse_layer_name(sequential_module, accsessor_key)
+            self.assertIsInstance(layer, accessor['type'])
+            for attr, value in accessor['attrs'].items():
+                self.assertEqual(getattr(layer, attr), value)
 
 
 class TestVGG19(unittest.TestCase):
