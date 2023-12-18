@@ -50,6 +50,8 @@ def init_hydra_cfg() -> DictConfig:
         "name": called_by_name,
         "path": called_by_path,
         "timestamp": date_str,
+        "config_name": config_name,
+        "config_path": str(config_file.absolute()),
     }
 
     # code = cfg.get("code", None)
