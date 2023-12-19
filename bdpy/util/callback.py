@@ -19,6 +19,33 @@ def _is_unused(fn: Callable) -> bool:
 
 
 def unused(fn: Callable[_P, Any]) -> Callable[_P, _Unused]:
+    """Decorate a function to raise an error when called.
+
+    This decorator marks a function as unused and raises an error when called.
+    The type of the return value is changed to `Annotated[None, "unused"]`.
+
+    Parameters
+    ----------
+    fn : Callable
+        Function to decorate.
+
+    Returns
+    -------
+    Callable
+        Decorated function.
+
+    Examples
+    --------
+    >>> @unused
+    ... def f(a: int, b: int, c: int = 0) -> int:
+    ...     return a + b + c
+    ...
+    >>> f(1, 2, 3)
+    Traceback (most recent call last):
+        ...
+        RuntimeError: Function <function f at 0x7f3b5e2d2d30> is decorated with @unused and must not be called.
+    """
+
     @wraps(fn)  # NOTE: preserve name, docstring, etc. of the original function
     def _unused(*args: _P.args, **kwargs: _P.kwargs) -> _Unused:
         raise RuntimeError(f"Function {fn} is decorated with @unused and must not be called.")
@@ -42,6 +69,35 @@ class BaseCallback:
 
 
 class CallbackHandler:
+    """Callback handler.
+
+    This class manages the callback functions registered to the event types.
+    The callback functions are registered by calling the `register` method.
+    The callback functions are executed by calling the `fire` method.
+    The callback functions must be defined as methods of the class that inherits
+    `BaseCallback` and starts with "on_".
+
+    Parameters
+    ----------
+    callbacks : BaseCallback | Iterable[BaseCallback] | None, optional
+        Callbacks to register, by default None
+
+    Examples
+    --------
+    >>> class Callback(BaseCallback):
+    ...     def on_pipeline_start(self):
+    ...         print("Pipeline started.")
+    ...
+    ...     def on_pipeline_end(self):
+    ...         print("Pipeline ended.")
+    ...
+    >>> handler = CallbackHandler(Callback())
+    >>> handler.fire("on_pipeline_start")
+    Pipeline started.
+    >>> handler.fire("on_pipeline_end")
+    Pipeline ended.
+    """
+
     _callbacks: list[BaseCallback]
     _registered_functions: defaultdict[str, list[Callable]]
 
@@ -55,6 +111,21 @@ class CallbackHandler:
                 self.register(callback)
 
     def register(self, callback: BaseCallback) -> None:
+        """Register a callback.
+
+        Parameters
+        ----------
+        callback : BaseCallback
+            Callback to register.
+
+        Raises
+        ------
+        TypeError
+            If the callback is not an instance of BaseCallback.
+        """
+        if not isinstance(callback, BaseCallback):
+            raise TypeError(f"Callback must be an instance of BaseCallback, not {type(callback)}.")
+
         self._callbacks.append(callback)
         for event_type in dir(callback):
             callback_method = getattr(callback, event_type)
@@ -68,7 +139,21 @@ class CallbackHandler:
                 self._registered_functions[event_type].append(callback_method)
                 continue
 
-    def fire(self, event_type: str, **kwargs) -> None:
+    def fire(self, event_type: str, **kwargs: dict[str, Any]) -> None:
+        """Execute the callback functions registered to the event type.
+
+        Parameters
+        ----------
+        event_type : str
+            Event type to fire, which must start with "on_".
+        kwargs : dict[str, Any]
+            Keyword arguments to pass to the callback functions.
+
+        Raises
+        ------
+        KeyError
+            If the event type is not registered.
+        """
         for callback_method in self._registered_functions[event_type]:
             callback_method(**kwargs)
 
