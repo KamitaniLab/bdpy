@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Callable
 
 from itertools import chain
 
@@ -12,8 +12,17 @@ from bdpy.util.callback import CallbackHandler, BaseCallback, unused
 FeatureType = Dict[str, torch.Tensor]
 
 
+def _apply_to_features(fn: Callable[[torch.Tensor], torch.Tensor], features: FeatureType) -> FeatureType:
+    return {k: fn(v) for k, v in features.items()}
+
+
 class FeatureInversionCallback(BaseCallback):
-    """Callback for feature inversion pipeline."""
+    """Callback for feature inversion pipeline.
+
+    As a design principle, the callback functions must not have any side effects
+    on the pipeline results. It should be used only for logging, visualization,
+    etc.
+    """
 
     @unused
     def on_iteration_start(self, *, step: int) -> None:
@@ -26,12 +35,12 @@ class FeatureInversionCallback(BaseCallback):
         pass
 
     @unused
-    def on_feature_extracted(self, *, step: int, features: torch.Tensor) -> None:
+    def on_feature_extracted(self, *, step: int, features: FeatureType) -> None:
         """Callback on feature extracted."""
         pass
 
     @unused
-    def on_layerwise_loss_calculated(self, *, step: int, layer_loss: torch.Tensor, layer_name: str) -> None:
+    def on_layerwise_loss_calculated(self, *, layer_loss: torch.Tensor, layer_name: str) -> None:
         """Callback on layerwise loss calculated."""
         pass
 
@@ -51,7 +60,7 @@ class FeatureInversionCallback(BaseCallback):
         pass
 
     @unused
-    def on_iteration_end(self, step: int) -> None:
+    def on_iteration_end(self, *, step: int) -> None:
         """Called at the end of each iteration."""
         pass
 
@@ -83,7 +92,7 @@ class CUILoggingCallback(FeatureInversionCallback):
     def on_loss_calculated(self, *, step: int, loss: torch.Tensor) -> None:
         self._loss = loss.item()
 
-    def on_iteration_end(self, step: int) -> None:
+    def on_iteration_end(self, *, step: int) -> None:
         if step % self._interval == 0:
             print(f"Step: [{self._step_str(step)}], Loss: {self._loss:.4f}")
 
@@ -173,13 +182,13 @@ class FeatureInversionPipeline:
 
             latent = self._latent()
             generated_image = self._generator(latent)
-            self._callback_handler.fire("on_image_generated", step=step, image=generated_image)
+            self._callback_handler.fire("on_image_generated", step=step, image=generated_image.detach())
 
             features = self._encoder(generated_image)
-            self._callback_handler.fire("on_feature_extracted", step=step, features=features)
+            self._callback_handler.fire("on_feature_extracted", step=step, features=_apply_to_features(lambda x: x.detach(), features))
 
             loss = self._critic(features, target_features)
-            self._callback_handler.fire("on_loss_calculated", step=step, loss=loss)
+            self._callback_handler.fire("on_loss_calculated", step=step, loss=loss.detach())
             loss.backward()
             self._callback_handler.fire("on_backward_end", step=step)
 

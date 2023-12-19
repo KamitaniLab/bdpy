@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable, Type, Any, Iterable
-from typing_extensions import Annotated, ParamSpec
+from typing_extensions import Annotated, ParamSpec, Unpack
 
 from collections import defaultdict
 from functools import wraps
@@ -57,6 +57,16 @@ def unused(fn: Callable[_P, Any]) -> Callable[_P, _Unused]:
 
 
 class BaseCallback:
+    """Base class for callbacks.
+
+    Callbacks are used to hook into the pipeline and execute custom functions
+    at specific events. Callback functions must be defined as methods of the
+    callback classes. The callback functions must be named as "on_<event_type>".
+    As a design principle, the callback functions must not have any side effects
+    on the pipeline results. It should be used only for logging, visualization,
+    etc.
+    """
+
     @unused
     def on_pipeline_start(self) -> None:
         """Callback on pipeline start."""
@@ -138,7 +148,7 @@ class CallbackHandler:
                 self._registered_functions[event_type].append(callback_method)
                 continue
 
-    def fire(self, event_type: str, **kwargs: dict[str, Any]) -> None:
+    def fire(self, event_type: str, **kwargs: Any) -> None:
         """Execute the callback functions registered to the event type.
 
         Parameters
