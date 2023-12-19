@@ -71,11 +71,10 @@ class BaseCallback:
 class CallbackHandler:
     """Callback handler.
 
-    This class manages the callback functions registered to the event types.
-    The callback functions are registered by calling the `register` method.
-    The callback functions are executed by calling the `fire` method.
-    The callback functions must be defined as methods of the class that inherits
-    `BaseCallback` and starts with "on_".
+    This class manages the callback objects and fires the callback functions
+    registered to the event type. The callback functions must be defined as
+    methods of the callback classes. The callback functions must be named as
+    "on_<event_type>".
 
     Parameters
     ----------

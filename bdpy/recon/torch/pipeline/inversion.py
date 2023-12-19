@@ -13,6 +13,8 @@ FeatureType = Dict[str, torch.Tensor]
 
 
 class FeatureInversionCallback(BaseCallback):
+    """Callback for feature inversion pipeline."""
+
     @unused
     def on_iteration_start(self, *, step: int) -> None:
         """Callback on iteration start."""
@@ -55,6 +57,18 @@ class FeatureInversionCallback(BaseCallback):
 
 
 class CUILoggingCallback(FeatureInversionCallback):
+    """Callback for logging on CUI.
+
+    Parameters
+    ----------
+    interval : int, optional
+        Logging interval, by default 1. If `interval` is 1, the callback logs
+        every iteration.
+    total_steps : int, optional
+        Total number of iterations, by default -1. If `total_steps` is -1,
+        the callback does not show the total number of iterations.
+    """
+
     def __init__(self, interval: int = 1, total_steps: int = -1) -> None:
         self._interval = interval
         self._total_steps = total_steps
