@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Iterable
 
 import torch
 import torch.nn as nn
+
+from bdpy.util.callback import CallbackHandler, BaseCallback
 
 
 _FeatureType = Dict[str, torch.Tensor]
@@ -12,6 +14,9 @@ _FeatureType = Dict[str, torch.Tensor]
 
 class BaseCritic(ABC):
     """Critic network module."""
+
+    def __init__(self, callbacks: BaseCallback | Iterable[BaseCallback] | None = None) -> None:
+        self._callback_handler = CallbackHandler(callbacks)
 
     @abstractmethod
     def __call__(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
@@ -88,6 +93,11 @@ class LayerWiseAverageCritic(NNModuleCritic):
             target_feature = target_features[layer_name]
             layer_wise_loss = self.criterion(
                 feature, target_feature, layer_name=layer_name
+            )
+            self._callback_handler.fire(
+                "on_layerwise_loss_calculated",
+                layer_name=layer_name,
+                layer_loss=layer_wise_loss,
             )
             loss += layer_wise_loss
             counts += 1
