@@ -1,13 +1,77 @@
-from typing import Dict
+from __future__ import annotations
+
+from typing import Dict, Iterable
 
 from itertools import chain
 
 import torch
 
 from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
+from bdpy.util.callback import CallbackHandler, BaseCallback, unused
 
 FeatureType = Dict[str, torch.Tensor]
 
+
+class FeatureInversionCallback(BaseCallback):
+    @unused
+    def on_iteration_start(self, *, step: int) -> None:
+        """Callback on iteration start."""
+        pass
+
+    @unused
+    def on_image_generated(self, *, step: int, image: torch.Tensor) -> None:
+        """Callback on image generated."""
+        pass
+
+    @unused
+    def on_feature_extracted(self, *, step: int, features: torch.Tensor) -> None:
+        """Callback on feature extracted."""
+        pass
+
+    @unused
+    def on_layerwise_loss_calculated(self, *, step: int, layer_loss: torch.Tensor, layer_name: str) -> None:
+        """Callback on layerwise loss calculated."""
+        pass
+
+    @unused
+    def on_loss_calculated(self, *, step: int, loss: torch.Tensor) -> None:
+        """Callback on loss calculated."""
+        pass
+
+    @unused
+    def on_backward_end(self, *, step: int) -> None:
+        """Callback on backward end."""
+        pass
+
+    @unused
+    def on_optimizer_step(self, *, step: int) -> None:
+        """Callback on optimizer step."""
+        pass
+
+    @unused
+    def on_iteration_end(self, step: int) -> None:
+        """Called at the end of each iteration."""
+        pass
+
+
+class CUILoggingCallback(FeatureInversionCallback):
+    def __init__(self, interval: int = 1, total_steps: int = -1) -> None:
+        self._interval = interval
+        self._total_steps = total_steps
+        self._loss: int | float = -1
+
+    def _step_str(self, step: int) -> str:
+        if self._total_steps > 0:
+            return f"{step+1}/{self._total_steps}"
+        else:
+            return f"{step+1}"
+
+    def on_loss_calculated(self, *, step: int, loss: torch.Tensor) -> None:
+        self._loss = loss.item()
+
+    def on_iteration_end(self, step: int) -> None:
+        if step % self._interval == 0:
+            print(f"Step: [{self._step_str(step)}], Loss: {self._loss:.4f}")
 
 class FeatureInversionPipeline:
     """Feature inversion pipeline.
@@ -28,8 +92,8 @@ class FeatureInversionPipeline:
         Learning rate scheduler, by default None.
     num_iterations : int, optional
         Number of iterations, by default 1.
-    log_interval : int, optional
-        Log interval, by default -1. If -1, logging is disabled.
+    callbacks : FeatureInversionCallback | Iterable[FeatureInversionCallback] | None, optional
+        Callbacks, by default None.
 
     Examples
     --------
@@ -59,7 +123,7 @@ class FeatureInversionPipeline:
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.LRScheduler = None,
         num_iterations: int = 1,
-        log_interval: int = -1,
+        callbacks: FeatureInversionCallback | Iterable[FeatureInversionCallback] | None = None,
     ) -> None:
         self._encoder = encoder
         self._generator = generator
@@ -69,7 +133,8 @@ class FeatureInversionPipeline:
         self._scheduler = scheduler
 
         self._num_iterations = num_iterations
-        self._log_interval = log_interval
+
+        self._callback_handler = CallbackHandler(callbacks)
 
     def __call__(
         self,
@@ -87,30 +152,39 @@ class FeatureInversionPipeline:
         torch.Tensor
             Reconstructed images which have the similar features to the target features.
         """
+        self._callback_handler.fire("on_pipeline_start")
         for step in range(self._num_iterations):
+            self._callback_handler.fire("on_iteration_start", step=step)
             self._optimizer.zero_grad()
 
             latent = self._latent()
             generated_image = self._generator(latent)
+            self._callback_handler.fire("on_image_generated", step=step, image=generated_image)
 
             features = self._encoder(generated_image)
+            self._callback_handler.fire("on_feature_extracted", step=step, features=features)
 
             loss = self._critic(features, target_features)
+            self._callback_handler.fire("on_loss_calculated", step=step, loss=loss)
             loss.backward()
+            self._callback_handler.fire("on_backward_end", step=step)
 
             self._optimizer.step()
+            self._callback_handler.fire("on_optimizer_step", step=step)
             if self._scheduler is not None:
                 self._scheduler.step()
 
-            if self._log_interval > 0 and step % self._log_interval == 0:
-                print(f"Step: [{step+1}/{self._num_iterations}], Loss: {loss.item():.4f}")
+            self._callback_handler.fire("on_iteration_end", step=step)
 
-        return self._generator(self._latent()).detach()
+        generated_image = self._generator(self._latent()).detach()
 
-    def reset_state(self) -> None:
+        self._callback_handler.fire("on_pipeline_end")
+        return generated_image
+
+    def reset_states(self) -> None:
         """Reset the state of the pipeline."""
-        self._generator.reset_state()
-        self._latent.reset_state()
+        self._generator.reset_states()
+        self._latent.reset_states()
         self._optimizer = self._optimizer.__class__(
             chain(
                 self._generator.parameters(),
@@ -118,3 +192,7 @@ class FeatureInversionPipeline:
             ),
             **self._optimizer.defaults
         )
+
+    def register_callback(self, callback: FeatureInversionCallback) -> None:
+        """Register a callback."""
+        self._callback_handler.register(callback)
