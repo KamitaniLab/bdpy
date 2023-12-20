@@ -68,10 +68,10 @@ class SimpleEncoder(BaseEncoder):
     ...     nn.Conv2d(3, 3, 3),
     ...     nn.ReLU(),
     ... )
-    >>> encoder = SimpleEncoder(feature_network, ['0'])
+    >>> encoder = SimpleEncoder(feature_network, ['[0]'])
     >>> image = torch.randn(1, 3, 64, 64)
     >>> features = encoder(image)
-    >>> features['0'].shape
+    >>> features['[0]'].shape
     torch.Size([1, 3, 62, 62])
     """
 
