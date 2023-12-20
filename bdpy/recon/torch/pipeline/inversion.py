@@ -12,7 +12,9 @@ from bdpy.util.callback import CallbackHandler, BaseCallback, unused
 FeatureType = Dict[str, torch.Tensor]
 
 
-def _apply_to_features(fn: Callable[[torch.Tensor], torch.Tensor], features: FeatureType) -> FeatureType:
+def _apply_to_features(
+    fn: Callable[[torch.Tensor], torch.Tensor], features: FeatureType
+) -> FeatureType:
     return {k: fn(v) for k, v in features.items()}
 
 
@@ -46,7 +48,9 @@ class FeatureInversionCallback(BaseCallback):
         pass
 
     @unused
-    def on_layerwise_loss_calculated(self, *, layer_loss: torch.Tensor, layer_name: str) -> None:
+    def on_layerwise_loss_calculated(
+        self, *, layer_loss: torch.Tensor, layer_name: str
+    ) -> None:
         """Callback on layerwise loss calculated."""
         pass
 
@@ -119,19 +123,25 @@ class WandBLoggingCallback(FeatureInversionCallback):
         Logging interval, by default 1. If `interval` is 1, the callback logs
         every iteration.
     media_interval : int, optional
-        Logging interval for media, by default 1. If `media_interval` is 1,
-        the callback logs every iteration.
+        Logging interval for media, by default -1. If `media_interval` is -1,
+        the callback does not log media.
 
     Notes
     -----
     TODO: Currently it does not work because the dependency (wandb) is not installed.
     """
 
-    def __init__(self, run: wandb.sdk.wandb_run.Run, interval: int = 1, media_interval: int = 1) -> None:
+    def __init__(
+        self, run: wandb.sdk.wandb_run.Run, interval: int = 1, media_interval: int = -1
+    ) -> None:
         self._run = run
         self._interval = interval
         self._media_interval = media_interval
         self._step = 0
+
+        if media_interval < 0:
+            # NOTE: Decorate `on_image_generated` to do nothing.
+            self.on_image_generated = unused(self.on_image_generated)
 
     def on_iteration_start(self, *, step: int) -> None:
         # NOTE: We need to store the global step because we cannot access it
@@ -143,7 +153,9 @@ class WandBLoggingCallback(FeatureInversionCallback):
             image = wandb.Image(image)
             self._run.log({"generated_image": image}, step=self._step)
 
-    def on_layerwise_loss_calculated(self, *, layer_loss: torch.Tensor, layer_name: str) -> None:
+    def on_layerwise_loss_calculated(
+        self, *, layer_loss: torch.Tensor, layer_name: str
+    ) -> None:
         if self._step % self._interval == 0:
             self._run.log({f"critic/{layer_name}": layer_loss.item()}, step=self._step)
 
@@ -203,7 +215,9 @@ class FeatureInversionPipeline:
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.LRScheduler = None,
         num_iterations: int = 1,
-        callbacks: FeatureInversionCallback | Iterable[FeatureInversionCallback] | None = None,
+        callbacks: FeatureInversionCallback
+        | Iterable[FeatureInversionCallback]
+        | None = None,
     ) -> None:
         self._encoder = encoder
         self._generator = generator
@@ -239,13 +253,21 @@ class FeatureInversionPipeline:
 
             latent = self._latent()
             generated_image = self._generator(latent)
-            self._callback_handler.fire("on_image_generated", step=step, image=generated_image.detach())
+            self._callback_handler.fire(
+                "on_image_generated", step=step, image=generated_image.detach()
+            )
 
             features = self._encoder(generated_image)
-            self._callback_handler.fire("on_feature_extracted", step=step, features=_apply_to_features(lambda x: x.detach(), features))
+            self._callback_handler.fire(
+                "on_feature_extracted",
+                step=step,
+                features=_apply_to_features(lambda x: x.detach(), features),
+            )
 
             loss = self._critic(features, target_features)
-            self._callback_handler.fire("on_loss_calculated", step=step, loss=loss.detach())
+            self._callback_handler.fire(
+                "on_loss_calculated", step=step, loss=loss.detach()
+            )
             loss.backward()
             self._callback_handler.fire("on_backward_end", step=step)
 
@@ -270,7 +292,7 @@ class FeatureInversionPipeline:
                 self._generator.parameters(),
                 self._latent.parameters(),
             ),
-            **self._optimizer.defaults
+            **self._optimizer.defaults,
         )
 
     def register_callback(self, callback: FeatureInversionCallback) -> None:
