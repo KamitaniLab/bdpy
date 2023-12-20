@@ -140,13 +140,11 @@ class CallbackHandler:
             callback_method = getattr(callback, event_type)
             if not callable(callback_method):
                 continue
-            if event_type.startswith("_"):
+            if not event_type.startswith("on_"):
                 continue
             if _is_unused(callback_method):
                 continue
-            if event_type.startswith("on_"):
-                self._registered_functions[event_type].append(callback_method)
-                continue
+            self._registered_functions[event_type].append(callback_method)
 
     def fire(self, event_type: str, **kwargs: Any) -> None:
         """Execute the callback functions registered to the event type.
