@@ -18,8 +18,29 @@ class BaseCritic(ABC):
     def __init__(self, callbacks: BaseCallback | Iterable[BaseCallback] | None = None) -> None:
         self._callback_handler = CallbackHandler(callbacks)
 
-    @abstractmethod
     def __call__(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
+        """Call self.compare.
+
+        Parameters
+        ----------
+        features : dict[str, torch.Tensor]
+            Features indexed by the layer names.
+        target_features : dict[str, torch.Tensor]
+            Target features indexed by the layer names.
+
+        Returns
+        -------
+        torch.Tensor
+            Loss value.
+        """
+        return self.compare(features, target_features)
+
+    @abstractmethod
+    def compare(
+        self,
+        features: _FeatureType,
+        target_features: _FeatureType,
+    ) -> torch.Tensor:
         """Compute the total loss value given the features and the target features.
 
         Parameters
@@ -34,9 +55,10 @@ class BaseCritic(ABC):
         torch.Tensor
             Loss value.
         """
+        pass
 
     @abstractmethod
-    def criterion(
+    def compare_layer(
         self, feature: torch.Tensor, target_feature: torch.Tensor, layer_name: str
     ) -> torch.Tensor:
         """Loss function per layer.
@@ -64,16 +86,19 @@ class NNModuleCritic(BaseCritic, nn.Module):
     def __call__(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
         return nn.Module.__call__(self, features, target_features)
 
+    def forward(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
+        return self.compare(features, target_features)
+
 
 class LayerWiseAverageCritic(NNModuleCritic):
     """Compute the average of the layer-wise loss values."""
 
-    def forward(
+    def compare(
         self,
         features: _FeatureType,
         target_features: _FeatureType,
     ) -> torch.Tensor:
-        """Forward pass through the critic network.
+        """Compute the total loss value given the features and the target features.
 
         Parameters
         ----------
@@ -107,7 +132,7 @@ class LayerWiseAverageCritic(NNModuleCritic):
 class MSE(LayerWiseAverageCritic):
     """MSE loss."""
 
-    def criterion(
+    def compare_layer(
         self, feature: torch.Tensor, target_feature: torch.Tensor, layer_name: str
     ) -> torch.Tensor:
         """Loss function per layer.
@@ -134,7 +159,7 @@ class MSE(LayerWiseAverageCritic):
 class TargetNormalizedMSE(LayerWiseAverageCritic):
     """MSE loss divided by the squared norm of the target feature."""
 
-    def criterion(
+    def compare_layer(
         self, feature: torch.Tensor, target_feature: torch.Tensor, layer_name: str
     ) -> torch.Tensor:
         """Loss function per layer.
