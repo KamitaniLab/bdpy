@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Iterable, TYPE_CHECKING, TypeVar, Generic
+from typing import Iterable, TypeVar, Generic
+import warnings
 
 import torch.nn as nn
-
-if TYPE_CHECKING:
-    import torch
 
 _T = TypeVar("_T")
 
@@ -72,6 +70,16 @@ class IrreversibleDomain(Domain, Generic[_T]):
     internal common space. Note that the subclasses of this class do not
     guarantee the reversibility of `send` and `receive` methods.
     """
+
+    def __init__(self) -> None:
+        super().__init__()
+        warnings.warn(
+            f"{self.__class__.__name__} is an irreversible domain. " \
+            "It does not guarantee the reversibility of `send` and `receive` " \
+            "methods. Please use the combination of `send` and `receive` methods " \
+            "with caution.",
+            RuntimeWarning,
+        )
 
     def send(self, x: _T) -> _T:
         return x

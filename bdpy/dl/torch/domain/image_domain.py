@@ -145,15 +145,16 @@ class PILDomainWithExplicitCrop(IrreversibleDomain):
     """
 
     def send(self, images: torch.Tensor) -> torch.Tensor:
-        warnings.warn(
-            "PILDomainWithExplicitCrop is an irreversible domain. " \
-            "It does not guarantee the reversibility of `send` and `receive` " \
-            "methods. Please use PILDomainWithExplicitCrop.send() with caution.",
-            RuntimeWarning,
-        )
         return _to_channel_first(images) / 255.0  # to [0, 1.0]
 
     def receive(self, images: torch.Tensor) -> torch.Tensor:
+        warnings.warn(
+            "`PILDominWithExplicitCrop.receive` performs explicit cropping. " \
+            "It could be affected to the gradient computation. " \
+            "Please do not use this domain inside the optimization pipeline.",
+            RuntimeWarning,
+        )
+
         images = _to_channel_last(images) * 255.0
 
         # Crop values to [0, 255]
