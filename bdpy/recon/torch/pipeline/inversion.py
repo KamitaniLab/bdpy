@@ -26,6 +26,11 @@ class FeatureInversionCallback(BaseCallback):
     """
 
     @unused
+    def on_pipeline_start(self) -> None:
+        """Callback on pipeline start."""
+        pass
+
+    @unused
     def on_iteration_start(self, *, step: int) -> None:
         """Callback on iteration start."""
         pass
@@ -63,6 +68,11 @@ class FeatureInversionCallback(BaseCallback):
     @unused
     def on_iteration_end(self, *, step: int) -> None:
         """Called at the end of each iteration."""
+        pass
+
+    @unused
+    def on_pipeline_end(self) -> None:
+        """Callback on pipeline end."""
         pass
 
 
