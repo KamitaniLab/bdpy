@@ -57,31 +57,12 @@ class BaseCritic(ABC):
         """
         pass
 
-    @abstractmethod
-    def compare_layer(
-        self, feature: torch.Tensor, target_feature: torch.Tensor, layer_name: str
-    ) -> torch.Tensor:
-        """Loss function per layer.
-
-        Parameters
-        ----------
-        feature : torch.Tensor
-            Feature tensor of the layer specified by `layer_name`.
-        target_feature : torch.Tensor
-            Target feature tensor of the layer specified by `layer_name`.
-        layer_name : str
-            Layer name.
-
-        Returns
-        -------
-        torch.Tensor
-            Loss value of the layer specified by `layer_name`.
-        """
-        pass
-
 
 class NNModuleCritic(BaseCritic, nn.Module):
     """Critic network module uses __call__ method of nn.Module."""
+    def __init__(self, callbacks: BaseCallback | Iterable[BaseCallback] | None = None) -> None:
+        BaseCritic.__init__(self, callbacks)
+        nn.Module.__init__(self)
 
     def __call__(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
         return nn.Module.__call__(self, features, target_features)
@@ -116,7 +97,7 @@ class LayerWiseAverageCritic(NNModuleCritic):
         counts = 0
         for layer_name, feature in features.items():
             target_feature = target_features[layer_name]
-            layer_wise_loss = self.criterion(
+            layer_wise_loss = self.compare_layer(
                 feature, target_feature, layer_name=layer_name
             )
             self._callback_handler.fire(
@@ -127,6 +108,28 @@ class LayerWiseAverageCritic(NNModuleCritic):
             loss += layer_wise_loss
             counts += 1
         return loss / counts
+
+    @abstractmethod
+    def compare_layer(
+        self, feature: torch.Tensor, target_feature: torch.Tensor, layer_name: str
+    ) -> torch.Tensor:
+        """Loss function per layer.
+
+        Parameters
+        ----------
+        feature : torch.Tensor
+            Feature tensor of the layer specified by `layer_name`.
+        target_feature : torch.Tensor
+            Target feature tensor of the layer specified by `layer_name`.
+        layer_name : str
+            Layer name.
+
+        Returns
+        -------
+        torch.Tensor
+            Loss value of the layer specified by `layer_name`.
+        """
+        pass
 
 
 class MSE(LayerWiseAverageCritic):
