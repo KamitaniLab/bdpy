@@ -67,7 +67,7 @@ jobs:
         (
           set -o pipefail
           pytest --junitxml=pytest.yml \
-            --cov-report=term-missing:skip-covered --cov=bdpy test | tee pytest-coverage.txt
+            --cov-report=term-missing:skip-covered --cov=bdpy tests | tee pytest-coverage.txt
         )
 
     - name: Upload coverage comment
