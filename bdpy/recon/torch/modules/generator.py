@@ -30,8 +30,23 @@ class BaseGenerator(ABC):
         pass
 
     @abstractmethod
+    def generate(self, latent: torch.Tensor) -> torch.Tensor:
+        """Generate image given latent variable.
+
+        Parameters
+        ----------
+        latent : torch.Tensor
+            Latent variable.
+
+        Returns
+        -------
+        torch.Tensor
+            Generated image. The generated images must be in the range [0, 1].
+        """
+        pass
+
     def __call__(self, latent: torch.Tensor) -> torch.Tensor:
-        """Forward pass through the generator network.
+        """Call self.generate.
 
         Parameters
         ----------
@@ -43,7 +58,7 @@ class BaseGenerator(ABC):
         torch.Tensor
             Generated image. The generated images must be in the range [0, 1].
         """
-        pass
+        return self.generate(latent)
 
 
 class NNModuleGenerator(BaseGenerator, nn.Module):
@@ -51,6 +66,9 @@ class NNModuleGenerator(BaseGenerator, nn.Module):
 
     def parameters(self, recurse: bool = True) -> Iterator[nn.Parameter]:
         return nn.Module.parameters(self, recurse=recurse)
+
+    def forward(self, latent: torch.Tensor) -> torch.Tensor:
+        return self.generate(latent)
 
     def __call__(self, latent: torch.Tensor) -> torch.Tensor:
         return nn.Module.__call__(self, latent)
@@ -87,8 +105,8 @@ class BareGenerator(NNModuleGenerator):
         """Reset the state of the generator."""
         pass
 
-    def forward(self, latent: torch.Tensor) -> torch.Tensor:
-        """Forward pass through the generator network.
+    def generate(self, latent: torch.Tensor) -> torch.Tensor:
+        """Naively pass the latent vector to the activation function.
 
         Parameters
         ----------
@@ -152,8 +170,8 @@ class DNNGenerator(NNModuleGenerator):
         """Reset the state of the generator."""
         self._generator_network.apply(self._reset_fn)
 
-    def forward(self, latent: torch.Tensor) -> torch.Tensor:
-        """Forward pass through the generator network.
+    def generate(self, latent: torch.Tensor) -> torch.Tensor:
+        """Generate image using the generator network.
 
         Parameters
         ----------
