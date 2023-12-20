@@ -92,8 +92,8 @@ class ComposedDomain(Domain, Generic[_T]):
     """The domain composed of multiple sub-domains.
 
     Suppose we have list of domain objects `domains = [d_0, d_1, ..., d_n]`.
-    Then, the data in the original domain `D` can be accessed as
-    `d_0[0].receive . d_1[1].receive . ... . d_n[n].receive(x)`.
+    Then, `ComposedDomain(domains)` accesses the data in the original domain `D`
+    as `d_n.receive . ... d_1.receive . d_0.receive(x)` from the internal common space `D_0`.
 
     Parameters
     ----------
@@ -107,7 +107,7 @@ class ComposedDomain(Domain, Generic[_T]):
     >>> from bdpy.dl.torch.domain import ComposedDomain
     >>> from bdpy.dl.torch.domain.image_domain import AffineDomain, BGRDomain
     >>> composed_domain = ComposedDomain([
-    ...     AffineDomain(np.array([0.5]), 1),
+    ...     AffineDomain(0.5, 1),
     ...     BGRDomain(),
     ... ])
     >>> image = torch.randn(1, 3, 64, 64).clamp(-0.5, 0.5)
