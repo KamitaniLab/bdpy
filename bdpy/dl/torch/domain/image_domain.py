@@ -169,7 +169,6 @@ class BdPyVGGDomain(ComposedDomain):
         - red: [-123, 132]
         - green: [-117, 138]
         - blue: [-104, 151]
-        # These values are calculated from the mean vector of ImageNet ([123, 117, 104]).
     - Image size: arbitrary
     - Color space: BGR
 
@@ -179,6 +178,10 @@ class BdPyVGGDomain(ComposedDomain):
         Device to send/receive images.
     dtype : torch.dtype | None
         Data type to send/receive images.
+
+    Notes
+    -----
+    The pixel ranges of this domain are derived from the mean vector of ImageNet ([123, 117, 104]).
     """
 
     def __init__(
