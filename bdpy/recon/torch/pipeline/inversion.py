@@ -21,7 +21,8 @@ class FeatureInversionCallback(BaseCallback):
 
     As a design principle, the callback functions must not have any side effects
     on the pipeline results. It should be used only for logging, visualization,
-    etc.
+    etc. Please refer to `bdpy.util.callback.BaseCallback` for details of the
+    usage of callbacks.
     """
 
     @unused
@@ -161,7 +162,8 @@ class FeatureInversionPipeline:
     num_iterations : int, optional
         Number of iterations, by default 1.
     callbacks : FeatureInversionCallback | Iterable[FeatureInversionCallback] | None, optional
-        Callbacks, by default None.
+        Callbacks, by default None. Please refer to `bdpy.util.callback.Callback`
+        and `bdpy.recon.torch.pipeline.FeatureInversionCallback` for details.
 
     Examples
     --------
