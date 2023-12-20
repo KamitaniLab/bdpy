@@ -6,7 +6,7 @@ from typing import Iterable
 import torch
 import torch.nn as nn
 from bdpy.dl.torch import FeatureExtractor
-from bdpy.dl.torch.stimulus_domain import Domain, image_domain
+from bdpy.dl.torch.domain import Domain, image_domain
 
 
 class BaseEncoder(ABC):

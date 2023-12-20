@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class Domain(nn.Module, ABC):
     """Base class for stimulus domain.
 
-    This class is used to convert stimulus between each domain and library's internal common space.
+    This class is used to convert data between each domain and library's internal common space.
     Suppose that we have two functions `f: X -> Y_1` and `g: Y_2 -> Z` and want to compose them.
     Here, `X`, `Y_1`, `Y_2`, and `Z` are different domains and assume that `Y_1` and `Y_2` are
     the similar domain that can be converted to each other.
@@ -20,8 +20,8 @@ class Domain(nn.Module, ABC):
     conversion function. This class is used to implement `t`.
 
     The subclasses of this class should implement `send` and `receive` methods. The `send` method
-    converts stimulus from the original domain (`Y_1` or `Y_2`) to the internal common space (`Y_0`),
-    and the `receive` method converts stimulus from the internal common space to the original domain.
+    converts data from the original domain (`Y_1` or `Y_2`) to the internal common space (`Y_0`),
+    and the `receive` method converts data from the internal common space to the original domain.
     By implementing domain class for `Y_1` and `Y_2`, we can construct the domain conversion function
     `t` as `t = Y_2.receive . Y_1.send`.
 
@@ -37,28 +37,28 @@ class Domain(nn.Module, ABC):
         Parameters
         ----------
         x : torch.Tensor
-            Stimulus in the original domain.
+            Data in the original domain.
 
         Returns
         -------
         torch.Tensor
-            Stimulus in the internal common space.
+            Data in the internal common space.
         """
         pass
 
     @abstractmethod
     def receive(self, x: torch.Tensor) -> torch.Tensor:
-        """Receive stimulus from the internal common space to each domain.
+        """Receive data from the internal common space to each domain.
 
         Parameters
         ----------
         x : torch.Tensor
-            Stimulus in the internal common space.
+            Data in the internal common space.
 
         Returns
         -------
         torch.Tensor
-            Stimulus in the original domain.
+            Data in the original domain.
         """
         pass
 
@@ -66,7 +66,7 @@ class Domain(nn.Module, ABC):
 class IrreversibleDomain(Domain):
     """The domain which cannot be reversed.
 
-    This class is used to convert stimulus between each domain and library's
+    This class is used to convert data between each domain and library's
     internal common space. Note that the subclasses of this class do not
     guarantee the reversibility of `send` and `receive` methods.
     """

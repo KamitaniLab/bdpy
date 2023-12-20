@@ -5,7 +5,7 @@ from typing import Callable, Iterator
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
-from bdpy.dl.torch.stimulus_domain import Domain, image_domain
+from bdpy.dl.torch.domain import Domain, image_domain
 
 
 @torch.no_grad()
