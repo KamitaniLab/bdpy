@@ -175,10 +175,10 @@ class FeatureInversionPipeline:
     >>> critic = TargetNormalizedMSE(...)
     >>> optimizer = torch.optim.Adam(latent.parameters())
     >>> pipeline = FeatureInversionPipeline(
-    ...     encoder, generator, latent, critic, optimizer
+    ...     encoder, generator, latent, critic, optimizer, num_iterations=200,
     ... )
     >>> target_features = encoder(target_image)
-    >>> pipeline.reset_state()
+    >>> pipeline.reset_states()
     >>> reconstructed_image = pipeline(target_features)
     """
 
