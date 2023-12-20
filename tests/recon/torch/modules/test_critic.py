@@ -153,3 +153,17 @@ class TestMSE(unittest.TestCase):
         target_feature = torch.randn_like(feature)
         loss = critic.compare_layer(feature, target_feature, "conv1")
         self.assertTrue(torch.allclose(loss, torch.sum((feature - target_feature)**2, dim=1)))
+
+
+class TestTargetNormalizedMSE(unittest.TestCase):
+    """Tests for bdpy.recon.torch.modules.critic.TargetNormalizedMSE."""
+    def test_compare_layer(self):
+        """Test compare_layer."""
+        critic = critic_module.TargetNormalizedMSE()
+        feature = torch.randn(13, 7)
+        target_feature = torch.randn_like(feature)
+        loss = critic.compare_layer(feature, target_feature, "conv1")
+        self.assertTrue(torch.allclose(
+            loss,
+            torch.sum((feature - target_feature)**2, dim=1)/torch.sum(target_feature**2, dim=1)
+        ))
