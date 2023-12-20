@@ -184,7 +184,7 @@ class FeatureInversionPipeline:
     num_iterations : int, optional
         Number of iterations, by default 1.
     callbacks : FeatureInversionCallback | Iterable[FeatureInversionCallback] | None, optional
-        Callbacks, by default None. Please refer to `bdpy.util.callback.Callback`
+        Callbacks, by default None. Please refer to `bdpy.util.callback.BaseCallback`
         and `bdpy.recon.torch.pipeline.FeatureInversionCallback` for details.
 
     Examples
