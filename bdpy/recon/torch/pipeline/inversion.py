@@ -244,7 +244,7 @@ class FeatureInversionPipeline:
         Returns
         -------
         torch.Tensor
-            Reconstructed images which have the similar features to the target features.
+            Reconstructed images on the libraries internal domain.
         """
         self._callback_handler.fire("on_pipeline_start")
         for step in range(self._num_iterations):
