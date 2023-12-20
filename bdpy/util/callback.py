@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable, Type, Any, Iterable
-from typing_extensions import Annotated, ParamSpec, Unpack
+from typing_extensions import Annotated, ParamSpec
 
 from collections import defaultdict
 from functools import wraps
