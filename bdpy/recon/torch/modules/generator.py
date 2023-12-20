@@ -41,7 +41,7 @@ class BaseGenerator(ABC):
         Returns
         -------
         torch.Tensor
-            Generated image. The generated images must be in the range [0, 1].
+            Generated image on the libraries internal domain.
         """
         pass
 
@@ -116,7 +116,7 @@ class BareGenerator(NNModuleGenerator):
         Returns
         -------
         torch.Tensor
-            Generated image. The generated images must be in the range [0, 1].
+            Generated image on the libraries internal domain.
         """
         return self._domain.send(self._activation(latent))
 
@@ -181,7 +181,7 @@ class DNNGenerator(NNModuleGenerator):
         Returns
         -------
         torch.Tensor
-            Generated image. The generated images must be in the range [0, 1].
+            Generated image on the libraries internal domain.
         """
         return self._domain.send(self._generator_network(latent))
 

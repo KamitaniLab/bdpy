@@ -34,7 +34,7 @@ class BaseEncoder(ABC):
         Parameters
         ----------
         images : torch.Tensor
-            Images.
+            Images on the libraries internal domain.
 
         Returns
         -------
@@ -95,7 +95,7 @@ class SimpleEncoder(BaseEncoder):
         Parameters
         ----------
         images : torch.Tensor
-            Images.
+            Images on the libraries internal domain.
 
         Returns
         -------
