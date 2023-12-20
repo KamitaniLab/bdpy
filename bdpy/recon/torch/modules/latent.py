@@ -21,7 +21,7 @@ class BaseLatent(ABC):
         pass
 
     @abstractmethod
-    def __call__(self) -> torch.Tensor:
+    def generate(self) -> torch.Tensor:
         """Generate a latent variable.
 
         Returns
@@ -30,6 +30,16 @@ class BaseLatent(ABC):
             Latent variable.
         """
         pass
+
+    def __call__(self) -> torch.Tensor:
+        """Call self.generate.
+
+        Returns
+        -------
+        torch.Tensor
+            Latent variable.
+        """
+        return self.generate()
 
 
 class NNModuleLatent(BaseLatent, nn.Module):
@@ -40,6 +50,9 @@ class NNModuleLatent(BaseLatent, nn.Module):
 
     def __call__(self) -> torch.Tensor:
         return nn.Module.__call__(self)
+
+    def forward(self) -> torch.Tensor:
+        return self.generate()
 
 
 class ArbitraryLatent(NNModuleLatent):
@@ -73,7 +86,7 @@ class ArbitraryLatent(NNModuleLatent):
         """Reset the state of the latent variable."""
         self._init_fn(self._latent)
 
-    def forward(self) -> torch.Tensor:
+    def generate(self) -> torch.Tensor:
         """Generate a latent variable.
 
         Returns
