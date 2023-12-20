@@ -140,9 +140,9 @@ class CallbackHandler:
             callback_method = getattr(callback, event_type)
             if not callable(callback_method):
                 continue
-            if _is_unused(callback_method):
-                continue
             if event_type.startswith("_"):
+                continue
+            if _is_unused(callback_method):
                 continue
             if event_type.startswith("on_"):
                 self._registered_functions[event_type].append(callback_method)
