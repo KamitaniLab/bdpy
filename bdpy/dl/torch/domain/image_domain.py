@@ -65,11 +65,28 @@ class AffineDomain(Domain):
 
     This domain is used to convert images in [0, 1] to images in [-center, scale-center].
     In other words, the pixel intensity p in [0, 1] is converted to p * scale - center.
+
+    Parameters
+    ----------
+    center : float | np.ndarray
+        Center of the affine transformation.
+        If center.ndim == 0, it must be scalar.
+        If center.ndim == 1, it must be 1D vector (C,).
+        If center.ndim == 3, it must be 3D vector (1, C, W, H).
+    scale : float | np.ndarray
+        Scale of the affine transformation.
+        If scale.ndim == 0, it must be scalar.
+        If scale.ndim == 1, it must be 1D vector (C,).
+        If scale.ndim == 3, it must be 3D vector (1, C, W, H).
+    device : torch.device | None
+        Device to send/receive images.
+    dtype : torch.dtype | None
+        Data type to send/receive images.
     """
 
     def __init__(
         self,
-        center: np.ndarray,
+        center: float | np.ndarray,
         scale: float | np.ndarray,
         *,
         device: torch.device | None = None,
@@ -77,6 +94,8 @@ class AffineDomain(Domain):
     ) -> None:
         super().__init__()
 
+        if isinstance(center, (float, int)) or center.ndim == 0:
+            center = np.array([center])[np.newaxis, np.newaxis, np.newaxis]
         if center.ndim == 1:  # 1D vector (C,)
             center = center[np.newaxis, :, np.newaxis, np.newaxis]
         elif center.ndim == 3:  # 3D vector (1, C, W, H)
@@ -152,6 +171,13 @@ class BdPyVGGDomain(ComposedDomain):
         # These values are calculated from the mean vector of ImageNet ([123, 117, 104]).
     - Image size: arbitrary
     - Color space: BGR
+
+    Parameters
+    ----------
+    device : torch.device | None
+        Device to send/receive images.
+    dtype : torch.dtype | None
+        Data type to send/receive images.
     """
 
     def __init__(
