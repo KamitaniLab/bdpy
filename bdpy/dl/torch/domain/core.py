@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Iterable, TYPE_CHECKING
+from typing import Iterable, TYPE_CHECKING, TypeVar, Generic
 
 import torch.nn as nn
 
 if TYPE_CHECKING:
     import torch
 
+_T = TypeVar("_T")
 
-class Domain(nn.Module, ABC):
+
+class Domain(nn.Module, ABC, Generic[_T]):
     """Base class for stimulus domain.
 
     This class is used to convert data between each domain and library's internal common space.
@@ -31,39 +33,39 @@ class Domain(nn.Module, ABC):
     """
 
     @abstractmethod
-    def send(self, x: torch.Tensor) -> torch.Tensor:
+    def send(self, x: _T) -> _T:
         """Send stimulus to the internal common space from each domain.
 
         Parameters
         ----------
-        x : torch.Tensor
+        x : _T
             Data in the original domain.
 
         Returns
         -------
-        torch.Tensor
+        _T
             Data in the internal common space.
         """
         pass
 
     @abstractmethod
-    def receive(self, x: torch.Tensor) -> torch.Tensor:
+    def receive(self, x: _T) -> _T:
         """Receive data from the internal common space to each domain.
 
         Parameters
         ----------
-        x : torch.Tensor
+        x : _T
             Data in the internal common space.
 
         Returns
         -------
-        torch.Tensor
+        _T
             Data in the original domain.
         """
         pass
 
 
-class IrreversibleDomain(Domain):
+class IrreversibleDomain(Domain, Generic[_T]):
     """The domain which cannot be reversed.
 
     This class is used to convert data between each domain and library's
@@ -71,26 +73,81 @@ class IrreversibleDomain(Domain):
     guarantee the reversibility of `send` and `receive` methods.
     """
 
-    def send(self, x: torch.Tensor) -> torch.Tensor:
+    def send(self, x: _T) -> _T:
         return x
 
-    def receive(self, x: torch.Tensor) -> torch.Tensor:
+    def receive(self, x: _T) -> _T:
         return x
 
 
-class ComposedDomain(Domain):
-    """The domain composed of multiple sub-domains."""
+class ComposedDomain(Domain, Generic[_T]):
+    """The domain composed of multiple sub-domains.
+
+    Suppose we have list of domain objects `domains = [d_0, d_1, ..., d_n]`.
+    Then, the data in the original domain `D` can be accessed as
+    `d_0[0].receive . d_1[1].receive . ... . d_n[n].receive(x)`.
+
+    Parameters
+    ----------
+    domains : Iterable[Domain]
+        Sub-domains to compose.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import torch
+    >>> from bdpy.dl.torch.domain import ComposedDomain
+    >>> from bdpy.dl.torch.domain.image_domain import AffineDomain, BGRDomain
+    >>> composed_domain = ComposedDomain([
+    ...     AffineDomain(np.array([0.5]), 1),
+    ...     BGRDomain(),
+    ... ])
+    >>> image = torch.randn(1, 3, 64, 64).clamp(-0.5, 0.5)
+    >>> image.shape
+    torch.Size([1, 3, 64, 64])
+    >>> composed_domain.send(image).shape
+    torch.Size([1, 3, 64, 64])
+    >>> print(composed_domain.send(image).min().item(), composed_domain.send(image).max().item())
+    0.0 1.0
+    """
 
     def __init__(self, domains: Iterable[Domain]) -> None:
         super().__init__()
         self.domains = nn.ModuleList(domains)
 
-    def send(self, x: torch.Tensor) -> torch.Tensor:
+    def send(self, x: _T) -> _T:
         for domain in reversed(self.domains):
             x = domain.send(x)
         return x
 
-    def receive(self, x: torch.Tensor) -> torch.Tensor:
+    def receive(self, x: _T) -> _T:
         for domain in self.domains:
             x = domain.receive(x)
         return x
+
+
+class KeyValueDomain(Domain, Generic[_T]):
+    """The domain which converts key-value pairs.
+
+    This class is used to convert key-value pairs between each domain and library's
+    internal common space.
+
+    Parameters
+    ----------
+    domain_mapper : dict[str, Domain]
+        Dictionary that maps keys to domains.
+    """
+
+    def __init__(self, domain_mapper: dict[str, Domain]) -> None:
+        super().__init__()
+        self.domain_mapper = domain_mapper
+
+    def send(self, x: dict[str, _T]) -> dict[str, _T]:
+        return {
+            key: self.domain_mapper[key].send(value) for key, value in x.items()
+        }
+
+    def receive(self, x: dict[str, _T]) -> dict[str, _T]:
+        return {
+            key: self.domain_mapper[key].receive(value) for key, value in x.items()
+        }

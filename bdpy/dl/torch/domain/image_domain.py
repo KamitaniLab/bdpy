@@ -1,3 +1,15 @@
+"""Image domains for PyTorch.
+
+This module provides image domains for PyTorch. The image domains are used to
+convert images between each domain and library's internal common space.
+The internal common space is defined as follows:
+
+- Channel axis: 1
+- Pixel range: [0, 1]
+- Image size: arbitrary
+- Color space: RGB
+"""
+
 from __future__ import annotations
 
 import warnings
