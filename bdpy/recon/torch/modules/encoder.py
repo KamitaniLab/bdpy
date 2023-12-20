@@ -13,8 +13,8 @@ class BaseEncoder(ABC):
     """Encoder network module."""
 
     @abstractmethod
-    def __call__(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
-        """Forward pass through the encoder network.
+    def encode(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Encode images as a hierarchical feature representation.
 
         Parameters
         ----------
@@ -27,6 +27,21 @@ class BaseEncoder(ABC):
             Features indexed by the layer names.
         """
         pass
+
+    def __call__(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Call self.encode.
+
+        Parameters
+        ----------
+        images : torch.Tensor
+            Images.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            Features indexed by the layer names.
+        """
+        return self.encode(images)
 
 
 class SimpleEncoder(BaseEncoder):
@@ -74,8 +89,8 @@ class SimpleEncoder(BaseEncoder):
         self._domain = domain
         self._feature_network = self._feature_extractor._encoder
 
-    def __call__(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
-        """Forward pass through the encoder network.
+    def encode(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Encode images as a hierarchical feature representation.
 
         Parameters
         ----------
