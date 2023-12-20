@@ -13,6 +13,21 @@ class Domain(nn.Module, ABC):
     """Base class for stimulus domain.
 
     This class is used to convert stimulus between each domain and library's internal common space.
+    Suppose that we have two functions `f: X -> Y_1` and `g: Y_2 -> Z` and want to compose them.
+    Here, `X`, `Y_1`, `Y_2`, and `Z` are different domains and assume that `Y_1` and `Y_2` are
+    the similar domain that can be converted to each other.
+    Then, we can compose `f` and `g` as `g . t . f(x)`, where `t: Y_1 -> Y_2` is the domain
+    conversion function. This class is used to implement `t`.
+
+    The subclasses of this class should implement `send` and `receive` methods. The `send` method
+    converts stimulus from the original domain (`Y_1` or `Y_2`) to the internal common space (`Y_0`),
+    and the `receive` method converts stimulus from the internal common space to the original domain.
+    By implementing domain class for `Y_1` and `Y_2`, we can construct the domain conversion function
+    `t` as `t = Y_2.receive . Y_1.send`.
+
+    Note that the subclasses of this class do not necessarily guarantee the reversibility of `send`
+    and `receive` methods. If the domain conversion is irreversible, the subclasses should inherit
+    `IrreversibleDomain` class instead of this class.
     """
 
     @abstractmethod
@@ -64,7 +79,7 @@ class IrreversibleDomain(Domain):
 
 
 class ComposedDomain(Domain):
-    """The domain composed of multiple domains."""
+    """The domain composed of multiple sub-domains."""
 
     def __init__(self, domains: Iterable[Domain]) -> None:
         super().__init__()
