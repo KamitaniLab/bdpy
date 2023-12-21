@@ -249,21 +249,14 @@ class FeatureInversionPipeline:
             )
 
             features = self._encoder(generated_image)
-            self._callback_handler.fire(
-                "on_feature_extracted",
-                step=step,
-                features=_apply_to_features(lambda x: x.detach(), features),
-            )
 
             loss = self._critic(features, target_features)
             self._callback_handler.fire(
                 "on_loss_calculated", step=step, loss=loss.detach()
             )
             loss.backward()
-            self._callback_handler.fire("on_backward_end", step=step)
 
             self._optimizer.step()
-            self._callback_handler.fire("on_optimizer_step", step=step)
             if self._scheduler is not None:
                 self._scheduler.step()
 
