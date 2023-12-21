@@ -127,7 +127,8 @@ def build_encoder(
         Layer names to extract features from.
     domain : Domain, optional
         Domain of the input images to receive (default: Zero2OneImageDomain()).
-        One needs to specify the equivalent domain of the feature network.
+        One needs to specify the domain that corresponds to the feature network's
+        input domain.
 
     Returns
     -------

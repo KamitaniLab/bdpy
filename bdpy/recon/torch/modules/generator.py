@@ -266,7 +266,9 @@ def build_generator(
         Generator network. This network should have a method `forward` that takes
         a latent vector and returns an image on its own domain.
     domain : Domain, optional
-        Domain of the input images to receive. (default: Zero2OneImageDomain())
+        Domain of the input images to receive. (default: Zero2OneImageDomain()).
+        One needs to specify the domain that corresponds to the generator
+        network's output domain.
     reset_fn : Callable[[nn.Module], None], optional
         Function to reset the parameters of the generator network, by default
         reset_all_parameters.
