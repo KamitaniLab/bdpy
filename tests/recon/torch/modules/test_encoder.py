@@ -83,3 +83,7 @@ class TestBuildEncoder(unittest.TestCase):
         self.assertEqual(features_from_builder.keys(), features.keys())
         for key in features_from_builder.keys():
             self.assertTrue(torch.allclose(features_from_builder[key], features[key]))
+
+
+if __name__ == "__main__":
+    unittest.main()

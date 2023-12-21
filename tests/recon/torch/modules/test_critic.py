@@ -167,3 +167,7 @@ class TestTargetNormalizedMSE(unittest.TestCase):
             loss,
             torch.sum((feature - target_feature)**2, dim=1)/torch.sum(target_feature**2, dim=1)
         ))
+
+
+if __name__ == "__main__":
+    unittest.main()
