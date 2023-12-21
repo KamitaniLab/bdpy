@@ -245,14 +245,14 @@ class FeatureInversionPipeline:
             latent = self._latent()
             generated_image = self._generator(latent)
             self._callback_handler.fire(
-                "on_image_generated", step=step, image=generated_image.detach()
+                "on_image_generated", step=step, image=generated_image.clone().detach()
             )
 
             features = self._encoder(generated_image)
 
             loss = self._critic(features, target_features)
             self._callback_handler.fire(
-                "on_loss_calculated", step=step, loss=loss.detach()
+                "on_loss_calculated", step=step, loss=loss.clone().detach()
             )
             loss.backward()
 
