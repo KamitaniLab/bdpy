@@ -43,11 +43,6 @@ class FeatureInversionCallback(BaseCallback):
         pass
 
     @unused
-    def on_feature_extracted(self, *, step: int, features: FeatureType) -> None:
-        """Callback on feature extracted."""
-        pass
-
-    @unused
     def on_layerwise_loss_calculated(
         self, *, layer_loss: torch.Tensor, layer_name: str
     ) -> None:
@@ -57,16 +52,6 @@ class FeatureInversionCallback(BaseCallback):
     @unused
     def on_loss_calculated(self, *, step: int, loss: torch.Tensor) -> None:
         """Callback on loss calculated."""
-        pass
-
-    @unused
-    def on_backward_end(self, *, step: int) -> None:
-        """Callback on backward end."""
-        pass
-
-    @unused
-    def on_optimizer_step(self, *, step: int) -> None:
-        """Callback on optimizer step."""
         pass
 
     @unused
