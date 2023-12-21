@@ -256,11 +256,15 @@ def build_generator(
 ) -> BaseGenerator:
     """Build a generator module.
 
+    This function builds a generator module from a generator network that takes
+    a latent vector as an input and returns an image on its own domain. One
+    needs to specify the domain of the generator network.
+
     Parameters
     ----------
     generator_network : nn.Module
         Generator network. This network should have a method `forward` that takes
-        a latent vector and propagates it through the network.
+        a latent vector and returns an image on its own domain.
     domain : Domain, optional
         Domain of the input images to receive. (default: Zero2OneImageDomain())
     reset_fn : Callable[[nn.Module], None], optional

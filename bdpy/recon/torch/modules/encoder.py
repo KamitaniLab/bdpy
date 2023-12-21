@@ -110,15 +110,24 @@ def build_encoder(
 ) -> BaseEncoder:
     """Build an encoder network with a naive feature extractor.
 
+    The function builds an encoder module from a feature network that takes
+    images on its own domain as input and processes them. The encoder module
+    receives images on the library's internal domain and returns features on the
+    library's internal domain indexed by `layer_names`. `domain` is used to
+    convert the input images to the feature network's domain from the library's
+    internal domain.
+
     Parameters
     ----------
     feature_network : nn.Module
         Feature network. This network should have a method `forward` that takes
-        an image tensor and propagates it through the network.
+        an image tensor and propagates it through the network. The images should
+        be on the network's own domain.
     layer_names : list[str]
         Layer names to extract features from.
     domain : Domain, optional
         Domain of the input images to receive (default: Zero2OneImageDomain()).
+        One needs to specify the equivalent domain of the feature network.
 
     Returns
     -------
