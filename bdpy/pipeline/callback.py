@@ -48,12 +48,36 @@ def unused(fn: Callable[_P, Any]) -> Callable[_P, _Unused]:
 
     @wraps(fn)  # NOTE: preserve name, docstring, etc. of the original function
     def _unused(*args: _P.args, **kwargs: _P.kwargs) -> _Unused:
-        raise RuntimeError(f"Function {fn} is decorated with @unused and must not be called.")
+        raise RuntimeError(
+            f"Function {fn} is decorated with @unused and must not be called."
+        )
 
     # NOTE: change the return type to Unused
     _unused.__annotations__["return"] = _Unused
 
     return _unused
+
+
+def _validate_callback(callback: BaseCallback, base_class: Type[BaseCallback]) -> None:
+    if not isinstance(callback, base_class):
+        raise TypeError(
+            f"Callback must be an instance of {base_class}, not {type(callback)}."
+        )
+    acceptable_events = []
+    for event_type in dir(base_class):
+        if event_type.startswith("on_") and callable(getattr(base_class, event_type)):
+            acceptable_events.append(event_type)
+    for event_type in dir(callback):
+        if not (
+            event_type.startswith("on_") and callable(getattr(callback, event_type))
+        ):
+            continue
+        if event_type not in acceptable_events:
+            raise ValueError(
+                f"{event_type} is not an acceptable event type. "
+                f"Acceptable event types are {acceptable_events}. "
+                f"Please refer to the documentation of {base_class.__name__} for the list of acceptable event types."
+            )
 
 
 class BaseCallback:
@@ -137,7 +161,9 @@ class CallbackHandler:
     _callbacks: list[BaseCallback]
     _registered_functions: defaultdict[str, list[Callable]]
 
-    def __init__(self, callbacks: BaseCallback | Iterable[BaseCallback] | None = None) -> None:
+    def __init__(
+        self, callbacks: BaseCallback | Iterable[BaseCallback] | None = None
+    ) -> None:
         self._callbacks = []
         self._registered_functions = defaultdict(list)
         if callbacks is not None:
@@ -160,7 +186,9 @@ class CallbackHandler:
             If the callback is not an instance of BaseCallback.
         """
         if not isinstance(callback, BaseCallback):
-            raise TypeError(f"Callback must be an instance of BaseCallback, not {type(callback)}.")
+            raise TypeError(
+                f"Callback must be an instance of BaseCallback, not {type(callback)}."
+            )
 
         self._callbacks.append(callback)
         for event_type in dir(callback):
@@ -190,4 +218,3 @@ class CallbackHandler:
         """
         for callback_method in self._registered_functions[event_type]:
             callback_method(**kwargs)
-

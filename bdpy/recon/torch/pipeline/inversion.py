@@ -7,7 +7,7 @@ from itertools import chain
 import torch
 
 from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
-from bdpy.pipeline.callback import CallbackHandler, BaseCallback, unused
+from bdpy.pipeline.callback import CallbackHandler, BaseCallback, unused, _validate_callback
 
 FeatureType = Dict[str, torch.Tensor]
 
@@ -26,6 +26,10 @@ class FeatureInversionCallback(BaseCallback):
     etc. Please refer to `bdpy.util.callback.BaseCallback` for details of the
     usage of callbacks.
     """
+
+    def __init__(self) -> None:
+        super().__init__()
+        _validate_callback(self, FeatureInversionCallback)
 
     @unused
     def on_pipeline_start(self) -> None:
@@ -79,6 +83,7 @@ class CUILoggingCallback(FeatureInversionCallback):
     """
 
     def __init__(self, interval: int = 1, total_steps: int = -1) -> None:
+        super().__init__()
         self._interval = interval
         self._total_steps = total_steps
         self._loss: int | float = -1
@@ -119,6 +124,7 @@ class WandBLoggingCallback(FeatureInversionCallback):
     def __init__(
         self, run: wandb.sdk.wandb_run.Run, interval: int = 1, media_interval: int = -1
     ) -> None:
+        super().__init__()
         self._run = run
         self._interval = interval
         self._media_interval = media_interval
