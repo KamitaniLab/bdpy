@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Iterable, List, Dict, Union, Tuple, Any, Callable, Optional
 
 import os
+import warnings
 
 import numpy as np
 from PIL import Image
@@ -170,6 +171,13 @@ class ImageDataset(torch.utils.data.Dataset):
         ----
         - Images are converted to RGB. Alpha channels in RGBA images are ignored.
         '''
+
+        warnings.warn(
+            "dl.torch.torch.ImageDataset is deprecated. Please consider using " \
+            "bdpy.dl.torch.dataset.ImageDataset instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
 
         self.transform = transform
         # Custom transforms
