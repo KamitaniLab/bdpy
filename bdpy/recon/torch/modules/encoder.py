@@ -56,8 +56,6 @@ class SimpleEncoder(BaseEncoder):
         Layer names to extract features from.
     domain : Domain, optional
         Domain of the input images to receive. (default: Zero2OneImageDomain())
-    device : torch.device, optional
-        Device to use. (default: "cpu").
 
     Examples
     --------
@@ -80,11 +78,10 @@ class SimpleEncoder(BaseEncoder):
         feature_network: nn.Module,
         layer_names: Iterable[str],
         domain: Domain = image_domain.Zero2OneImageDomain(),
-        device: str | torch.device = "cpu",
     ) -> None:
         super().__init__()
         self._feature_extractor = FeatureExtractor(
-            encoder=feature_network, layers=layer_names, detach=False, device=device
+            encoder=feature_network, layers=layer_names, detach=False, device=None
         )
         self._domain = domain
         self._feature_network = self._feature_extractor._encoder
@@ -110,7 +107,6 @@ def build_encoder(
     feature_network: nn.Module,
     layer_names: Iterable[str],
     domain: Domain = image_domain.Zero2OneImageDomain(),
-    device: str | torch.device = "cpu",
 ) -> BaseEncoder:
     """Build an encoder network with a naive feature extractor.
 
@@ -123,8 +119,6 @@ def build_encoder(
         Layer names to extract features from.
     domain : Domain, optional
         Domain of the input images to receive (default: Zero2OneImageDomain()).
-    device : torch.device, optional
-        Device to use. (default: "cpu").
 
     Returns
     -------
@@ -146,4 +140,4 @@ def build_encoder(
     >>> features['[0]'].shape
     torch.Size([1, 3, 62, 62])
     """
-    return SimpleEncoder(feature_network, layer_names, domain, device)
+    return SimpleEncoder(feature_network, layer_names, domain)
