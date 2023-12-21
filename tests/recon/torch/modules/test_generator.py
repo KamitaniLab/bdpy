@@ -53,7 +53,7 @@ class TestNNModuleGenerator(unittest.TestCase):
         class LinearGenerator(generator_module.NNModuleGenerator):
             def __init__(self):
                 super().__init__()
-                self.fc = nn.Linear(64, 64)
+                self.fc = nn.Linear(64, 10)
 
             def generate(self, latent):
                 return self.fc(latent)
@@ -71,7 +71,9 @@ class TestNNModuleGenerator(unittest.TestCase):
         """Test __call__."""
         latent = torch.randn(1, 64)
         generated_image = self.generator(latent)
-        self.assertEqual(generated_image.shape, (1, 64))
+        self.assertEqual(generated_image.shape, (1, 10))
+        generated_image.sum().backward()
+        self.assertIsNotNone(self.generator.fc.weight.grad)
 
     def test_reset_states(self):
         """Test reset_states."""
