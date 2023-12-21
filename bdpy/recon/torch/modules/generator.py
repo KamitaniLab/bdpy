@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
 from typing import Callable, Iterator
@@ -8,12 +10,24 @@ from torch.nn.parameter import Parameter
 from bdpy.dl.torch.domain import Domain, image_domain
 
 
+def _get_reset_module_fn(module: nn.Module) -> Callable[[], None] | None:
+    """Get the function to reset the parameters of the module."""
+    reset_parameters = getattr(module, "reset_parameters", None)
+    if callable(reset_parameters):
+        return reset_parameters
+    # NOTE: This is needed for nn.MultiheadAttention
+    reset_parameters = getattr(module, "_reset_parameters", None)
+    if callable(reset_parameters):
+        return reset_parameters
+    return None
+
+
 @torch.no_grad()
 def reset_all_parameters(module: nn.Module) -> None:
     """Reset the parameters of the module."""
-    reset_parameters = getattr(module, "reset_parameters", None)
-    if callable(reset_parameters):
-        module.reset_parameters()
+    reset_parameters = _get_reset_module_fn(module)
+    if reset_parameters is not None:
+        reset_parameters()
 
 
 class BaseGenerator(ABC):
