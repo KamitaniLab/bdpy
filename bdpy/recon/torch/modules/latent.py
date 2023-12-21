@@ -80,7 +80,7 @@ class ArbitraryLatent(NNModuleLatent):
         super().__init__()
         self._shape = shape
         self._init_fn = init_fn
-        self._latent = torch.empty(shape)
+        self._latent = nn.Parameter(torch.empty(shape))
 
     def reset_states(self) -> None:
         """Reset the state of the latent variable."""
