@@ -16,6 +16,7 @@ import warnings
 
 import numpy as np
 import torch
+from torchvision.transforms import InterpolationMode, Resize
 
 from .core import Domain, IrreversibleDomain, ComposedDomain
 
@@ -198,3 +199,43 @@ class BdPyVGGDomain(ComposedDomain):
                 BGRDomain(),
             ]
         )
+
+
+class FixedResolutionDomain(IrreversibleDomain):
+    """Image domain for images with fixed resolution.
+
+    Parameters
+    ----------
+    image_shape : tuple[int, int]
+        Spatial resolution of the images.
+    interpolation : InterpolationMode, optional
+        Interpolation mode for resizing. (default: InterpolationMode.BILINEAR)
+    antialias : bool, optional
+        Whether to use antialiasing. (default: True)
+    """
+
+    def __init__(
+        self,
+        image_shape: tuple[int, int],
+        interpolation: InterpolationMode = InterpolationMode.BILINEAR,
+        antialias: bool = True,
+    ) -> None:
+        super().__init__()
+        self._image_shape = image_shape
+        self._interpolation = interpolation
+        self._antialias = antialias
+
+        self._resizer = Resize(
+            size=self._image_shape,
+            interpolation=self._interpolation,
+            antialias=self._antialias
+        )
+
+    def send(self, images: torch.Tensor) -> torch.Tensor:
+        raise RuntimeError(
+            "FixedResolutionDomain is not supposed to be used for sending images " \
+            "because the internal image resolution could not be determined."
+        )
+
+    def receive(self, images: torch.Tensor) -> torch.Tensor:
+        return self._resizer(images)
