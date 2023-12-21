@@ -7,7 +7,7 @@ from itertools import chain
 import torch
 
 from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
-from bdpy.util.callback import CallbackHandler, BaseCallback, unused
+from bdpy.pipeline.callback import CallbackHandler, BaseCallback, unused
 
 FeatureType = Dict[str, torch.Tensor]
 
