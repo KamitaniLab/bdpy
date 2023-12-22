@@ -11,6 +11,18 @@ from torchvision.models import get_model
 from bdpy.recon.torch.modules import generator as generator_module
 
 
+class LinearGenerator(generator_module.NNModuleGenerator):
+    def __init__(self):
+        super().__init__()
+        self.fc = nn.Linear(64, 10)
+
+    def generate(self, latent):
+        return self.fc(latent)
+
+    def reset_states(self) -> None:
+        self.fc.apply(generator_module.reset_all_parameters)
+
+
 class TestResetAllParameters(unittest.TestCase):
     """Tests for bdpy.recon.torch.modules.generator.reset_all_parameters."""
     def setUp(self):
@@ -89,18 +101,6 @@ class TestNNModuleGenerator(unittest.TestCase):
 
     def setUp(self):
         """Set up."""
-
-        class LinearGenerator(generator_module.NNModuleGenerator):
-            def __init__(self):
-                super().__init__()
-                self.fc = nn.Linear(64, 10)
-
-            def generate(self, latent):
-                return self.fc(latent)
-
-            def reset_states(self) -> None:
-                self.fc.apply(generator_module.reset_all_parameters)
-
         self.generator = LinearGenerator()
 
     def test_instantiation(self):
@@ -122,6 +122,41 @@ class TestNNModuleGenerator(unittest.TestCase):
             self.assertTrue(torch.equal(p1, p2))
         self.generator.reset_states()
         for p1, p2 in zip(self.generator.parameters(), generator_copy.parameters()):
+            self.assertFalse(torch.equal(p1, p2))
+
+
+class TestBareGenerator(unittest.TestCase):
+    """Tests for bdpy.recon.torch.modules.generator.BareGenerator."""
+
+    def test_call(self):
+        """Test __call__."""
+        generator = generator_module.BareGenerator(activation=torch.sigmoid)
+        latent = torch.randn(1, 3, 64, 64)
+        generated_image = generator(latent)
+        self.assertEqual(generated_image.shape, (1, 3, 64, 64))
+        torch.testing.assert_close(generated_image, torch.sigmoid(latent))
+
+
+class TestDNNGenerator(unittest.TestCase):
+    """Tests for bdpy.recon.torch.modules.generator.DNNGenerator."""
+    def test_call(self):
+        """Test __call__."""
+        generator_network = LinearGenerator()
+        generator = generator_module.DNNGenerator(generator_network)
+        latent = torch.randn(1, 64)
+        generated_image = generator(latent)
+        self.assertEqual(generated_image.shape, (1, 10))
+        generated_image.sum().backward()
+        self.assertIsNotNone(generator_network.fc.weight.grad)
+
+    def test_reset_states(self):
+        """Test reset_states."""
+        generator = generator_module.DNNGenerator(LinearGenerator())
+        generator_copy = copy.deepcopy(generator)
+        for p1, p2 in zip(generator.parameters(), generator_copy.parameters()):
+            self.assertTrue(torch.equal(p1, p2))
+        generator.reset_states()
+        for p1, p2 in zip(generator.parameters(), generator_copy.parameters()):
             self.assertFalse(torch.equal(p1, p2))
 
 
