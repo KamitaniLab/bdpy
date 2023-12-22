@@ -45,6 +45,34 @@ class TestBaseEncoder(unittest.TestCase):
         self.assertDictEqual(features, {"image": images})
 
 
+class TestNNModuleEncoder(unittest.TestCase):
+    """Tests for bdpy.recon.torch.modules.encoder.NNModuleEncoder."""
+
+    def test_instantiation(self):
+        """Test instantiation."""
+        self.assertRaises(TypeError, encoder_module.NNModuleEncoder)
+
+    def test_call(self):
+        """Test __call__."""
+
+        class ReturnAsIsEncoder(encoder_module.NNModuleEncoder):
+            def __init__(self) -> None:
+                super().__init__()
+            def encode(self, images):
+                return {"image": images}
+
+        encoder = ReturnAsIsEncoder()
+
+        images = torch.randn(1, 3, 64, 64)
+        images.requires_grad = True
+        features = encoder(images)
+        self.assertIsInstance(features, dict)
+        self.assertEqual(len(features), 1)
+        self.assertEqual(features["image"].shape, (1, 3, 64, 64))
+        features["image"].sum().backward()
+        self.assertIsNotNone(images.grad)
+
+
 class TestSimpleEncoder(unittest.TestCase):
     """Tests for bdpy.recon.torch.modules.encoder.SimpleEncoder."""
 
@@ -54,11 +82,14 @@ class TestSimpleEncoder(unittest.TestCase):
             MLP(), ["fc1", "fc2"], domain=Zero2OneImageDomain()
         )
         images = torch.randn(1, 3, 64, 64).clamp(0, 1)
+        images.requires_grad = True
         features = encoder(images)
         self.assertIsInstance(features, dict)
         self.assertEqual(len(features), 2)
         self.assertEqual(features["fc1"].shape, (1, 256))
         self.assertEqual(features["fc2"].shape, (1, 128))
+        features["fc2"].sum().backward()
+        self.assertIsNotNone(images.grad)
 
 
 class TestBuildEncoder(unittest.TestCase):

@@ -44,7 +44,29 @@ class BaseEncoder(ABC):
         return self.encode(images)
 
 
-class SimpleEncoder(BaseEncoder):
+class NNModuleEncoder(BaseEncoder, nn.Module):
+    """Encoder network module subclassed from nn.Module."""
+
+    def forward(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Call self.encode.
+
+        Parameters
+        ----------
+        images : torch.Tensor
+            Images on the library's internal domain.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            Features indexed by the layer names.
+        """
+        return self.encode(images)
+
+    def __call__(self, images: torch.Tensor) -> dict[str, torch.Tensor]:
+        return nn.Module.__call__(self, images)
+
+
+class SimpleEncoder(NNModuleEncoder):
     """Encoder network module with a naive feature extractor.
 
     Parameters
