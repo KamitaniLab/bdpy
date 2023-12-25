@@ -6,6 +6,7 @@ import copy
 
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torchvision.models import get_model
 
 from bdpy.recon.torch.modules import generator as generator_module
@@ -158,6 +159,39 @@ class TestDNNGenerator(unittest.TestCase):
         generator.reset_states()
         for p1, p2 in zip(generator.parameters(), generator_copy.parameters()):
             self.assertFalse(torch.equal(p1, p2))
+
+
+class TestFrozenGenerator(unittest.TestCase):
+    """Tests for bdpy.recon.torch.modules.generator.FrozenGenerator."""
+    def test_call(self):
+        """Test __call__."""
+        generator_network = LinearGenerator()
+        generator = generator_module.FrozenGenerator(generator_network)
+        latent = torch.randn(1, 64)
+        generated_image = generator(latent)
+        self.assertEqual(generated_image.shape, (1, 10))
+        self.assertRaises(ValueError, optim.SGD, generator.parameters())
+
+    def test_reset_states(self):
+        """Test reset_states."""
+        generator = generator_module.FrozenGenerator(LinearGenerator())
+        generator_copy = copy.deepcopy(generator)
+        for p1, p2 in zip(generator.parameters(), generator_copy.parameters()):
+            self.assertTrue(torch.equal(p1, p2))
+        generator.reset_states()
+        for p1, p2 in zip(generator.parameters(), generator_copy.parameters()):
+            self.assertTrue(torch.equal(p1, p2))
+
+
+class TestBuildGenerator(unittest.TestCase):
+    """Tests for bdpy.recon.torch.modules.generator.build_generator."""
+    def test_build_generator(self):
+        """Test build_generator."""
+        generator_network = LinearGenerator()
+        generator = generator_module.build_generator(generator_network)
+        self.assertIsInstance(generator, generator_module.DNNGenerator)
+        generator = generator_module.build_generator(generator_network, frozen=True)
+        self.assertIsInstance(generator, generator_module.FrozenGenerator)
 
 
 if __name__ == "__main__":
