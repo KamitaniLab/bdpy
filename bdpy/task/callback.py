@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Type, Any, Iterable
+from typing import Callable, Type, Any, Iterable, TypeVar, Generic
 from typing_extensions import Annotated, ParamSpec
 
 from collections import defaultdict
@@ -122,7 +122,10 @@ class BaseCallback:
         pass
 
 
-class CallbackHandler:
+_CallbackType = TypeVar("_CallbackType", bound=BaseCallback)
+
+
+class CallbackHandler(Generic[_CallbackType]):
     """Callback handler.
 
     This class manages the callback objects and fires the callback functions
@@ -156,21 +159,21 @@ class CallbackHandler:
     Task ended (name=B).
     """
 
-    _callbacks: list[BaseCallback]
+    _callbacks: list[_CallbackType]
     _registered_functions: defaultdict[str, list[Callable]]
 
     def __init__(
-        self, callbacks: BaseCallback | Iterable[BaseCallback] | None = None
+        self, callbacks: _CallbackType | Iterable[_CallbackType] | None = None
     ) -> None:
         self._callbacks = []
         self._registered_functions = defaultdict(list)
         if callbacks is not None:
-            if isinstance(callbacks, BaseCallback):
+            if not isinstance(callbacks, Iterable):
                 callbacks = [callbacks]
             for callback in callbacks:
                 self.register(callback)
 
-    def register(self, callback: BaseCallback) -> None:
+    def register(self, callback: _CallbackType) -> None:
         """Register a callback.
 
         Parameters

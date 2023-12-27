@@ -7,6 +7,7 @@ from itertools import chain
 import torch
 
 from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
+from bdpy.task import BaseTask
 from bdpy.task.callback import CallbackHandler, BaseCallback, unused, _validate_callback
 
 FeatureType = Dict[str, torch.Tensor]
@@ -155,7 +156,7 @@ class WandBLoggingCallback(FeatureInversionCallback):
             self._run.log({"loss": loss.item()}, step=self._step)
 
 
-class FeatureInversionTask:
+class FeatureInversionTask(BaseTask):
     """Feature inversion Task.
 
     Parameters
@@ -210,6 +211,7 @@ class FeatureInversionTask:
         | Iterable[FeatureInversionCallback]
         | None = None,
     ) -> None:
+        super().__init__(callbacks)
         self._encoder = encoder
         self._generator = generator
         self._latent = latent
@@ -218,8 +220,6 @@ class FeatureInversionTask:
         self._scheduler = scheduler
 
         self._num_iterations = num_iterations
-
-        self._callback_handler = CallbackHandler(callbacks)
 
     def __call__(
         self,
@@ -278,7 +278,3 @@ class FeatureInversionTask:
             ),
             **self._optimizer.defaults,
         )
-
-    def register_callback(self, callback: FeatureInversionCallback) -> None:
-        """Register a callback."""
-        self._callback_handler.register(callback)
