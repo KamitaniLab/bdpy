@@ -152,7 +152,7 @@ class PILDomainWithExplicitCrop(IrreversibleDomain):
         warnings.warn(
             "`PILDominWithExplicitCrop.receive` performs explicit cropping. " \
             "It could be affected to the gradient computation. " \
-            "Please do not use this domain inside the optimization pipeline.",
+            "Please do not use this domain inside the optimization.",
             RuntimeWarning,
         )
 

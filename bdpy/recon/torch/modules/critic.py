@@ -6,7 +6,7 @@ from typing import Dict, Iterable
 import torch
 import torch.nn as nn
 
-from bdpy.pipeline.callback import CallbackHandler, BaseCallback
+from bdpy.task.callback import CallbackHandler, BaseCallback
 
 
 _FeatureType = Dict[str, torch.Tensor]

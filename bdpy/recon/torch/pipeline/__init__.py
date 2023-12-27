@@ -1,1 +1,0 @@
-from .inversion import FeatureInversionPipeline

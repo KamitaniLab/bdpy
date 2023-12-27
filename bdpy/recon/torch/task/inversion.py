@@ -7,7 +7,7 @@ from itertools import chain
 import torch
 
 from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
-from bdpy.pipeline.callback import CallbackHandler, BaseCallback, unused, _validate_callback
+from bdpy.task.callback import CallbackHandler, BaseCallback, unused, _validate_callback
 
 FeatureType = Dict[str, torch.Tensor]
 
@@ -19,10 +19,10 @@ def _apply_to_features(
 
 
 class FeatureInversionCallback(BaseCallback):
-    """Callback for feature inversion pipeline.
+    """Callback for feature inversion task.
 
     As a design principle, the callback functions must not have any side effects
-    on the pipeline results. It should be used only for logging, visualization,
+    on the task results. It should be used only for logging, visualization,
     etc. Please refer to `bdpy.util.callback.BaseCallback` for details of the
     usage of callbacks.
     """
@@ -32,8 +32,8 @@ class FeatureInversionCallback(BaseCallback):
         _validate_callback(self, FeatureInversionCallback)
 
     @unused
-    def on_pipeline_start(self) -> None:
-        """Callback on pipeline start."""
+    def on_task_start(self) -> None:
+        """Callback on task start."""
         pass
 
     @unused
@@ -64,8 +64,8 @@ class FeatureInversionCallback(BaseCallback):
         pass
 
     @unused
-    def on_pipeline_end(self) -> None:
-        """Callback on pipeline end."""
+    def on_task_end(self) -> None:
+        """Callback on task end."""
         pass
 
 
@@ -155,8 +155,8 @@ class WandBLoggingCallback(FeatureInversionCallback):
             self._run.log({"loss": loss.item()}, step=self._step)
 
 
-class FeatureInversionPipeline:
-    """Feature inversion pipeline.
+class FeatureInversionTask:
+    """Feature inversion Task.
 
     Parameters
     ----------
@@ -176,25 +176,25 @@ class FeatureInversionPipeline:
         Number of iterations, by default 1.
     callbacks : FeatureInversionCallback | Iterable[FeatureInversionCallback] | None, optional
         Callbacks, by default None. Please refer to `bdpy.util.callback.BaseCallback`
-        and `bdpy.recon.torch.pipeline.FeatureInversionCallback` for details.
+        and `bdpy.recon.torch.task.FeatureInversionCallback` for details.
 
     Examples
     --------
     >>> import torch
     >>> import torch.nn as nn
-    >>> from bdpy.recon.torch.pipeline import FeatureInversionPipeline
+    >>> from bdpy.recon.torch.task import FeatureInversionTask
     >>> from bdpy.recon.torch.modules import build_encoder, build_generator, ArbitraryLatent, TargetNormalizedMSE
     >>> encoder = build_encoder(...)
     >>> generator = build_generator(...)
     >>> latent = ArbitraryLatent(...)
     >>> critic = TargetNormalizedMSE(...)
     >>> optimizer = torch.optim.Adam(latent.parameters())
-    >>> pipeline = FeatureInversionPipeline(
+    >>> task = FeatureInversionTask(
     ...     encoder, generator, latent, critic, optimizer, num_iterations=200,
     ... )
     >>> target_features = encoder(target_image)
-    >>> pipeline.reset_states()
-    >>> reconstructed_image = pipeline(target_features)
+    >>> task.reset_states()
+    >>> reconstructed_image = task(target_features)
     """
 
     def __init__(
@@ -237,7 +237,7 @@ class FeatureInversionPipeline:
         torch.Tensor
             Reconstructed images on the libraries internal domain.
         """
-        self._callback_handler.fire("on_pipeline_start")
+        self._callback_handler.fire("on_task_start")
         for step in range(self._num_iterations):
             self._callback_handler.fire("on_iteration_start", step=step)
             self._optimizer.zero_grad()
@@ -264,11 +264,11 @@ class FeatureInversionPipeline:
 
         generated_image = self._generator(self._latent()).detach()
 
-        self._callback_handler.fire("on_pipeline_end")
+        self._callback_handler.fire("on_task_end")
         return generated_image
 
     def reset_states(self) -> None:
-        """Reset the state of the pipeline."""
+        """Reset the state of the task."""
         self._generator.reset_states()
         self._latent.reset_states()
         self._optimizer = self._optimizer.__class__(

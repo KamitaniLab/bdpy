@@ -83,44 +83,42 @@ def _validate_callback(callback: BaseCallback, base_class: Type[BaseCallback]) -
 class BaseCallback:
     """Base class for callbacks.
 
-    Callbacks are used to hook into the pipeline and execute custom functions
+    Callbacks are used to hook into the task and execute custom functions
     at specific events. Callback functions must be defined as methods of the
     callback classes. The callback functions must be named as "on_<event_type>".
     As a design principle, the callback functions must not have any side effects
-    on the pipeline results. It should be used only for logging, visualization,
-    etc.
+    on the task results. It should be used only for logging, visualization, etc.
 
-    For example, the following callback class logs the start and end of the
-    pipeline.
+    For example, the following callback class logs the start and end of the task.
 
     >>> class Callback(BaseCallback):
-    ...     def on_pipeline_start(self):
-    ...         print("Pipeline started.")
+    ...     def on_task_start(self):
+    ...         print("Task started.")
     ...
-    ...     def on_pipeline_end(self):
-    ...         print("Pipeline ended.")
+    ...     def on_task_end(self):
+    ...         print("Task ended.")
     ...
     >>> callback = Callback()
-    >>> some_pipeline = SomePipeline()  # Initialize a pipeline object
-    >>> some_pipeline.register_callback(callback)
-    >>> outputs = some_pipeline(inputs)  # Run the pipeline
-    Pipeline started.
-    Pipeline ended.
+    >>> some_task = SomeTask()  # Initialize a task object
+    >>> some_task.register_callback(callback)
+    >>> outputs = some_task(inputs)  # Run the task
+    Task started.
+    Task ended.
 
-    The set of available events that can be hooked into depends on the pipeline.
-    See the base class of the corresponding pipeline for the list of all events.
+    The set of available events that can be hooked into depends on the task.
+    See the base class of the corresponding task for the list of all events.
     `@unused` decorator can be used to mark a callback function as unused, so
     that the callback handler does not fire the function.
     """
 
     @unused
-    def on_pipeline_start(self) -> None:
-        """Callback on pipeline start."""
+    def on_task_start(self) -> None:
+        """Callback on task start."""
         pass
 
     @unused
-    def on_pipeline_end(self) -> None:
-        """Callback on pipeline end."""
+    def on_task_end(self) -> None:
+        """Callback on task end."""
         pass
 
 
@@ -143,19 +141,19 @@ class CallbackHandler:
     ...     def __init__(self, name):
     ...         self._name = name
     ...
-    ...     def on_pipeline_start(self):
-    ...         print(f"Pipeline started (name={self._name}).")
+    ...     def on_task_start(self):
+    ...         print(f"Task started (name={self._name}).")
     ...
-    ...     def on_pipeline_end(self):
-    ...         print(f"Pipeline ended (name={self._name}).")
+    ...     def on_task_end(self):
+    ...         print(f"Task ended (name={self._name}).")
     ...
     >>> handler = CallbackHandler([Callback("A"), Callback("B")])
-    >>> handler.fire("on_pipeline_start")
-    Pipeline started (name=A).
-    Pipeline started (name=B).
-    >>> handler.fire("on_pipeline_end")
-    Pipeline ended (name=A).
-    Pipeline ended (name=B).
+    >>> handler.fire("on_task_start")
+    Task started (name=A).
+    Task started (name=B).
+    >>> handler.fire("on_task_end")
+    Task ended (name=A).
+    Task ended (name=B).
     """
 
     _callbacks: list[BaseCallback]
