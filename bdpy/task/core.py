@@ -11,7 +11,27 @@ _CallbackType = TypeVar("_CallbackType", bound=BaseCallback)
 
 
 class BaseTask(ABC, Generic[_CallbackType]):
-    """Base class for tasks."""
+    """Base class for tasks.
+
+    Parameters
+    ----------
+    callbacks : BaseCallback | Iterable[BaseCallback] | None
+        Callbacks to register. If `None`, no callbacks are registered.
+
+    Attributes
+    ----------
+    _callback_handler : CallbackHandler
+        Callback handler.
+
+    Notes
+    -----
+    This class is designed to be used as a base class for tasks. The task
+    implementation should override the `__call__` method. The actual interface
+    of `__call__` depends on the task. For example, the task may take a single
+    input and return a single output, or it may take multiple inputs and return
+    multiple outputs. The task may also take keyword arguments. Please refer to
+    the documentation of the specific task for details.
+    """
 
     _callback_handler: CallbackHandler[_CallbackType]
 
