@@ -13,6 +13,8 @@ _CallbackType = TypeVar("_CallbackType", bound=BaseCallback)
 class BaseTask(ABC, Generic[_CallbackType]):
     """Base class for tasks."""
 
+    _callback_handler: CallbackHandler[_CallbackType]
+
     def __init__(
         self, callbacks: _CallbackType | Iterable[_CallbackType] | None = None
     ) -> None:

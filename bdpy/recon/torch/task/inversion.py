@@ -8,7 +8,7 @@ import torch
 
 from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
 from bdpy.task import BaseTask
-from bdpy.task.callback import CallbackHandler, BaseCallback, unused, _validate_callback
+from bdpy.task.callback import BaseCallback, unused, _validate_callback
 
 FeatureType = Dict[str, torch.Tensor]
 
