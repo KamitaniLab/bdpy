@@ -21,11 +21,11 @@ class LinearGenerator(generator_module.NNModuleGenerator):
         return self.fc(latent)
 
     def reset_states(self) -> None:
-        self.fc.apply(generator_module.reset_all_parameters)
+        self.fc.apply(generator_module.call_reset_parameters)
 
 
-class TestResetAllParameters(unittest.TestCase):
-    """Tests for bdpy.recon.torch.modules.generator.reset_all_parameters."""
+class TestCallResetParameters(unittest.TestCase):
+    """Tests for bdpy.recon.torch.modules.generator.call_reset_parameters."""
     def setUp(self):
         self.model_ids = [
             "alexnet",
@@ -52,13 +52,13 @@ class TestResetAllParameters(unittest.TestCase):
                 continue
             self.assertFalse(
                 torch.equal(p1, p2),
-                msg=f"Parameter {parent_name}.{name_p1} does not change after reset_all_parameters."
+                msg=f"Parameter {parent_name}.{name_p1} does not change after calling reset_parameters."
             )
         for (name_m1, m1), (_, m2) in zip(module.named_children(), module_copy.named_children()):
             self._validate_module(m1, m2, f"{parent_name}.{name_m1}")
 
-    def test_reset_all_parameters(self):
-        """Test reset_all_parameters."""
+    def test_call_reset_parameters(self):
+        """Test call_reset_parameters."""
         for model_id in self.model_ids:
             model = get_model(model_id)
             model_copy = copy.deepcopy(model)
@@ -67,7 +67,7 @@ class TestResetAllParameters(unittest.TestCase):
                     torch.equal(p1, p2),
                     msg=f"Parameter {name_p1} of {model_id} has been changed by deepcopy."
                 )
-            model.apply(generator_module.reset_all_parameters)
+            model.apply(generator_module.call_reset_parameters)
             self._validate_module(model, model_copy, model_id)
 
 

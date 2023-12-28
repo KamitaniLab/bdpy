@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-
 from typing import Callable, Iterator
+import warnings
 
 import torch
 import torch.nn as nn
@@ -23,8 +23,16 @@ def _get_reset_module_fn(module: nn.Module) -> Callable[[], None] | None:
 
 
 @torch.no_grad()
-def reset_all_parameters(module: nn.Module) -> None:
+def call_reset_parameters(module: nn.Module) -> None:
     """Reset the parameters of the module."""
+    warnings.warn(
+        "`call_reset_parameters` calls the instance method named `reset_parameters` " \
+        "or `_reset_parameters` of the module. This method does not guarantee that " \
+        "all the parameters of the module are reset. Please use this method with " \
+        "caution.",
+        UserWarning,
+        stacklevel=2,
+    )
     reset_parameters = _get_reset_module_fn(module)
     if reset_parameters is not None:
         reset_parameters()
@@ -150,7 +158,7 @@ class DNNGenerator(NNModuleGenerator):
         Domain of the input images to receive. (default: Zero2OneImageDomain())
     reset_fn : Callable[[nn.Module], None], optional
         Function to reset the parameters of the generator network, by default
-        reset_all_parameters.
+        call_reset_parameters.
 
     Examples
     --------
@@ -172,7 +180,7 @@ class DNNGenerator(NNModuleGenerator):
         self,
         generator_network: nn.Module,
         domain: Domain = image_domain.Zero2OneImageDomain(),
-        reset_fn: Callable[[nn.Module], None] = reset_all_parameters,
+        reset_fn: Callable[[nn.Module], None] = call_reset_parameters,
     ) -> None:
         """Initialize the generator."""
         super().__init__()
@@ -251,7 +259,7 @@ class FrozenGenerator(DNNGenerator):
 def build_generator(
     generator_network: nn.Module,
     domain: Domain = image_domain.Zero2OneImageDomain(),
-    reset_fn: Callable[[nn.Module], None] = reset_all_parameters,
+    reset_fn: Callable[[nn.Module], None] = call_reset_parameters,
     frozen: bool = True,
 ) -> BaseGenerator:
     """Build a generator module.
@@ -271,7 +279,7 @@ def build_generator(
         network's output domain.
     reset_fn : Callable[[nn.Module], None], optional
         Function to reset the parameters of the generator network, by default
-        reset_all_parameters.
+        call_reset_parameters.
     frozen : bool, optional
         Whether to freeze the parameters of the generator network, by default True.
 
