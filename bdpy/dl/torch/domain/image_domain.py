@@ -18,7 +18,7 @@ import numpy as np
 import torch
 from torchvision.transforms import InterpolationMode, Resize
 
-from .core import Domain, IrreversibleDomain, ComposedDomain
+from .core import Domain, InternalDomain, IrreversibleDomain, ComposedDomain
 
 
 def _bgr2rgb(images: torch.Tensor) -> torch.Tensor:
@@ -41,24 +41,12 @@ def _to_channel_last(images: torch.Tensor) -> torch.Tensor:
     return images.permute(0, 2, 3, 1)
 
 
-
-class Zero2OneImageDomain(Domain):
-    """Image domain for images in [0, 1].
-
-    - Channel axis: 1
-    - Pixel range: [0, 1]
-    - Image size: arbitrary
-    - Color space: RGB
-    """
-
-    def send(self, images: torch.Tensor) -> torch.Tensor:
-        return images
-
-    def receive(self, images: torch.Tensor) -> torch.Tensor:
-        return images
-
-
-InternalImageDomain = Zero2OneImageDomain
+# NOTE: The internal common space for images is defined as follows:
+# - Channel axis: 1
+# - Pixel range: [0, 1]
+# - Image size: arbitrary
+# - Color space: RGB
+Zero2OneImageDomain = InternalDomain[torch.Tensor]
 
 
 class AffineDomain(Domain):

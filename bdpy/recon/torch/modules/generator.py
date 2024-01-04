@@ -7,7 +7,7 @@ import warnings
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
-from bdpy.dl.torch.domain import Domain, image_domain
+from bdpy.dl.torch.domain import Domain, InternalDomain
 
 
 def _get_reset_module_fn(module: nn.Module) -> Callable[[], None] | None:
@@ -121,7 +121,7 @@ class BareGenerator(NNModuleGenerator):
         """Initialize the generator."""
         super().__init__()
         self._activation = activation
-        self._domain = image_domain.Zero2OneImageDomain()
+        self._domain = InternalDomain()
 
     def reset_states(self) -> None:
         """Reset the state of the generator."""
@@ -155,7 +155,7 @@ class DNNGenerator(NNModuleGenerator):
         Generator network. This network should have a method `forward` that takes
         a latent vector and propagates it through the network.
     domain : Domain, optional
-        Domain of the input images to receive. (default: Zero2OneImageDomain())
+        Domain of the input stimuli to receive. (default: InternalDomain())
     reset_fn : Callable[[nn.Module], None], optional
         Function to reset the parameters of the generator network, by default
         call_reset_parameters.
@@ -179,7 +179,7 @@ class DNNGenerator(NNModuleGenerator):
     def __init__(
         self,
         generator_network: nn.Module,
-        domain: Domain = image_domain.Zero2OneImageDomain(),
+        domain: Domain = InternalDomain(),
         reset_fn: Callable[[nn.Module], None] = call_reset_parameters,
     ) -> None:
         """Initialize the generator."""
@@ -220,7 +220,7 @@ class FrozenGenerator(DNNGenerator):
         Generator network. This network should have a method `forward` that takes
         a latent vector and propagates it through the network.
     domain : Domain, optional
-        Domain of the input images to receive. (default: Zero2OneImageDomain())
+        Domain of the input stimuli to receive. (default: InternalDomain())
 
     Examples
     --------
@@ -241,7 +241,7 @@ class FrozenGenerator(DNNGenerator):
     def __init__(
         self,
         generator_network: nn.Module,
-        domain: Domain = image_domain.Zero2OneImageDomain()
+        domain: Domain = InternalDomain(),
     ) -> None:
         """Initialize the generator."""
         super().__init__(generator_network, domain=domain, reset_fn=lambda _: None)
@@ -258,7 +258,7 @@ class FrozenGenerator(DNNGenerator):
 
 def build_generator(
     generator_network: nn.Module,
-    domain: Domain = image_domain.Zero2OneImageDomain(),
+    domain: Domain = InternalDomain(),
     reset_fn: Callable[[nn.Module], None] = call_reset_parameters,
     frozen: bool = True,
 ) -> BaseGenerator:
@@ -274,7 +274,7 @@ def build_generator(
         Generator network. This network should have a method `forward` that takes
         a latent vector and returns an image on its own domain.
     domain : Domain, optional
-        Domain of the input images to receive. (default: Zero2OneImageDomain()).
+        Domain of the input images to receive. (default: InternalDomain()).
         One needs to specify the domain that corresponds to the generator
         network's output domain.
     reset_fn : Callable[[nn.Module], None], optional

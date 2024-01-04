@@ -6,7 +6,7 @@ from typing import Iterable
 import torch
 import torch.nn as nn
 from bdpy.dl.torch import FeatureExtractor
-from bdpy.dl.torch.domain import Domain, image_domain
+from bdpy.dl.torch.domain import Domain, InternalDomain
 
 
 class BaseEncoder(ABC):
@@ -77,7 +77,7 @@ class SimpleEncoder(NNModuleEncoder):
     layer_names : list[str]
         Layer names to extract features from.
     domain : Domain, optional
-        Domain of the input images to receive. (default: Zero2OneImageDomain())
+        Domain of the input stimuli to receive. (default: InternalDomain())
 
     Examples
     --------
@@ -99,7 +99,7 @@ class SimpleEncoder(NNModuleEncoder):
         self,
         feature_network: nn.Module,
         layer_names: Iterable[str],
-        domain: Domain = image_domain.Zero2OneImageDomain(),
+        domain: Domain = InternalDomain(),
     ) -> None:
         super().__init__()
         self._feature_extractor = FeatureExtractor(
@@ -128,7 +128,7 @@ class SimpleEncoder(NNModuleEncoder):
 def build_encoder(
     feature_network: nn.Module,
     layer_names: Iterable[str],
-    domain: Domain = image_domain.Zero2OneImageDomain(),
+    domain: Domain = InternalDomain(),
 ) -> BaseEncoder:
     """Build an encoder network with a naive feature extractor.
 
@@ -148,7 +148,7 @@ def build_encoder(
     layer_names : list[str]
         Layer names to extract features from.
     domain : Domain, optional
-        Domain of the input images to receive (default: Zero2OneImageDomain()).
+        Domain of the input stimuli to receive (default: InternalDomain()).
         One needs to specify the domain that corresponds to the feature network's
         input domain.
 

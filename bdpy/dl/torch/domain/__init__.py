@@ -1,1 +1,1 @@
-from .core import Domain, IrreversibleDomain, ComposedDomain, KeyValueDomain
+from .core import Domain, InternalDomain, IrreversibleDomain, ComposedDomain, KeyValueDomain

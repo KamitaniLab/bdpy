@@ -63,6 +63,20 @@ class Domain(nn.Module, ABC, Generic[_T]):
         pass
 
 
+class InternalDomain(Domain, Generic[_T]):
+    """The internal common space.
+
+    The domain class which defines the internal common space. This class
+    receives and sends data as it is.
+    """
+
+    def send(self, x: _T) -> _T:
+        return x
+
+    def receive(self, x: _T) -> _T:
+        return x
+
+
 class IrreversibleDomain(Domain, Generic[_T]):
     """The domain which cannot be reversed.
 
