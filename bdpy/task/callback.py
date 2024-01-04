@@ -12,6 +12,8 @@ _Unused = Annotated[None, "unused"]
 
 
 def _is_unused(fn: Callable) -> bool:
+    if not hasattr(fn, "__annotations__"):
+        return False
     return_type: Type | None = fn.__annotations__.get("return", None)
     if return_type is None:
         return False
@@ -43,7 +45,7 @@ def unused(fn: Callable[_P, Any]) -> Callable[_P, _Unused]:
     >>> f(1, 2, 3)
     Traceback (most recent call last):
         ...
-        RuntimeError: Function <function f at 0x7f3b5e2d2d30> is decorated with @unused and must not be called.
+        RuntimeError: Function <function f at ...> is decorated with @unused and must not be called.
     """
 
     @wraps(fn)  # NOTE: preserve name, docstring, etc. of the original function
@@ -59,6 +61,44 @@ def unused(fn: Callable[_P, Any]) -> Callable[_P, _Unused]:
 
 
 def _validate_callback(callback: BaseCallback, base_class: Type[BaseCallback]) -> None:
+    """Validate a callback.
+
+    Parameters
+    ----------
+    callback : BaseCallback
+        Callback to validate.
+    base_class : Type[BaseCallback]
+        Base class of the callback.
+
+    Raises
+    ------
+    TypeError
+        If the callback is not an instance of the base class.
+    ValueError
+        If the callback has an event type that is not acceptable.
+
+    Examples
+    --------
+    >>> class TaskBaseCallback(BaseCallback):
+    ...     @unused
+    ...     def on_task_start(self):
+    ...         pass
+    ...
+    ...     @unused
+    ...     def on_task_end(self):
+    ...         pass
+    ...
+    >>> class SomeTaskCallback(TaskBaseCallback):
+    ...     def on_unacceptable_event(self):
+    ...         # do something
+    ...
+    >>> callback = SomeTaskCallback()
+    >>> _validate_callback(callback, TaskBaseCallback)
+    Traceback (most recent call last):
+        ...
+        ValueError: on_unacceptable_event is not an acceptable event type. ...
+    """
+
     if not isinstance(callback, base_class):
         raise TypeError(
             f"Callback must be an instance of {base_class}, not {type(callback)}."
