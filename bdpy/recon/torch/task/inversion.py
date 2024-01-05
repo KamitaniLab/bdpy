@@ -103,59 +103,6 @@ class CUILoggingCallback(FeatureInversionCallback):
             print(f"Step: [{self._step_str(step)}], Loss: {self._loss:.4f}")
 
 
-class WandBLoggingCallback(FeatureInversionCallback):
-    """Callback for logging on Weights & Biases.
-
-    Parameters
-    ----------
-    run : wandb.sdk.wandb_run.Run
-        Run object of Weights & Biases.
-    interval : int, optional
-        Logging interval, by default 1. If `interval` is 1, the callback logs
-        every iteration.
-    media_interval : int, optional
-        Logging interval for media, by default -1. If `media_interval` is -1,
-        the callback does not log media.
-
-    Notes
-    -----
-    TODO: Currently it does not work because the dependency (wandb) is not installed.
-    """
-
-    def __init__(
-        self, run: wandb.sdk.wandb_run.Run, interval: int = 1, media_interval: int = -1
-    ) -> None:
-        super().__init__()
-        self._run = run
-        self._interval = interval
-        self._media_interval = media_interval
-        self._step = 0
-
-        if media_interval < 0:
-            # NOTE: Decorate `on_image_generated` to do nothing.
-            self.on_image_generated = unused(self.on_image_generated)
-
-    def on_iteration_start(self, *, step: int) -> None:
-        # NOTE: We need to store the global step because we cannot access it
-        #      in `on_layerwise_loss_calculated` by design.
-        self._step = step
-
-    def on_image_generated(self, *, step: int, image: torch.Tensor) -> None:
-        if self._step % self._media_interval == 0:
-            image = wandb.Image(image)
-            self._run.log({"generated_image": image}, step=self._step)
-
-    def on_layerwise_loss_calculated(
-        self, *, layer_loss: torch.Tensor, layer_name: str
-    ) -> None:
-        if self._step % self._interval == 0:
-            self._run.log({f"critic/{layer_name}": layer_loss.item()}, step=self._step)
-
-    def on_loss_calculated(self, *, step: int, loss: torch.Tensor) -> None:
-        if self._step % self._interval == 0:
-            self._run.log({"loss": loss.item()}, step=self._step)
-
-
 class FeatureInversionTask(BaseTask):
     """Feature inversion Task.
 
