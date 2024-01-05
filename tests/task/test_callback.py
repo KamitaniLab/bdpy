@@ -33,6 +33,9 @@ def setup_fns() -> list[tuple[Callable, tuple[Any], Any]]:
 
 def setup_callback_classes():
     class TaskBaseCallback(callback_module.BaseCallback):
+        def __init__(self):
+            super().__init__(base_class=TaskBaseCallback)
+
         @callback_module.unused
         def on_some_event(self, input_):
             pass
@@ -131,9 +134,13 @@ class TestBaseCallback(unittest.TestCase):
         TaskBaseCallback, AppendCallback = setup_callback_classes()
 
         class Unrelated(callback_module.BaseCallback):
+            """Valid callback object but is not a subclass of TaskBaseCallback"""
+
             pass
 
         class HasUnknownEvent(TaskBaseCallback):
+            """Having invalid instance method `on_unknown_event` as a subclass of TaskBaseCallback"""
+
             def on_unknown_event(self):
                 pass
 
@@ -143,12 +150,7 @@ class TestBaseCallback(unittest.TestCase):
         self.assertRaises(
             TypeError, callback_module._validate_callback, Unrelated(), TaskBaseCallback
         )
-        self.assertRaises(
-            ValueError,
-            callback_module._validate_callback,
-            HasUnknownEvent(),
-            TaskBaseCallback,
-        )
+        self.assertRaises(ValueError, HasUnknownEvent)
 
 
 class TestCallbackHandler(unittest.TestCase):

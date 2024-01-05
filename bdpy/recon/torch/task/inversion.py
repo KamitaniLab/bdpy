@@ -29,8 +29,7 @@ class FeatureInversionCallback(BaseCallback):
     """
 
     def __init__(self) -> None:
-        super().__init__()
-        _validate_callback(self, FeatureInversionCallback)
+        super().__init__(base_class=FeatureInversionCallback)
 
     @unused
     def on_task_start(self) -> None:

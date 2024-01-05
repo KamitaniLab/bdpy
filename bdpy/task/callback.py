@@ -150,6 +150,10 @@ class BaseCallback:
     `@unused` decorator can be used to mark a callback function as unused, so
     that the callback handler does not fire the function.
     """
+    def __init__(self, base_class: Type[BaseCallback] | None = None) -> None:
+        if base_class is None:
+            base_class = BaseCallback
+        _validate_callback(self, base_class)
 
     @unused
     def on_task_start(self) -> None:
