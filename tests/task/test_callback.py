@@ -119,8 +119,7 @@ class TestBaseCallback(unittest.TestCase):
         method_names = {
             event_type
             for event_type in dir(callback)
-            if event_type.startswith("on_")
-            and callable(getattr(callback, event_type))
+            if event_type.startswith("on_") and callable(getattr(callback, event_type))
         }
 
         self.assertEqual(method_names, expected_method_names)
@@ -130,16 +129,87 @@ class TestBaseCallback(unittest.TestCase):
 
     def test_validate_callback(self):
         TaskBaseCallback, AppendCallback = setup_callback_classes()
+
         class Unrelated(callback_module.BaseCallback):
             pass
 
-        class HasUnkownEvent(TaskBaseCallback):
+        class HasUnknownEvent(TaskBaseCallback):
             def on_unknown_event(self):
                 pass
 
-        self.assertIsNone(callback_module._validate_callback(AppendCallback(), TaskBaseCallback))
-        self.assertRaises(TypeError, callback_module._validate_callback, Unrelated(), TaskBaseCallback)
-        self.assertRaises(ValueError, callback_module._validate_callback, HasUnkownEvent(), TaskBaseCallback)
+        self.assertIsNone(
+            callback_module._validate_callback(AppendCallback(), TaskBaseCallback)
+        )
+        self.assertRaises(
+            TypeError, callback_module._validate_callback, Unrelated(), TaskBaseCallback
+        )
+        self.assertRaises(
+            ValueError,
+            callback_module._validate_callback,
+            HasUnknownEvent(),
+            TaskBaseCallback,
+        )
+
+
+class TestCallbackHandler(unittest.TestCase):
+    def test_initialization(self):
+        _, AppendCallback = setup_callback_classes()
+        c1, c2 = AppendCallback(), AppendCallback()
+
+        handler = callback_module.CallbackHandler()
+        self.assertListEqual(handler._callbacks, [])
+        self.assertDictEqual(handler._registered_functions, {})
+
+        handler = callback_module.CallbackHandler(c1)
+        self.assertListEqual(handler._callbacks, [c1])
+        self.assertDictEqual(
+            handler._registered_functions,
+            {"on_some_event": [c1.on_some_event]},
+        )
+
+        handler = callback_module.CallbackHandler([c1, c2])
+        self.assertListEqual(handler._callbacks, [c1, c2])
+        self.assertDictEqual(
+            handler._registered_functions,
+            {"on_some_event": [c1.on_some_event, c2.on_some_event]},
+        )
+
+    def test_register(self):
+        handler = callback_module.CallbackHandler()
+        _, AppendCallback = setup_callback_classes()
+        cb = AppendCallback()
+
+        self.assertListEqual(handler._callbacks, [])
+        self.assertDictEqual(handler._registered_functions, {})
+        handler.register(cb)
+        self.assertListEqual(handler._callbacks, [cb])
+        self.assertDictEqual(
+            handler._registered_functions,
+            {"on_some_event": [cb.on_some_event]},
+        )
+
+    def test_fire(self):
+        handler = callback_module.CallbackHandler()
+        _, AppendCallback = setup_callback_classes()
+        cb = AppendCallback()
+        handler.register(cb)
+
+        self.assertListEqual(cb._storage, [])
+
+        handler.fire("on_task_start")
+        self.assertListEqual(cb._storage, [])
+
+        handler.fire("on_some_event", input_=1)
+        self.assertListEqual(cb._storage, [1])
+
+        handler.fire("on_some_event", input_=2)
+        self.assertListEqual(cb._storage, [1, 2])
+
+        # NOTE: fire() should only accept keyword arguments
+        self.assertRaises(TypeError, handler.fire, "on_some_event", 1, 2)
+
+        handler.fire("on_task_end")
+        self.assertListEqual(cb._storage, [1, 2])
 
 
 if __name__ == "__main__":
