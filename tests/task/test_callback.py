@@ -10,7 +10,6 @@ from bdpy.task import callback
 
 # NOTE: setup functions
 def setup_fns() -> list[tuple[Callable, tuple[Any], Any]]:
-
     def f1(input_: Any) -> None:
         pass
 
@@ -56,9 +55,45 @@ class TestUnused(unittest.TestCase):
 
         params = setup_fns()
         for fn, inputs_, output in params:
-            self.assertFalse(callback._is_unused(fn))
+            self.assertTrue(
+                not hasattr(fn, "__annotations__")
+                or fn.__annotations__.get("return", None) != callback._Unused
+            )
             self.assertEqual(fn(*inputs_), output)
-            self.assertTrue(callback._is_unused(callback.unused(fn)))
+            unused_fn = callback.unused(fn)
+            self.assertTrue(
+                hasattr(unused_fn, "__annotations__")
+                and unused_fn.__annotations__.get("return", None) == callback._Unused
+            )
             with self.assertRaises(RuntimeError):
-                callback.unused(fn)(*inputs_)
+                unused_fn(*inputs_)
 
+    def test_is_unused(self):
+        params = setup_fns()
+        for fn, _, _ in params:
+            self.assertFalse(callback._is_unused(fn))
+            self.assertTrue(callback._is_unused(callback.unused(fn)))
+
+
+class TestBaseCallback(unittest.TestCase):
+    def setUp(self):
+        self.callback = callback.BaseCallback()
+        self.expected_method_names = {
+            "on_task_start",
+            "on_task_end",
+        }
+
+    def test_instance_methods(self):
+        method_names = {
+            event_type
+            for event_type in dir(self.callback)
+            if event_type.startswith("on_") and callable(getattr(self.callback, event_type))
+        }
+        self.assertEqual(method_names, self.expected_method_names)
+        for event_type in method_names:
+            fn = getattr(self.callback, event_type)
+            self.assertRaises(RuntimeError, fn)
+
+
+if __name__ == "__main__":
+    unittest.main()
