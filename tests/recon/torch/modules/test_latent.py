@@ -8,7 +8,7 @@ from bdpy.recon.torch.modules import latent as latent_module
 
 class DummyLatent(latent_module.BaseLatent):
     def __init__(self):
-        self.latent = torch.tensor([1.0])
+        self.latent = nn.Parameter(torch.tensor([1.0]))
 
     def reset_states(self):
         self.latent = torch.zeros_like(self.latent)
