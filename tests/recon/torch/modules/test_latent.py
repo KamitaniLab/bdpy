@@ -22,7 +22,7 @@ class DummyLatent(latent_module.BaseLatent):
 class TestBaseLatent(unittest.TestCase):
     """Tests for bdpy.recon.torch.modules.latent.BaseLatent."""
     def setUp(self):
-        self.latent = torch.tensor([1.0])
+        self.latent_value_expected = torch.tensor([1.0])
 
     def test_instantiation(self):
         """Test instantiation."""
