@@ -11,7 +11,8 @@ class DummyLatent(latent_module.BaseLatent):
         self.latent = nn.Parameter(torch.tensor([1.0]))
 
     def reset_states(self):
-        self.latent = torch.zeros_like(self.latent)
+        with torch.no_grad():
+            self.latent.fill_(0.0)
     
     def parameters(self, recurse):
         return iter([nn.Parameter(self.latent)])
