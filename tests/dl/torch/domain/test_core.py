@@ -33,6 +33,10 @@ class TestDomain(unittest.TestCase):
         self.original_space_num = 0
         self.internal_space_num = 1
 
+    def test_instantiation(self):
+        """Test instantiation."""
+        self.assertRaises(TypeError, core_module.Domain)
+
     def test_send(self):
         """test send"""
         self.assertEqual(self.domian.send(self.original_space_num), self.internal_space_num)
