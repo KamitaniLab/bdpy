@@ -5,6 +5,7 @@ import torch
 import numpy as np
 import warnings
 from bdpy.dl.torch.domain import image_domain as iamge_domain_module
+from IPython import embed
 
 class TestAffineDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.image_domain.AffineDomain"""
@@ -114,7 +115,25 @@ class TestPILDomainWithExplicitCrop(unittest.TestCase):
             received_image = pdwe_domain.receive(self.expected_transformed_image)
         self.assertTrue(any(isinstance(warn.message, RuntimeWarning) for warn in w))
         torch.testing.assert_close(received_image, self.image)
-    
+
+class TestFixedResolutionDomain(unittest.TestCase):
+    """Tests fot bdpy.dl.torch.domain.image_domain.FixedResolutionDomain"""
+    def setUp(self):
+        self.expected_received_image_size = (1, 3, 16, 16)
+        self.image =torch.rand((1, 3, 32, 32))
+
+    def test_send(self):
+        """Test send"""
+        fr_domain = iamge_domain_module.FixedResolutionDomain((16, 16))
+        with self.assertRaises(RuntimeError):
+            fr_domain.send(self.image)
+
+    def test_receive(self):
+        """Tests receive"""
+        fr_domain = iamge_domain_module.FixedResolutionDomain((16, 16))
+        
+        received_image = fr_domain.receive(self.image)
+        self.assertEqual(received_image.size(), self.expected_received_image_size)
 
 if __name__ == "__main__":
     unittest.main()
