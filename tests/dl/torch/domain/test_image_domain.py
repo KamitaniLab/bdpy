@@ -5,7 +5,6 @@ import torch
 import numpy as np
 import warnings
 from bdpy.dl.torch.domain import image_domain as iamge_domain_module
-from IPython import embed
 
 class TestAffineDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.image_domain.AffineDomain"""

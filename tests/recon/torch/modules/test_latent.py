@@ -5,7 +5,6 @@ from typing import Iterator
 import torch.nn as nn
 from functools import partial
 from bdpy.recon.torch.modules import latent as latent_module
-from IPython import embed
 
 
 class DummyLatent(latent_module.BaseLatent):
