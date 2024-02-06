@@ -55,3 +55,6 @@ class TestBaseTask(unittest.TestCase):
         self.assertEqual(task_inputs, (self.input1, self.input2))
         self.assertEqual(task_parameters["name"], self.task_name)
         self.assertEqual(mock_callback._storage, [1])
+
+if __name__ == "__main__":
+    unittest.main()
