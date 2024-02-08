@@ -172,8 +172,8 @@ class TestFeatureInversionTask(unittest.TestCase):
 
         self.inversion_task = inversion_module.FeatureInversionTask(
             encoder=self.encoder,
-            generator=copy.deepcopy(self.generator),
-            latent=copy.deepcopy(self.latent),
+            generator=self.generator,
+            latent=self.latent,
             critic=self.critic,
             optimizer=self.optimizer,
             callbacks=self.callbacks
