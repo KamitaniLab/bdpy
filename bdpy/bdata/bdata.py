@@ -578,7 +578,7 @@ class BData(object):
 
         if where is not None:
             # Mask the metadata array with columns specified with `where`
-            ind = self.metadata.get(where, 'value') is True
+            ind = self.metadata.get(where, 'value') == 1
             md = md[ind]
 
         return md
