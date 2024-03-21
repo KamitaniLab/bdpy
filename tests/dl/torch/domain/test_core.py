@@ -11,6 +11,7 @@ class DummyAddDomain(core_module.Domain):
     def receive(self, num):
         return num - 1
 
+
 class DummyDoubleDomain(core_module.Domain):
     def send(self, num):
         return num * 2
