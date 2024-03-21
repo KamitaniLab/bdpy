@@ -85,7 +85,7 @@ class AffineDomain(Domain):
 
         if isinstance(center, (float, int)) or center.ndim == 0:
             center = np.array([center])[np.newaxis, np.newaxis, np.newaxis]
-        if center.ndim == 1:  # 1D vector (C,)
+        elif center.ndim == 1:  # 1D vector (C,)
             center = center[np.newaxis, :, np.newaxis, np.newaxis]
         elif center.ndim == 3:  # 3D vector (1, C, W, H)
             center = center[np.newaxis]
