@@ -18,7 +18,8 @@ class DummyDoubleDomain(core_module.Domain):
     
     def receive(self, num):
         return num // 2
-    
+
+
 class DummyUpperCaseDomain(core_module.Domain):
     def send(self, text):
         return text.upper()
