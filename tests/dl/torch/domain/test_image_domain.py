@@ -37,7 +37,7 @@ class TestAffineDomain(unittest.TestCase):
         with self.assertRaises(ValueError):
             iamge_domain_module.AffineDomain(self.center2d, self.scale0d)
 
-        # Failss when the scale is neither 1-dimensional nor 3-dimensional
+        # Fails when the scale is neither 1-dimensional nor 3-dimensional
         with self.assertRaises(ValueError):
             iamge_domain_module.AffineDomain(self.center0d, self.scale2d)
     
