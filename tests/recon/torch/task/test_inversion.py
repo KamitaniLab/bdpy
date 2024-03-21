@@ -16,7 +16,6 @@ from bdpy.recon.torch.modules import encoder as encoder_module
 from bdpy.recon.torch.modules import generator as generator_module
 from bdpy.recon.torch.modules import latent as latent_module
 from bdpy.recon.torch.modules import critic as critic_module
-from IPython import embed
 
 
 class DummyFeatureInversionCallback(inversion_module.FeatureInversionCallback):
