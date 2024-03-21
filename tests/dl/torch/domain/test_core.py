@@ -26,11 +26,12 @@ class DummyUpperCaseDomain(core_module.Domain):
     
     def receive(self, value):
         return value.lower()
-    
+
+
 class TestDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.core.Domain."""
     def setUp(self):
-        self.domian = DummyAddDomain()
+        self.domain = DummyAddDomain()
         self.original_space_num = 0
         self.internal_space_num = 1
 
@@ -40,44 +41,59 @@ class TestDomain(unittest.TestCase):
 
     def test_send(self):
         """test send"""
-        self.assertEqual(self.domian.send(self.original_space_num), self.internal_space_num)
+        self.assertEqual(self.domain.send(self.original_space_num), self.internal_space_num)
 
     def test_receive(self):
         """test receive"""
-        self.assertEqual(self.domian.receive(self.internal_space_num), self.original_space_num)
+        self.assertEqual(self.domain.receive(self.internal_space_num), self.original_space_num)
+
+    def test_invertibility(self):
+        input_candidates = [-1, 0, 1, 0.5]
+        for x in input_candidates:
+            assert x == self.domain.send(self.domain.receive(x))
+            assert x == self.domain.receive(self.domain.send(x))
+
 
 class TestInternalDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.core.InternalDomain."""
     def setUp(self):
-        self.domian = core_module.InternalDomain()
+        self.domain = core_module.InternalDomain()
         self.num = 1
 
     def test_send(self):
         """test send"""
-        self.assertEqual(self.domian.send(self.num), self.num)
+        self.assertEqual(self.domain.send(self.num), self.num)
 
     def test_receive(self):
         """test receive"""
-        self.assertEqual(self.domian.receive(self.num), self.num)
+        self.assertEqual(self.domain.receive(self.num), self.num)
+
+    def test_invertibility(self):
+        input_candidates = [-1, 0, 1, 0.5]
+        for x in input_candidates:
+            assert x == self.domain.send(self.domain.receive(x))
+            assert x == self.domain.receive(self.domain.send(x))
+
 
 class TestIrreversibleDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.core.IrreversibleDomain."""
     def setUp(self):
-        self.domian = core_module.IrreversibleDomain()
+        self.domain = core_module.IrreversibleDomain()
         self.num = 1
 
     def test_send(self):
         """test send"""
-        self.assertEqual(self.domian.send(self.num), self.num)
+        self.assertEqual(self.domain.send(self.num), self.num)
 
     def test_receive(self):
         """test receive"""
-        self.assertEqual(self.domian.receive(self.num), self.num)
+        self.assertEqual(self.domain.receive(self.num), self.num)
+
 
 class TestComposedDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.core.ComposedDomain."""
     def setUp(self):
-        self.composed_domian = core_module.ComposedDomain([
+        self.composed_domain = core_module.ComposedDomain([
             DummyDoubleDomain(),
             DummyAddDomain(),
         ])
@@ -86,16 +102,17 @@ class TestComposedDomain(unittest.TestCase):
 
     def test_send(self):
         """test send"""
-        self.assertEqual(self.composed_domian.send(self.original_space_num), self.internal_space_num)
+        self.assertEqual(self.composed_domain.send(self.original_space_num), self.internal_space_num)
 
     def test_receive(self):
         """test receive"""
-        self.assertEqual(self.composed_domian.receive(self.internal_space_num), self.original_space_num)
+        self.assertEqual(self.composed_domain.receive(self.internal_space_num), self.original_space_num)
+
 
 class TestKeyValueDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.core.KeyValueDomain."""
     def setUp(self):
-        self.key_value_domian = core_module.KeyValueDomain({
+        self.key_value_domain = core_module.KeyValueDomain({
             "name": DummyUpperCaseDomain(),
             "age": DummyDoubleDomain()
         })
@@ -104,13 +121,18 @@ class TestKeyValueDomain(unittest.TestCase):
 
     def test_send(self):
         """test send"""
-        self.assertEqual(self.key_value_domian.send(self.original_space_data), self.internal_space_data)
+        self.assertEqual(self.key_value_domain.send(self.original_space_data), self.internal_space_data)
 
     def test_receive(self):
         """test receive"""
-        self.assertEqual(self.key_value_domian.receive(self.internal_space_data), self.original_space_data)
-
+        self.assertEqual(self.key_value_domain.receive(self.internal_space_data), self.original_space_data)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    #unittest.main()
+    composed_domain = core_module.ComposedDomain([
+        DummyDoubleDomain(),
+        DummyAddDomain(),
+    ])
+    print(composed_domain.receive(-1))
+    print(composed_domain.send(-2))
