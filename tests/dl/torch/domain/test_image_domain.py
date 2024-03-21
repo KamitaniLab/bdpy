@@ -33,7 +33,7 @@ class TestAffineDomain(unittest.TestCase):
         affine_domain = iamge_domain_module.AffineDomain(self.center3d, self.scale3d)
         self.assertIsInstance(affine_domain, iamge_domain_module.AffineDomain)
 
-        # Failss when the center is neither 1-dimensional nor 3-dimensional
+        # Fails when the center is neither 1-dimensional nor 3-dimensional
         with self.assertRaises(ValueError):
             iamge_domain_module.AffineDomain(self.center2d, self.scale0d)
 
