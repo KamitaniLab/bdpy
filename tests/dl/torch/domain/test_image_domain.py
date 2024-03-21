@@ -6,6 +6,7 @@ import numpy as np
 import warnings
 from bdpy.dl.torch.domain import image_domain as iamge_domain_module
 
+
 class TestAffineDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.image_domain.AffineDomain"""
     def setUp(self):
@@ -76,6 +77,7 @@ class TestAffineDomain(unittest.TestCase):
         expected_received_image = expected_transformed_image * scale3d - center3d
         torch.testing.assert_close(received_image, expected_received_image)
 
+
 class TestRGBDomain(unittest.TestCase):
     """Tests fot bdpy.dl.torch.domain.image_domain.BGRDomain"""
 
@@ -94,6 +96,7 @@ class TestRGBDomain(unittest.TestCase):
         bgr_domain = iamge_domain_module.BGRDomain()
         received_image = bgr_domain.receive(self.rgb_image)
         torch.testing.assert_close(received_image, self.bgr_image)
+
 
 class TestPILDomainWithExplicitCrop(unittest.TestCase):
     """Tests fot bdpy.dl.torch.domain.image_domain.PILDomainWithExplicitCrop"""
@@ -115,6 +118,7 @@ class TestPILDomainWithExplicitCrop(unittest.TestCase):
         self.assertTrue(any(isinstance(warn.message, RuntimeWarning) for warn in w))
         torch.testing.assert_close(received_image, self.image)
 
+
 class TestFixedResolutionDomain(unittest.TestCase):
     """Tests fot bdpy.dl.torch.domain.image_domain.FixedResolutionDomain"""
     def setUp(self):
@@ -133,6 +137,7 @@ class TestFixedResolutionDomain(unittest.TestCase):
         
         received_image = fr_domain.receive(self.image)
         self.assertEqual(received_image.size(), self.expected_received_image_size)
+
 
 if __name__ == "__main__":
     unittest.main()

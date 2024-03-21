@@ -4,6 +4,7 @@ import unittest
 import torch
 from bdpy.dl.torch.domain import feature_domain as feature_domain_module
 
+
 class TestMethods(unittest.TestCase):
     def setUp(self):
         self.lnd_tensor = torch.empty((12, 196, 768))
@@ -16,6 +17,7 @@ class TestMethods(unittest.TestCase):
     def test_nld2lnd(self):
         """test _nld2lnd"""
         self.assertEqual(feature_domain_module._nld2lnd(self.nld_tensor).shape, self.lnd_tensor.shape)
+
 
 class TestArbitraryFeatureKeyDomain(unittest.TestCase):
     """Tests for bdpy.dl.torch.domain.feature_domain.ArbitraryFeatureKeyDomain."""
@@ -78,6 +80,7 @@ class TestArbitraryFeatureKeyDomain(unittest.TestCase):
             to_internal=self.to_internal_mapping
         )
         self.assertEqual(domain.receive(self.internal_features), self.features)
+
 
 if __name__ == "__main__":
     unittest.main()
