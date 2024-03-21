@@ -1,7 +1,6 @@
 """Tests for bdpy.dl.torch.domain.core."""
 
 import unittest
-import torch
 from bdpy.dl.torch.domain import core as core_module
 
 
