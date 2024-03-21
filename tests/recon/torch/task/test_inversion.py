@@ -114,6 +114,7 @@ class TestCUILoggingCallback(unittest.TestCase):
         self.callback.on_iteration_end(step=0)
         mock_print.assert_called_once_with("Step: [1], Loss: -1.0000")
 
+
 class MLP(nn.Module):
     """A simple MLP."""
 
@@ -128,6 +129,7 @@ class MLP(nn.Module):
         x = torch.relu(x)
         x = self.fc2(x)
         return x
+
 
 class LinearGenerator(generator_module.NNModuleGenerator):
     def __init__(self):

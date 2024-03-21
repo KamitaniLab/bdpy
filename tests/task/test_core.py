@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import unittest
-
 from bdpy.task import core as core_module
+
 
 class MockCallback(core_module.BaseCallback):
     """Mock callback for testing."""
@@ -14,11 +14,13 @@ class MockCallback(core_module.BaseCallback):
     def on_some_event(self, input_):
             self._storage.append(input_)
 
+
 class MockTask(core_module.BaseTask[MockCallback]):
     """Mock task for testing BaseTask."""
     def __call__(self, *inputs, **parameters):
         self._callback_handler.fire("on_some_event", input_=1)
         return inputs, parameters
+
 
 class TestBaseTask(unittest.TestCase):
     """Tests forbdpy.task.core.BaseTask """
@@ -55,6 +57,7 @@ class TestBaseTask(unittest.TestCase):
         self.assertEqual(task_inputs, (self.input1, self.input2))
         self.assertEqual(task_parameters["name"], self.task_name)
         self.assertEqual(mock_callback._storage, [1])
+
 
 if __name__ == "__main__":
     unittest.main()
