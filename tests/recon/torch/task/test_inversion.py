@@ -140,6 +140,7 @@ class LinearGenerator(generator_module.NNModuleGenerator):
     def reset_states(self) -> None:
         self.fc.apply(generator_module.call_reset_parameters)
 
+
 class DummyNNModuleLatent(latent_module.NNModuleLatent):
     def __init__(self, base_latent):
         super().__init__()
@@ -151,7 +152,8 @@ class DummyNNModuleLatent(latent_module.NNModuleLatent):
     
     def generate(self):
         return self.latent
-    
+
+
 class TestFeatureInversionTask(unittest.TestCase):
     """Tests for bdpy.recon.torch.task.inversion.FeatureInversionTask"""
     def setUp(self):
@@ -185,6 +187,7 @@ class TestFeatureInversionTask(unittest.TestCase):
         self.assertTrue(len(self.inversion_task._callback_handler._callbacks) > 0)
 
         # test for process
+        assert isinstance(generated_image, torch.Tensor)
         self.assertEqual(generated_image.shape, (1, 7 * 7 * 3))
         self.assertIsNotNone(self.inversion_task._generator._generator_network.fc.weight.grad)
         self.assertFalse(torch.equal(self.inversion_task._latent.latent, self.init_latent))
@@ -212,6 +215,7 @@ class TestFeatureInversionTask(unittest.TestCase):
         for p1, p2 in zip(self.inversion_task._generator.parameters(), generator_copy.parameters()):
             self.assertFalse(torch.equal(p1, p2))
         self.assertFalse(torch.equal(self.inversion_task._latent.latent, latent_copy.latent))
+
 
 if __name__ == "__main__":
     unittest.main()

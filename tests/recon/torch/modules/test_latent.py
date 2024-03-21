@@ -19,7 +19,8 @@ class DummyLatent(latent_module.BaseLatent):
     
     def generate(self):
         return self.latent
-        
+
+
 class TestBaseLatent(unittest.TestCase):
     """Tests for bdpy.recon.torch.modules.latent.BaseLatent."""
     def setUp(self):
@@ -47,6 +48,7 @@ class TestBaseLatent(unittest.TestCase):
         latent.reset_states()
         self.assertTrue(torch.equal(latent(), self.latent_reset_value_expected))
 
+
 class DummyNNModuleLatent(latent_module.NNModuleLatent):
     def __init__(self):
         super().__init__()
@@ -58,6 +60,7 @@ class DummyNNModuleLatent(latent_module.NNModuleLatent):
     
     def generate(self):
         return self.latent
+
 
 class TestNNModuleLatent(unittest.TestCase):
     """Tests for bdpy.recon.torch.modules.latent.NNModuleLatent."""
@@ -86,14 +89,11 @@ class TestNNModuleLatent(unittest.TestCase):
         latent.reset_states()
         self.assertTrue(torch.equal(latent(), self.latent_reset_value_expected))
 
-class DummyArbitraryLatent(latent_module.ArbitraryLatent):
-    def parameters(self, recurse):
-        return iter(self._latent)
 
 class TestArbitraryLatent(unittest.TestCase):
     """Tests for bdpy.recon.torch.modules.latent.ArbitraryLatent."""
     def setUp(self):
-        self.latent = DummyArbitraryLatent((1, 3, 64, 64), partial(nn.init.normal_, mean=0, std=1))
+        self.latent = latent_module.ArbitraryLatent((1, 3, 64, 64), partial(nn.init.normal_, mean=0, std=1))
         self.latent_shape_expected = (1, 3, 64, 64)
         self.latent_value_expected = nn.Parameter(torch.tensor([0.0, 1.0, 2.0]))
         self.latent_reset_value_expected = nn.Parameter(torch.tensor([0.0, 0.0, 0.0]))
@@ -118,6 +118,7 @@ class TestArbitraryLatent(unittest.TestCase):
         std = self.latent().std().item()
         self.assertAlmostEqual(mean, 0, places=1)
         self.assertAlmostEqual(std, 1, places=1)
+
 
 if __name__ == '__main__':
     unittest.main()
