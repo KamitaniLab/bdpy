@@ -69,7 +69,7 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(pattern_correlation(x, y).shape, (10,))
 
     def test_2d(self):
-        with open('data/testdata-2d.pkl.gz', 'rb') as f:
+        with open('tests/data/testdata-2d.pkl.gz', 'rb') as f:
             d = pickle.load(f)
         self.assertTrue(np.array_equal(
             profile_correlation(d['x'], d['y']),
@@ -85,7 +85,7 @@ class TestMetrics(unittest.TestCase):
         ))
 
     def test_2d_nan(self):
-        with open('data/testdata-2d-nan.pkl.gz', 'rb') as f:
+        with open('tests/data/testdata-2d-nan.pkl.gz', 'rb') as f:
             d = pickle.load(f)
         # self.assertTrue(np.array_equal(
         #     profile_correlation(d['x'], d['y']),
