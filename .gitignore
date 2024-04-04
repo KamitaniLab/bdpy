@@ -26,3 +26,6 @@ test_versions
 
 /venv
 /venv-*
+
+*.code-workspace
+
