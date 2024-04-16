@@ -1,6 +1,5 @@
 """Model definitions."""
 
-from __future__ import annotations
 
 from typing import Dict, Union, Optional, Sequence
 
