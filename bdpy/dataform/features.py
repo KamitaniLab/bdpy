@@ -28,7 +28,7 @@ import hdf5storage
 def _load_array_with_key(key: str, path: str) -> np.ndarray:
     try:
         return sio.loadmat(path)[key]
-    except NotImplementedError:
+    except (NotImplementedError, ValueError):
         return hdf5storage.loadmat(path)[key]
 
 
