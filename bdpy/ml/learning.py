@@ -409,7 +409,7 @@ class ModelTraining(object):
                 if os.path.exists(info_file):
                     while True:
                         with open(info_file, 'r') as f:
-                            info = yaml.load(f)  # NOTE: this will raise an error, yaml.load() takes two arguments
+                            info = yaml.load(f, Loader=yaml.SafeLoader)
                         if info is None:
                             print('Failed to load info from %s. Retrying ...' % info_file)
                             sleep(1)
