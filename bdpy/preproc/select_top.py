@@ -1,5 +1,4 @@
-"""
-select_top
+"""select_top.
 
 This file is a part of BdPy.
 """
@@ -8,13 +7,13 @@ This file is a part of BdPy.
 __all__ = ['select_top']
 
 
+from typing import Tuple, Optional
 import numpy as np
 from .util import print_start_msg, print_finish_msg
 
 
-def select_top(data, value, num, axis=0, verbose=True):
-    """
-    Select top `num` features of `value` from `data`
+def select_top(data: np.ndarray, value: np.ndarray, num: int, axis: Optional[int] = 0, verbose: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:
+    """Select top `num` features of `value` from `data`.
 
     Parameters
     ----------
@@ -31,8 +30,8 @@ def select_top(data, value, num, axis=0, verbose=True):
         Selected data matrix
     selected_index : array
         Index of selected data
-    """
 
+    """
     if verbose:
         print_start_msg()
 
