@@ -41,17 +41,17 @@ def select_top(data, value, num, axis=0, verbose=True):
     value = np.array([-np.inf if np.isnan(a) else a for a in value])
     sorted_index = np.argsort(value)[::-1]
 
-    rank = np.zeros(num_elem, dtype=np.uint8)
+    rank = np.zeros(num_elem, dtype=int)
     rank[sorted_index] = np.array(range(0, num_elem))
 
     selected_index_bool = rank < num
 
     if axis == 0:
         selected_data = data[selected_index_bool, :]
-        selected_index = np.array(range(0, num_elem), dtype=np.uint8)[selected_index_bool]
+        selected_index = np.array(range(0, num_elem), dtype=int)[selected_index_bool]
     elif axis == 1:
         selected_data = data[:, selected_index_bool]
-        selected_index = np.array(range(0, num_elem), dtype=np.uint8)[selected_index_bool]
+        selected_index = np.array(range(0, num_elem), dtype=int)[selected_index_bool]
     else:
         raise ValueError('Invalid axis')
 
