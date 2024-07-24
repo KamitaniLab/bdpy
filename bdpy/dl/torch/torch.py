@@ -1,7 +1,7 @@
 '''PyTorch module.'''
 
 from typing import Iterable, List, Dict, Union, Tuple, Any, Callable, Optional
-
+from collections import OrderedDict
 import os
 
 import numpy as np
@@ -93,6 +93,12 @@ class FeatureExtractor(object):
             }
 
         return features
+    
+    def __del__(self):
+        '''Remove forward hooks from the encoder.'''
+        for layer in self.__layers:
+            layer_object = models._parse_layer_name(self._encoder, layer)
+            layer_object._forward_hooks = OrderedDict()
 
 
 class FeatureExtractorHandle(object):
