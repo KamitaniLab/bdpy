@@ -140,7 +140,6 @@ class FeatureInversionTask(BaseTask):
     ...     encoder, generator, latent, critic, optimizer, num_iterations=200,
     ... )
     >>> target_features = encoder(target_image)
-    >>> task.reset_states()
     >>> reconstructed_image = task(target_features)
     """
 
@@ -167,7 +166,7 @@ class FeatureInversionTask(BaseTask):
 
         self._num_iterations = num_iterations
 
-    def __call__(
+    def run(
         self,
         target_features: FeatureType,
     ) -> torch.Tensor:
@@ -184,6 +183,7 @@ class FeatureInversionTask(BaseTask):
             Reconstructed images on the libraries internal domain.
         """
         self._callback_handler.fire("on_task_start")
+        self.reset_states()
         for step in range(self._num_iterations):
             self._callback_handler.fire("on_iteration_start", step=step)
             self._optimizer.zero_grad()
