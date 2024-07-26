@@ -10,14 +10,14 @@ class MockCallback(core_module.BaseCallback):
     """Mock callback for testing."""
     def __init__(self):
             self._storage = []
-    
+
     def on_some_event(self, input_):
             self._storage.append(input_)
 
 
 class MockTask(core_module.BaseTask[MockCallback]):
     """Mock task for testing BaseTask."""
-    def __call__(self, *inputs, **parameters):
+    def run(self, *inputs, **parameters):
         self._callback_handler.fire("on_some_event", input_=1)
         return inputs, parameters
 

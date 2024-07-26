@@ -40,8 +40,12 @@ class BaseTask(ABC, Generic[_CallbackType]):
     ) -> None:
         self._callback_handler = CallbackHandler(callbacks)
 
-    @abstractmethod
     def __call__(self, *inputs, **parameters) -> Any:
+        """Run the task."""
+        return self.run(*inputs, **parameters)
+
+    @abstractmethod
+    def run(self, *inputs, **parameters) -> Any:
         """Run the task."""
         pass
 
