@@ -33,10 +33,10 @@ class BaseCritic(ABC):
         torch.Tensor
             Loss value.
         """
-        return self.compare(features, target_features)
+        return self.evaluate(features, target_features)
 
     @abstractmethod
-    def compare(
+    def evaluate(
         self,
         features: _FeatureType,
         target_features: _FeatureType,
@@ -68,13 +68,13 @@ class NNModuleCritic(BaseCritic, nn.Module):
         return nn.Module.__call__(self, features, target_features)
 
     def forward(self, features: _FeatureType, target_features: _FeatureType) -> torch.Tensor:
-        return self.compare(features, target_features)
+        return self.evaluate(features, target_features)
 
 
 class LayerWiseAverageCritic(NNModuleCritic):
     """Compute the average of the layer-wise loss values."""
 
-    def compare(
+    def evaluate(
         self,
         features: _FeatureType,
         target_features: _FeatureType,

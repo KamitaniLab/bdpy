@@ -28,7 +28,7 @@ class TestBaseCritic(unittest.TestCase):
     def test_call(self):
         """Test __call__."""
         class ReturnZeroCritic(critic_module.BaseCritic):
-            def compare(self, features, target_features):
+            def evaluate(self, features, target_features):
                 return 0.0
 
         critic = ReturnZeroCritic()
@@ -37,7 +37,7 @@ class TestBaseCritic(unittest.TestCase):
     def test_loss_computation(self):
         """Test loss computation."""
         class SumCritic(critic_module.BaseCritic):
-            def compare(self, features, target_features):
+            def evaluate(self, features, target_features):
                 loss = 0.0
                 for feature, target_feature in zip(features.values(), target_features.values()):
                     loss += torch.sum(torch.abs(feature - target_feature))
@@ -76,7 +76,7 @@ class TestNNModuleCritic(unittest.TestCase):
     def test_call(self):
         """Test __call__."""
         class ReturnZeroCritic(critic_module.NNModuleCritic):
-            def compare(self, features, target_features):
+            def evaluate(self, features, target_features):
                 return 0.0
 
         critic = ReturnZeroCritic()
@@ -85,7 +85,7 @@ class TestNNModuleCritic(unittest.TestCase):
     def test_loss_computation(self):
         """Test loss computation."""
         class SumCritic(critic_module.NNModuleCritic):
-            def compare(self, features, target_features):
+            def evaluate(self, features, target_features):
                 loss = 0.0
                 for feature, target_feature in zip(features.values(), target_features.values()):
                     loss += torch.sum(torch.abs(feature - target_feature))
