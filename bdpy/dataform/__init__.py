@@ -8,3 +8,4 @@ from .pd import *
 from .datastore import *
 from .sparse import *
 from .features import *
+from .kvs import SQLite3KeyValueStore
