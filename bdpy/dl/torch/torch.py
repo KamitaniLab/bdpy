@@ -1,8 +1,11 @@
 '''PyTorch module.'''
 
+from __future__ import annotations
+
 from typing import Iterable, List, Dict, Union, Tuple, Any, Callable, Optional
 from collections import OrderedDict
 import os
+import warnings
 
 import numpy as np
 from PIL import Image
@@ -56,10 +59,10 @@ class FeatureExtractor(object):
             layer_object = models._parse_layer_name(self._encoder, layer)
             layer_object.register_forward_hook(self._extractor)
 
-    def __call__(self, x: _tensor_t) -> Dict[str, _tensor_t]:
+    def __call__(self, x: _tensor_t) -> Dict[str, np.ndarray] | Dict[str, torch.Tensor]:
         return self.run(x)
 
-    def run(self, x: _tensor_t) -> Dict[str, _tensor_t]:
+    def run(self, x: _tensor_t) -> Dict[str, np.ndarray] | Dict[str, torch.Tensor]:
         '''Extract feature activations from the specified layers.
 
         Parameters
@@ -82,17 +85,17 @@ class FeatureExtractor(object):
 
         self._encoder.forward(xt)
 
-        features: Dict[str, _tensor_t] = {
+        features: Dict[str, torch.Tensor] = {
             layer: self._extractor.outputs[i]
             for i, layer in enumerate(self.__layers)
         }
-        if self.__detach:
-            features = {
-                k: v.cpu().detach().numpy()
-                for k, v in features.items()
-            }
+        if not self.__detach:
+            return features
 
-        return features
+        return {
+            k: v.cpu().detach().numpy()
+            for k, v in features.items()
+        }
     
     def __del__(self):
         '''
@@ -181,6 +184,13 @@ class ImageDataset(torch.utils.data.Dataset):
         ----
         - Images are converted to RGB. Alpha channels in RGBA images are ignored.
         '''
+
+        warnings.warn(
+            "dl.torch.torch.ImageDataset is deprecated. Please consider using " \
+            "bdpy.dl.torch.dataset.ImageDataset instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
 
         self.transform = transform
         # Custom transforms
