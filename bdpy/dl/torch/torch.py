@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Iterable, List, Dict, Union, Tuple, Any, Callable, Optional
-
+from collections import OrderedDict
 import os
 import warnings
 
@@ -96,6 +96,19 @@ class FeatureExtractor(object):
             k: v.cpu().detach().numpy()
             for k, v in features.items()
         }
+    
+    def __del__(self):
+        '''
+        Remove forward hooks for the FeatureExtractor while keeping
+        other forward hooks in the model.
+        '''
+        for layer in self.__layers:
+            if self.__layer_map is not None:
+                layer = self.__layer_map[layer]
+            layer_object = models._parse_layer_name(self._encoder, layer)
+            for key, hook in layer_object._forward_hooks.items():
+                if hook == self._extractor:
+                    del layer_object._forward_hooks[key]
 
 
 class FeatureExtractorHandle(object):

@@ -469,7 +469,7 @@ class BData(object):
             selected_index = [n < num_sel for n in selected_index]
 
         # Very dirty solution
-        selected_index = np.array(selected_index) is True
+        selected_index = np.array(selected_index) == True  # Should use "==" instead of "is" here.
 
         if return_index:
             return self.dataset[:, np.array(selected_index)], selected_index
@@ -578,7 +578,7 @@ class BData(object):
 
         if where is not None:
             # Mask the metadata array with columns specified with `where`
-            ind = self.metadata.get(where, 'value') is True
+            ind = self.metadata.get(where, 'value') == 1
             md = md[ind]
 
         return md
