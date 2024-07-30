@@ -212,6 +212,27 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         """Check if the key-value pair exists."""
         return self._get_group_id(**kwargs) is not None
 
+    def delete(self, **kwargs) -> None:
+        """Delete the key-value pair."""
+        key_group_id = self._get_group_id(**kwargs)
+        if key_group_id is None:
+            return None
+
+        # Delete from key_value_store
+        sql = f"DELETE FROM key_value_store WHERE id = {key_group_id}"
+        cursor = self._conn.cursor()
+        cursor.execute(sql)
+        self._conn.commit()
+        cursor.close()
+
+        # Delete from key_group_members
+        sql = f"DELETE FROM key_group_members WHERE key_value_store_id = {key_group_id}"
+        cursor = self._conn.cursor()
+        cursor.execute(sql)
+        self._conn.commit()
+        cursor.close()
+        return None
+
     def _get_group_id(self, **kwargs) -> Optional[int]:
         """Get group ID."""
         where = ' AND '.join(
