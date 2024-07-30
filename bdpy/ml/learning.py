@@ -549,7 +549,8 @@ class ModelTest(object):
             if os.path.isfile(self.model_path):
                 model_files = [self.model_path]
             elif os.path.isdir(self.model_path):
-                model_files = sorted(glob.glob(os.path.join(self.model_path, '*.pkl.gz')))
+                model_path = self.model_path.replace('[', '[[]')
+                model_files = sorted(glob.glob(os.path.join(model_path, '*.pkl.gz')))
             else:
                 raise ValueError('Invalid model path: %s' % self.model_path)
         elif self.model_format == 'bdmodel':
@@ -558,7 +559,8 @@ class ModelTest(object):
 
             # W: shape = (n_voxels, shape_features)
             if os.path.isdir(os.path.join(self.model_path, 'W')):
-                W_files = sorted(glob.glob(os.path.join(self.model_path, 'W', '*.mat')))
+                model_path = self.model_path.replace('[', '[[]')
+                W_files = sorted(glob.glob(os.path.join(model_path, 'W', '*.mat')))
             elif os.path.isfile(os.path.join(self.model_path, 'W.mat')):
                 W_files = [os.path.join(self.model_path, 'W.mat')]
             else:
@@ -566,7 +568,8 @@ class ModelTest(object):
 
             # b: shape = (1, shape_features)
             if os.path.isdir(os.path.join(self.model_path, 'b')):
-                b_files = sorted(glob.glob(os.path.join(self.model_path, 'b', '*.mat')))
+                model_path = self.model_path.replace('[', '[[]')
+                b_files = sorted(glob.glob(os.path.join(model_path, 'b', '*.mat')))
             elif os.path.isfile(os.path.join(self.model_path, 'b.mat')):
                 b_files = [os.path.join(self.model_path, 'b.mat')]
             else:
