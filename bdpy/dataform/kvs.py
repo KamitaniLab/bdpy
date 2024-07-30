@@ -208,6 +208,10 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         cursor.close()
         return key_group_id
 
+    def exists(self, **kwargs) -> bool:
+        """Check if the key-value pair exists."""
+        return self._get_group_id(**kwargs) is not None
+
     def _get_group_id(self, **kwargs) -> Optional[int]:
         """Get group ID."""
         where = ' AND '.join(
