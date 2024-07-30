@@ -65,65 +65,6 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
             self._validate_db(keys)
             self._keys = self._get_keys()
 
-    def _init_empty_db(self) -> None:
-        """Create empty tables."""
-        sqls = [
-            """
-            CREATE TABLE IF NOT EXISTS key_names (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT UNIQUE
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS key_instances (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT,
-              key_name_id INTEGER,
-              FOREIGN KEY (key_name_id) REFERENCES key_names(id)
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS key_value_store (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              value BLOB
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS key_group_members (
-              key_value_store_id INTEGER,
-              key_instance_id INTEGER,
-              PRIMARY KEY (key_value_store_id, key_instance_id),
-              FOREIGN KEY (key_value_store_id) REFERENCES key_value_store(id),
-              FOREIGN KEY (key_instance_id) REFERENCES key_instances(id)
-            )
-            """,
-        ]
-        cursor = self._conn.cursor()
-        for sql in sqls:
-            cursor.execute(sql)
-        self._conn.commit()
-        cursor.close()
-        return None
-
-    def _validate_db(self, keys: List[str]) -> None:
-        pass
-
-    def _add_key(self, key: str) -> None:
-        sql = f"INSERT OR IGNORE INTO key_names (name) VALUES('{key}')"
-        cursor = self._conn.cursor()
-        cursor.execute(sql)
-        self._conn.commit()
-        cursor.close()
-        return None
-
-    def _get_keys(self) -> List[str]:
-        sql = "SELECT name FROM key_names"
-        cursor = self._conn.cursor()
-        cursor.execute(sql)
-        res = cursor.fetchall()
-        cursor.close()
-        return [r[0] for r in res]
-
     def set(self, value: _array_t, **kwargs) -> None:
         """Set value for the given keys."""
         # Check if the keys are valid
@@ -180,6 +121,31 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         else:
             return np.frombuffer(res[0][0], dtype=float)
 
+    def exists(self, **kwargs) -> bool:
+        """Check if the key-value pair exists."""
+        return self._get_key_group_id(**kwargs) is not None
+
+    def delete(self, **kwargs) -> None:
+        """Delete the key-value pair."""
+        key_group_id = self._get_key_group_id(**kwargs)
+        if key_group_id is None:
+            return None
+
+        # Delete from key_value_store
+        sql = f"DELETE FROM key_value_store WHERE id = {key_group_id}"
+        cursor = self._conn.cursor()
+        cursor.execute(sql)
+        self._conn.commit()
+        cursor.close()
+
+        # Delete from key_group_members
+        sql = f"DELETE FROM key_group_members WHERE key_value_store_id = {key_group_id}"
+        cursor = self._conn.cursor()
+        cursor.execute(sql)
+        self._conn.commit()
+        cursor.close()
+        return None
+
     def _add_key_group_id(self, key_group_id: int, **kwargs) -> int:
         """Add key group ID."""
         for key, inst in kwargs.items():
@@ -207,31 +173,6 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         self._conn.commit()
         cursor.close()
         return key_group_id
-
-    def exists(self, **kwargs) -> bool:
-        """Check if the key-value pair exists."""
-        return self._get_key_group_id(**kwargs) is not None
-
-    def delete(self, **kwargs) -> None:
-        """Delete the key-value pair."""
-        key_group_id = self._get_key_group_id(**kwargs)
-        if key_group_id is None:
-            return None
-
-        # Delete from key_value_store
-        sql = f"DELETE FROM key_value_store WHERE id = {key_group_id}"
-        cursor = self._conn.cursor()
-        cursor.execute(sql)
-        self._conn.commit()
-        cursor.close()
-
-        # Delete from key_group_members
-        sql = f"DELETE FROM key_group_members WHERE key_value_store_id = {key_group_id}"
-        cursor = self._conn.cursor()
-        cursor.execute(sql)
-        self._conn.commit()
-        cursor.close()
-        return None
 
     def _get_key_group_id(self, **kwargs) -> Optional[int]:
         """Get key group ID."""
@@ -273,6 +214,22 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         else:
             return res[0][0]
 
+    def _add_key(self, key: str) -> None:
+        sql = f"INSERT OR IGNORE INTO key_names (name) VALUES('{key}')"
+        cursor = self._conn.cursor()
+        cursor.execute(sql)
+        self._conn.commit()
+        cursor.close()
+        return None
+
+    def _get_keys(self) -> List[str]:
+        sql = "SELECT name FROM key_names"
+        cursor = self._conn.cursor()
+        cursor.execute(sql)
+        res = cursor.fetchall()
+        cursor.close()
+        return [r[0] for r in res]
+
     def _get_key_name_id(self, key: str) -> int:
         """Get key name ID."""
         sql = f"SELECT id FROM key_names WHERE name = '{key}'"
@@ -295,4 +252,46 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         if not res:
             return None
         return res[0][0]
- 
+
+    def _init_empty_db(self) -> None:
+        """Create empty tables."""
+        sqls = [
+            """
+            CREATE TABLE IF NOT EXISTS key_names (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT UNIQUE
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS key_instances (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              name TEXT,
+              key_name_id INTEGER,
+              FOREIGN KEY (key_name_id) REFERENCES key_names(id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS key_value_store (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              value BLOB
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS key_group_members (
+              key_value_store_id INTEGER,
+              key_instance_id INTEGER,
+              PRIMARY KEY (key_value_store_id, key_instance_id),
+              FOREIGN KEY (key_value_store_id) REFERENCES key_value_store(id),
+              FOREIGN KEY (key_instance_id) REFERENCES key_instances(id)
+            )
+            """,
+        ]
+        cursor = self._conn.cursor()
+        for sql in sqls:
+            cursor.execute(sql)
+        self._conn.commit()
+        cursor.close()
+        return None
+
+    def _validate_db(self, keys: List[str]) -> None:
+        pass
