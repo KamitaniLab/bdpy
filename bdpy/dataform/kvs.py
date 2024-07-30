@@ -136,7 +136,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
             raise ValueError("All keys must be given.")
 
         # Check if the given keys already exist
-        key_group_id = self._get_group_id(**kwargs)
+        key_group_id = self._get_key_group_id(**kwargs)
         if key_group_id is None:
             # Add new key-value pair
             sql = "INSERT INTO key_value_store (value) VALUES (?)"
@@ -145,7 +145,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
             key_group_id = cursor.lastrowid
             self._conn.commit()
             cursor.close()
-            self._add_group_id(key_group_id, **kwargs)
+            self._add_key_group_id(key_group_id, **kwargs)
         else:
             # Update existing key-value pair
             sql = f"""
@@ -162,7 +162,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
 
     def get(self, **kwargs) -> Optional[_array_t]:
         """Get value for the given keys."""
-        key_group_id = self._get_group_id(**kwargs)
+        key_group_id = self._get_key_group_id(**kwargs)
         if key_group_id is None:
             return None
         sql = f"""
@@ -180,8 +180,8 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         else:
             return np.frombuffer(res[0][0], dtype=float)
 
-    def _add_group_id(self, key_group_id: int, **kwargs) -> int:
-        """Add group ID."""
+    def _add_key_group_id(self, key_group_id: int, **kwargs) -> int:
+        """Add key group ID."""
         for key, inst in kwargs.items():
             # Add key instance if not exists
             key_instance_id = self._get_key_instance_id(key, inst)
@@ -210,11 +210,11 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
 
     def exists(self, **kwargs) -> bool:
         """Check if the key-value pair exists."""
-        return self._get_group_id(**kwargs) is not None
+        return self._get_key_group_id(**kwargs) is not None
 
     def delete(self, **kwargs) -> None:
         """Delete the key-value pair."""
-        key_group_id = self._get_group_id(**kwargs)
+        key_group_id = self._get_key_group_id(**kwargs)
         if key_group_id is None:
             return None
 
@@ -233,8 +233,8 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         cursor.close()
         return None
 
-    def _get_group_id(self, **kwargs) -> Optional[int]:
-        """Get group ID."""
+    def _get_key_group_id(self, **kwargs) -> Optional[int]:
+        """Get key group ID."""
         where = ' AND '.join(
             [
                f"""
