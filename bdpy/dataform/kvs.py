@@ -46,7 +46,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         new_db = not os.path.exists(self._path)
 
         # Connect to DB
-        self._conn = sqlite3.connect(self._path)
+        self._conn = sqlite3.connect(self._path, isolation_level="EXCLUSIVE")
 
         # Enable foreign key
         cursor = self._conn.cursor()
