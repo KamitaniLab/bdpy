@@ -176,23 +176,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
 
     def _get_key_group_id(self, **kwargs) -> Optional[int]:
         """Get key group ID."""
-        where = ' AND '.join(
-            [
-               f"""
-               EXISTS(
-                 SELECT * FROM key_group_members AS kgm{i}
-                 JOIN key_instances AS ki{i} ON kgm{i}.key_instance_id = ki{i}.id
-                 JOIN key_names     AS kn{i} ON ki{i}.key_name_id = kn{i}.id
-                 WHERE
-                   kgm.key_value_store_id = kgm{i}.key_value_store_id
-                   AND
-                   kn{i}.name = '{key}' AND ki{i}.name = '{inst}'
-               )
-               """
-               for i, (key, inst) in enumerate(kwargs.items())
-               ]
-        )
-
+        where = self._generate_where(**kwargs)
         sql = f"""
         SELECT kgm.key_value_store_id
         FROM key_group_members AS kgm
@@ -295,3 +279,23 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
 
     def _validate_db(self, keys: List[str]) -> None:
         pass
+
+    def _generate_where(self, **kwargs) -> str:
+        """Generate WHERE clause."""
+        where = ' AND '.join(
+            [
+               f"""
+               EXISTS(
+                 SELECT * FROM key_group_members AS kgm{i}
+                 JOIN key_instances AS ki{i} ON kgm{i}.key_instance_id = ki{i}.id
+                 JOIN key_names     AS kn{i} ON ki{i}.key_name_id = kn{i}.id
+                 WHERE
+                   kgm.key_value_store_id = kgm{i}.key_value_store_id
+                   AND
+                   kn{i}.name = '{key}' AND ki{i}.name = '{inst}'
+               )
+               """
+               for i, (key, inst) in enumerate(kwargs.items())
+               ]
+        )
+        return where
