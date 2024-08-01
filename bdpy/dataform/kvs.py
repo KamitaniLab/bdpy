@@ -76,28 +76,62 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         if len(kwargs) != len(self._keys):
             raise ValueError("All keys must be given.")
 
-        # Check if the given keys already exist
-        key_group_id = self._get_key_group_id(**kwargs)
-        if key_group_id is None:
-            # Add new key-value pair
-            sql = "INSERT INTO key_value_store (value) VALUES (?)"
-            cursor = self._conn.cursor()
-            cursor.execute(sql, (value.astype(float).tobytes(order='C'),))
-            key_group_id = cursor.lastrowid
-            self._conn.commit()
-            cursor.close()
-            self._add_key_group_id(key_group_id, **kwargs)
-        else:
-            # Update existing key-value pair
-            sql = f"""
-            UPDATE key_value_store
-            SET value = ?
-            WHERE id = {key_group_id}
-            """
-            cursor = self._conn.cursor()
-            cursor.execute(sql, (value.astype(float).tobytes(order='C'),))
-            self._conn.commit()
-            cursor.close()
+        # Set transaction
+        self._conn.execute("BEGIN TRANSACTION;")
+        _v = value.astype(float).tobytes(order='C')
+        where = self._generate_where(**kwargs)
+        insert_instances = ', '.join([
+            f"('{inst}', (SELECT id FROM key_names WHERE name = '{key}'))"
+            for key, inst in kwargs.items()
+        ])
+        insert_members = ', '.join([
+            f"((SELECT id FROM key_value_store WHERE rowid = (SELECT * FROM kvs_last_inserted_rowid)), (SELECT ki.id FROM key_instances AS ki JOIN key_names AS kn ON ki.key_name_id = kn.id WHERE kn.name = '{key}' AND ki.name = '{inst}'))"
+            for key, inst in kwargs.items()
+        ])
+        sqls_prep = f"""
+        CREATE TABLE tmp AS
+        WITH hit AS (
+            SELECT kgm.key_value_store_id FROM key_group_members AS kgm
+            JOIN key_instances            AS ki ON kgm.key_instance_id = ki.id
+            JOIN key_names                AS kn ON ki.key_name_id = kn.id
+        WHERE
+            {where}
+        GROUP BY kgm.key_value_store_id
+        )
+        SELECT * FROM hit;
+
+        CREATE TABLE kvs_last_inserted_rowid (rowid INTEGER);
+        CREATE TRIGGER kvs_insert
+        AFTER INSERT ON key_value_store
+        BEGIN
+            DELETE FROM kvs_last_inserted_rowid;
+            INSERT INTO kvs_last_inserted_rowid (rowid) VALUES (new.rowid);
+        END;
+        """
+        sql_update = "UPDATE key_value_store SET value = ? WHERE id = (SELECT key_value_store_id FROM tmp LIMIT 1) AND (SELECT COUNT(*) FROM tmp) = 1;"
+        sql_insert_inst = f"""
+        INSERT OR IGNORE INTO key_instances (name, key_name_id)
+            VALUES {insert_instances};
+        """
+        sql_insert_kvs = "INSERT INTO key_value_store (value) SELECT ? WHERE (SELECT COUNT(*) FROM tmp) = 0;"
+        sql_insert_kgm = f"""
+        INSERT OR IGNORE INTO key_group_members (key_value_store_id, key_instance_id)
+            VALUES {insert_members};
+        """
+        sqls_post = """
+        DROP TABLE tmp;
+        DROP TABLE kvs_last_inserted_rowid;
+        DROP TRIGGER kvs_insert;
+        """
+        cursor = self._conn.cursor()
+        cursor.executescript(sqls_prep)
+        cursor.execute(sql_update, (_v,))
+        cursor.execute(sql_insert_inst)
+        cursor.execute(sql_insert_kvs, (_v,))
+        cursor.execute(sql_insert_kgm)
+        cursor.executescript(sqls_post)
+        self._conn.commit()
+        cursor.close()
 
         return None
 
