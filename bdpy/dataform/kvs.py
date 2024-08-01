@@ -180,34 +180,6 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         cursor.close()
         return None
 
-    def _add_key_group_id(self, key_group_id: int, **kwargs) -> int:
-        """Add key group ID."""
-        for key, inst in kwargs.items():
-            # Add key instance if not exists
-            key_instance_id = self._get_key_instance_id(key, inst)
-            if key_instance_id is not None:
-                continue
-            key_name_id = self._get_key_name_id(key)
-            sql = f"""
-            INSERT OR IGNORE INTO key_instances (name, key_name_id) VALUES ('{inst}', {key_name_id})
-            """
-            cursor = self._conn.cursor()
-            cursor.execute(sql)
-            cursor.close()
-
-        inst_ids = [self._get_key_instance_id(key, inst) for key, inst in kwargs.items()]
-        kvid = key_group_id
-        sqls = [
-            f"INSERT INTO key_group_members (key_value_store_id, key_instance_id) VALUES ({kvid}, {inst_id})"
-            for inst_id in inst_ids
-        ]
-        cursor = self._conn.cursor()
-        for sql in sqls:
-            cursor.execute(sql)
-        self._conn.commit()
-        cursor.close()
-        return key_group_id
-
     def _get_key_group_id(self, **kwargs) -> Optional[int]:
         """Get key group ID."""
         where = self._generate_where(**kwargs)
