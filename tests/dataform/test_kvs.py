@@ -22,7 +22,7 @@ class TestSQlite3KeyValueStore(unittest.TestCase):
             """
             CREATE TABLE IF NOT EXISTS key_instances (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT,
+              name TEXT UNIQUE,
               key_name_id INTEGER,
               FOREIGN KEY (key_name_id) REFERENCES key_names(id)
             )
@@ -43,10 +43,10 @@ class TestSQlite3KeyValueStore(unittest.TestCase):
             )
             """,
             # Insert keys
-            "INSERT INTO key_names (name) VALUES ('layer')",
-            "INSERT INTO key_names (name) VALUES ('subject')",
-            "INSERT INTO key_names (name) VALUES ('roi')",
-            "INSERT INTO key_names (name) VALUES ('metric')",
+            "INSERT OR IGNORE INTO key_names (name) VALUES ('layer')",
+            "INSERT OR IGNORE INTO key_names (name) VALUES ('subject')",
+            "INSERT OR IGNORE INTO key_names (name) VALUES ('roi')",
+            "INSERT OR IGNORE INTO key_names (name) VALUES ('metric')",
         ]
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()

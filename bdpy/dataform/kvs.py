@@ -46,7 +46,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         new_db = not os.path.exists(self._path)
 
         # Connect to DB
-        self._conn = sqlite3.connect(self._path, isolation_level="EXCLUSIVE")
+        self._conn = sqlite3.connect(self._path, isolation_level="EXCLUSIVE", timeout=60)
 
         # Enable foreign key
         cursor = self._conn.cursor()
@@ -83,16 +83,6 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
 
         where = self._generate_where(**kwargs)
 
-        insert_instances = ', '.join([
-            f"('{inst}', (SELECT id FROM key_names WHERE name = '{key}'))"
-            for key, inst in kwargs.items()
-        ])
-
-        insert_members = ', '.join([
-            f"((SELECT id FROM key_value_store WHERE rowid = (SELECT * FROM kvs_last_inserted_rowid)), (SELECT ki.id FROM key_instances AS ki JOIN key_names AS kn ON ki.key_name_id = kn.id WHERE kn.name = '{key}' AND ki.name = '{inst}'))"
-            for key, inst in kwargs.items()
-        ])
-
         self._conn.execute(
             f"""
             CREATE TABLE tmp AS
@@ -109,8 +99,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         self._conn.execute("CREATE TABLE kvs_last_inserted_rowid (rowid INTEGER);")
         self._conn.execute(
             """
-            CREATE TRIGGER kvs_insert
-            AFTER INSERT ON key_value_store
+            CREATE TRIGGER kvs_insert AFTER INSERT ON key_value_store
             BEGIN
                 DELETE FROM kvs_last_inserted_rowid;
                 INSERT INTO kvs_last_inserted_rowid (rowid) VALUES (new.rowid);
@@ -121,20 +110,25 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         sql_update = "UPDATE key_value_store SET value = ? WHERE id = (SELECT key_value_store_id FROM tmp LIMIT 1) AND (SELECT COUNT(*) FROM tmp) = 1;"
         self._conn.execute(sql_update, (_v,))
 
-        sql_insert_inst = f"""
-        INSERT OR IGNORE INTO key_instances (name, key_name_id)
-            VALUES {insert_instances};
-        """
+        insert_instances = ', '.join([
+            f"('{inst}', (SELECT id FROM key_names WHERE name = '{key}'))"
+            for key, inst in kwargs.items()
+        ])
+        sql_insert_inst = f"INSERT OR IGNORE INTO key_instances (name, key_name_id) VALUES {insert_instances};"
         self._conn.execute(sql_insert_inst)
 
         sql_insert_kvs = "INSERT INTO key_value_store (value) SELECT ? WHERE (SELECT COUNT(*) FROM tmp) = 0;"
         self._conn.execute(sql_insert_kvs, (_v,))
 
-        sql_insert_kgm = f"""
-        INSERT OR IGNORE INTO key_group_members (key_value_store_id, key_instance_id)
-            VALUES {insert_members};
-        """
-        self._conn.execute(sql_insert_kgm)
+        for key, inst in kwargs.items():
+            sql_insert_kgm = f"""
+            INSERT OR IGNORE INTO key_group_members (key_value_store_id, key_instance_id)
+                SELECT
+                    (SELECT id FROM key_value_store WHERE rowid = (SELECT * FROM kvs_last_inserted_rowid)),
+                    (SELECT ki.id FROM key_instances AS ki JOIN key_names AS kn ON ki.key_name_id = kn.id WHERE kn.name = '{key}' AND ki.name = '{inst}')
+                WHERE (SELECT COUNT(*) FROM tmp) = 0;
+            """
+            self._conn.execute(sql_insert_kgm)
 
         self._conn.execute("DROP TABLE tmp;")
         self._conn.execute("DROP TABLE kvs_last_inserted_rowid;")
@@ -264,7 +258,7 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
             """
             CREATE TABLE IF NOT EXISTS key_instances (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
-              name TEXT,
+              name TEXT UNIQUE,
               key_name_id INTEGER,
               FOREIGN KEY (key_name_id) REFERENCES key_names(id)
             )
