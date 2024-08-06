@@ -285,11 +285,10 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
             )
             """,
         ]
-        cursor = self._conn.cursor()
+        self._conn.execute("BEGIN TRANSACTION;")
         for sql in sqls:
-            cursor.execute(sql)
+            self._conn.execute(sql)
         self._conn.commit()
-        cursor.close()
         return None
 
     def _validate_db(self, keys: List[str]) -> None:
