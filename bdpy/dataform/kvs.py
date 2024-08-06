@@ -78,60 +78,69 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
 
         # Set transaction
         self._conn.execute("BEGIN TRANSACTION;")
+
         _v = value.astype(float).tobytes(order='C')
+
         where = self._generate_where(**kwargs)
+
         insert_instances = ', '.join([
             f"('{inst}', (SELECT id FROM key_names WHERE name = '{key}'))"
             for key, inst in kwargs.items()
         ])
+
         insert_members = ', '.join([
             f"((SELECT id FROM key_value_store WHERE rowid = (SELECT * FROM kvs_last_inserted_rowid)), (SELECT ki.id FROM key_instances AS ki JOIN key_names AS kn ON ki.key_name_id = kn.id WHERE kn.name = '{key}' AND ki.name = '{inst}'))"
             for key, inst in kwargs.items()
         ])
-        sqls_prep = f"""
-        CREATE TABLE tmp AS
-        WITH hit AS (
-            SELECT kgm.key_value_store_id FROM key_group_members AS kgm
-            JOIN key_instances            AS ki ON kgm.key_instance_id = ki.id
-            JOIN key_names                AS kn ON ki.key_name_id = kn.id
-        WHERE
-            {where}
-        GROUP BY kgm.key_value_store_id
-        )
-        SELECT * FROM hit;
 
-        CREATE TABLE kvs_last_inserted_rowid (rowid INTEGER);
-        CREATE TRIGGER kvs_insert
-        AFTER INSERT ON key_value_store
-        BEGIN
-            DELETE FROM kvs_last_inserted_rowid;
-            INSERT INTO kvs_last_inserted_rowid (rowid) VALUES (new.rowid);
-        END;
-        """
+        self._conn.execute(
+            f"""
+            CREATE TABLE tmp AS
+            WITH hit AS (
+                SELECT kgm.key_value_store_id FROM key_group_members AS kgm
+                JOIN key_instances            AS ki ON kgm.key_instance_id = ki.id
+                JOIN key_names                AS kn ON ki.key_name_id = kn.id
+            WHERE {where}
+            GROUP BY kgm.key_value_store_id
+            )
+            SELECT * FROM hit;
+            """
+        )
+        self._conn.execute("CREATE TABLE kvs_last_inserted_rowid (rowid INTEGER);")
+        self._conn.execute(
+            """
+            CREATE TRIGGER kvs_insert
+            AFTER INSERT ON key_value_store
+            BEGIN
+                DELETE FROM kvs_last_inserted_rowid;
+                INSERT INTO kvs_last_inserted_rowid (rowid) VALUES (new.rowid);
+            END;
+            """
+        )
+
         sql_update = "UPDATE key_value_store SET value = ? WHERE id = (SELECT key_value_store_id FROM tmp LIMIT 1) AND (SELECT COUNT(*) FROM tmp) = 1;"
+        self._conn.execute(sql_update, (_v,))
+
         sql_insert_inst = f"""
         INSERT OR IGNORE INTO key_instances (name, key_name_id)
             VALUES {insert_instances};
         """
+        self._conn.execute(sql_insert_inst)
+
         sql_insert_kvs = "INSERT INTO key_value_store (value) SELECT ? WHERE (SELECT COUNT(*) FROM tmp) = 0;"
+        self._conn.execute(sql_insert_kvs, (_v,))
+
         sql_insert_kgm = f"""
         INSERT OR IGNORE INTO key_group_members (key_value_store_id, key_instance_id)
             VALUES {insert_members};
         """
-        sqls_post = """
-        DROP TABLE tmp;
-        DROP TABLE kvs_last_inserted_rowid;
-        DROP TRIGGER kvs_insert;
-        """
-        cursor = self._conn.cursor()
-        cursor.executescript(sqls_prep)
-        cursor.execute(sql_update, (_v,))
-        cursor.execute(sql_insert_inst)
-        cursor.execute(sql_insert_kvs, (_v,))
-        cursor.execute(sql_insert_kgm)
-        cursor.executescript(sqls_post)
+        self._conn.execute(sql_insert_kgm)
+
+        self._conn.execute("DROP TABLE tmp;")
+        self._conn.execute("DROP TABLE kvs_last_inserted_rowid;")
+        self._conn.execute("DROP TRIGGER kvs_insert;")
+
         self._conn.commit()
-        cursor.close()
 
         return None
 
