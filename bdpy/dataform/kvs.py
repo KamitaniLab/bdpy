@@ -168,19 +168,20 @@ class SQLite3KeyValueStore(BaseKeyValueStore):
         if key_group_id is None:
             return None
 
-        # Delete from key_value_store
-        sql = f"DELETE FROM key_value_store WHERE id = {key_group_id}"
-        cursor = self._conn.cursor()
-        cursor.execute(sql)
+        # Delete from key_group_members and key_value_store
+        sqls = [
+            f"""
+            DELETE FROM key_group_members WHERE key_value_store_id = {key_group_id}
+            """,
+            f"""
+            DELETE FROM key_value_store WHERE id = {key_group_id}
+            """,
+        ]
+        self._conn.execute("BEGIN TRANSACTION;")
+        for sql in sqls:
+            self._conn.execute(sql)
         self._conn.commit()
-        cursor.close()
 
-        # Delete from key_group_members
-        sql = f"DELETE FROM key_group_members WHERE key_value_store_id = {key_group_id}"
-        cursor = self._conn.cursor()
-        cursor.execute(sql)
-        self._conn.commit()
-        cursor.close()
         return None
 
     def _get_key_group_id(self, **kwargs) -> Optional[int]:

@@ -153,7 +153,7 @@ class TestSQlite3KeyValueStore(unittest.TestCase):
             kvs.set(np.array([]), layer="conv1", subject="sub04", roi="LOC", metric="accuracy")
             val = kvs.get(layer="conv1", subject="sub04", roi="LOC", metric="accuracy")
             np.testing.assert_array_equal(val, np.array([]))
- 
+
             # Found (np.nan)
             kvs.set(np.array([np.nan]), layer="conv1", subject="sub04", roi="FFA", metric="accuracy")
             val = kvs.get(layer="conv1", subject="sub04", roi="FFA", metric="accuracy")
@@ -175,7 +175,22 @@ class TestSQlite3KeyValueStore(unittest.TestCase):
                 kvs.set(np.array([10, 20, 30, 40]), layer="conv1", subject="sub03", roi="PPA", metric="accuracy")
             val = kvs.get(layer="conv1", subject="sub03", roi="PPA", metric="accuracy")
             np.testing.assert_array_equal(val, np.array([10, 20, 30, 40]))
- 
+
+    def test_delete(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test_3304.db")
+            self._init_test_db(db_path)
+
+            kvs = SQLite3KeyValueStore(db_path)
+
+            kvs.set(np.array([ 1,  2,  3,  4]), layer="conv1", subject="sub03", roi="LOC", metric="accuracy")
+            kvs.set(np.array([ 5,  6,  7,  8]), layer="conv1", subject="sub03", roi="FFA", metric="accuracy")
+            kvs.set(np.array([np.nan]),         layer="conv1", subject="sub03", roi="PPA", metric="accuracy")
+
+            kvs.delete(layer="conv1", subject="sub03", roi="PPA", metric="accuracy")
+            np.testing.assert_(kvs.exists(layer="conv1", subject="sub03", roi="LOC", metric="accuracy"))
+            np.testing.assert_(~kvs.exists(layer="conv1", subject="sub03", roi="PPA", metric="accuracy"),
+                               'AssertionError: Failed to delete the record.')
 
 if __name__ == "__main__":
     unittest.main()
