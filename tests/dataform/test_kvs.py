@@ -188,9 +188,23 @@ class TestSQlite3KeyValueStore(unittest.TestCase):
             kvs.set(np.array([np.nan]),         layer="conv1", subject="sub03", roi="PPA", metric="accuracy")
 
             kvs.delete(layer="conv1", subject="sub03", roi="PPA", metric="accuracy")
-            np.testing.assert_(kvs.exists(layer="conv1", subject="sub03", roi="LOC", metric="accuracy"))
             np.testing.assert_(~kvs.exists(layer="conv1", subject="sub03", roi="PPA", metric="accuracy"),
                                'AssertionError: Failed to delete the record.')
+
+    def test_lock(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test_3304.db")
+            self._init_test_db(db_path)
+
+            kvs = SQLite3KeyValueStore(db_path)
+
+            kvs.set(np.array([ 1,  2,  3,  4]), layer="conv1", subject="sub03", roi="LOC", metric="accuracy")
+            kvs.set(np.array([ 5,  6,  7,  8]), layer="conv1", subject="sub03", roi="FFA", metric="accuracy")
+            np.testing.assert_(kvs.lock(layer="conv1", subject="sub03", roi="PPA", metric="accuracy"),
+                               'AssertionError: Failed to lock the specified condition.')
+            np.testing.assert_(~kvs.lock(layer="conv1", subject="sub03", roi="PPA", metric="accuracy"),
+                               'AssertionError: A condition that was already locked has been newly locked.')
+
 
 if __name__ == "__main__":
     unittest.main()
