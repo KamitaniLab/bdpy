@@ -7,3 +7,4 @@ from .fig import *
 from .tile_images import tile_images
 from .draw_group_image_set import draw_group_image_set
 from .makeplots import makeplots
+from .makeplots2 import makeplots2
