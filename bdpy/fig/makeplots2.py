@@ -1,9 +1,10 @@
 from itertools import product
 
+from typing import Callable
+
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.colors import to_rgba
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -18,8 +19,7 @@ def makeplots2(
         group=None, group_list=None,
         subplot=None, subplot_list=None,
         figure=None, figure_list=None,
-        plot_type='bar',
-        plot_func=None,
+        plot=None,
         horizontal=False,
         plot_size_auto=True, plot_size=(4, 0.3),
         max_col=None,
@@ -43,8 +43,9 @@ def makeplots2(
     subplot : list
     figure : str
     figure_list : list
-    plot_type : {'violin', 'swarm+box', 'bar', 'line', 'original'}
-    plot_func : function
+    plot : str | Callable
+        Selectable plots can be specified as strings: 'violin', 'swarm+box', 'bar', 'line'
+        You can pass your own plot function that conforms to the implementation of the `__plot_*` subfunctions.
     horizontal: bool
     plot_size : (width, height)
     y_lim : (y_min, y_max)
@@ -58,7 +59,7 @@ def makeplots2(
     -------
     fig : matplotlib.figure.Figure or list of matplotlib.figure.Figure
     '''
-
+    # Check plot keys
     x_keys       = sorted(df[x].unique())
     group_keys   = sorted(df[group].unique()) if group is not None else [None]
     subplot_keys = sorted(df[subplot].unique()) if subplot is not None else [None]
@@ -67,7 +68,6 @@ def makeplots2(
     group_list   = group_keys   if group_list   is None else group_list
     subplot_list = subplot_keys if subplot_list is None else subplot_list
     figure_list  = figure_keys  if figure_list  is None else figure_list
-
     if verbose:
         print('X:       {}'.format(x_list))
         if group is None:
@@ -77,13 +77,32 @@ def makeplots2(
         if figure is not None:
             print('Figures: {}'.format(figure_list))
 
+    # Check plot type
+    if isinstance(plot, str):
+        if plot == 'violin':
+            plot = __plot_violin
+        elif plot == 'swarm+box':
+            plot = __plot_swarmbox
+        elif plot == 'bar':
+            plot = __plot_bar
+        elif plot == 'line':
+            plot = __plot_line
+        else:
+            raise ValueError('Unknown plot name: {}'.format(plot))
+    elif isinstance(plot, Callable):
+        pass
+    else:
+        raise ValueError('This type of variable cannot be specified for plot: {}'.format(plot))
+
+    # Matrix size of plot
     col_num = np.ceil(np.sqrt(len(subplot_list)))
     row_num = int(np.ceil(len(subplot_list) / col_num))
     col_num = int(col_num)
-
     if max_col is not None and col_num > max_col:
         col_num = max_col
         row_num = int(np.ceil(len(subplot_list) / col_num))
+    if verbose:
+        print('Subplot in {} x {}'.format(row_num, col_num))
 
     # Plot size
     if plot_size_auto:
@@ -94,9 +113,6 @@ def makeplots2(
 
     # Figure size
     figsize = (col_num * plot_size[0], row_num * plot_size[1])  # (width, height)
-
-    if verbose:
-        print('Subplot in {} x {}'.format(row_num, col_num))
 
     figs = []
 
@@ -149,43 +165,12 @@ def makeplots2(
                 else:
                     ax.grid(axis='y', color='k', linestyle='-', linewidth=0.5)
 
-            if plot_type == 'original':
-                legend_handler = plot_func(
-                    ax, x, y, x_list, df_t,
-                    horizontal=horizontal,
-                    group=group, group_list=group_list,
-                    **makeplots_kws,
-                )
-            elif plot_type == 'swarm+box':
-                legend_handler = __plot_swarmbox(
-                    ax, x, y, x_list, df_t,
-                    horizontal=horizontal,
-                    group=group, group_list=group_list,
-                    **makeplots_kws,
-                )
-            elif plot_type == 'bar':
-                legend_handler = __plot_bar(
-                    ax, x, y, x_list, df_t,
-                    horizontal=horizontal,
-                    group=group, group_list=group_list,
-                    **makeplots_kws,
-                )
-            elif plot_type == 'violin':
-                legend_handler = __plot_violin(
-                    ax, x, y, x_list, df_t,
-                    horizontal=horizontal,
-                    group=group, group_list=group_list,
-                    **makeplots_kws,
-                )
-            elif plot_type == 'line':
-                legend_handler = __plot_line(
-                    ax, x, y, x_list, df_t,
-                    horizontal=horizontal,
-                    group=group, group_list=group_list,
-                    **makeplots_kws,
-                )
-            else:
-                raise ValueError('Unknown plot_type: {}'.format(plot_type))
+            legend_handler = plot(
+                ax, x, y, x_list, df_t,
+                horizontal=horizontal,
+                group=group, group_list=group_list,
+                **makeplots_kws,
+            )
 
             ax.set(xlabel=None, ylabel=None)
             if not horizontal:
@@ -262,7 +247,7 @@ def makeplots2(
             ax.legend(legend_handler[0], legend_handler[1],
                       loc='upper left', bbox_to_anchor=(0, 1.0), fontsize=tick_fontsize)
             ax.set_axis_off()
-            plt.tight_layout()
+            # plt.tight_layout()
 
         ax = fig.add_axes([0, 0, 1, 1])
         ax.patch.set_alpha(0.0)
@@ -325,7 +310,7 @@ def __plot_swarmbox(
             data=df_t, ax=ax,
             x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
             orient="h" if horizontal else "v",
-            palette=sns.color_palette(dot_color_palette),
+            palette=sns.color_palette(dot_color_palette, n_colors=len(group_list)),
             dodge=True,
             size=dot_size, alpha=dot_alpha, zorder=10
         )
@@ -350,7 +335,7 @@ def __plot_swarmbox(
             data=df_t, ax=ax,
             x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
             orient="h" if horizontal else "v",
-            palette=sns.color_palette(box_color_palette),
+            palette=sns.color_palette(box_color_palette, n_colors=len(group_list)),
             linewidth=box_linewidth,
             showfliers=False,
             showmeans=True, meanline=True, meanprops=box_meanprops,
@@ -400,7 +385,8 @@ def __plot_bar(
             x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
             errorbar=('sd', 1),
             orient="h" if horizontal else "v",
-            palette=sns.color_palette(color_pallete), width=bar_width, alpha=alpha
+            palette=sns.color_palette(color_pallete, n_colors=len(group_list)),
+            width=bar_width, alpha=alpha
         )
         # prepare legend
         handlers, labels = barax.get_legend_handles_labels()
@@ -419,7 +405,7 @@ def __plot_violin(
     ax, x, y, x_list, df_t,
     horizontal=False,
     group=None, group_list=[],
-    color='#023eff', color_palette='bright', width=0.8, alpha=0.6, points=100,
+    color='#023eff', color_palette='bright', width=0.8, alpha=0.4, points=100,
 ):
     '''
     Violin plot.
@@ -431,7 +417,11 @@ def __plot_violin(
         xpos = np.arange(len(x_list))
         data = []
         for x_label in x_list:
-            data.append(df_t.query("`{}` == '{}'".format(x, x_label))[y].values.ravel())
+            a_data = df_t.query("`{}` == '{}'".format(x, x_label))[y].values.ravel()
+            if len(a_data) == 0:
+                data.append([np.nan, np.nan])  # set dummy data
+            else:
+                data.append(a_data)
         # plot
         violinax = ax.violinplot(data, xpos, vert=not horizontal,
                                  showmeans=True, showextrema=False, showmedians=False, points=points)
@@ -445,7 +435,7 @@ def __plot_violin(
         w = width / (n_grp + 1)
         xpos = np.arange(len(x_list))
 
-        color_palette = sns.color_palette(color_palette).as_hex()
+        color_palette = sns.color_palette(color_palette, n_colors=n_grp).as_hex()
         legend_handlers = []
         for gi, group_label in enumerate(group_list):
             # prepare data
@@ -453,9 +443,13 @@ def __plot_violin(
             xpos_grp = np.array(xpos) + offset
             data = []
             for x_label in x_list:
-                data.append(df_t.query("`{}` == '{}' and `{}` == '{}'".format(
+                a_data = df_t.query("`{}` == '{}' and `{}` == '{}'".format(
                     x, x_label, group, group_label
-                    ))[y].values.ravel())
+                    ))[y].values.ravel()
+                if len(a_data) == 0:
+                    data.append([np.nan, np.nan])  # set dummy data
+                else:
+                    data.append(a_data)
             # plot
             violinax = ax.violinplot(
                 data, xpos_grp,
@@ -466,6 +460,7 @@ def __plot_violin(
             group_color = to_rgba(color_palette[gi], alpha=alpha)
             for pc in violinax['bodies']:
                 pc.set_facecolor(group_color)
+                pc.set_alpha(alpha)
                 pc.set_linewidth(0)
             # prepare legend
             legend_handlers.append(mpatches.Patch(color=group_color))
@@ -515,7 +510,7 @@ def __plot_line(
             data=df_t, ax=ax,
             x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
             orient="h" if horizontal else "v",
-            palette=sns.color_palette(color_pallete), errorbar=errorbar,
+            palette=sns.color_palette(color_pallete, n_colors=len(group_list)), errorbar=errorbar,
             dodge=dodge,
             scale=markerscale,
         )
@@ -542,7 +537,7 @@ def __strict_data(
         figure, fig_label,
 ):
     """
-    Limit the data you need. 
+    Limit the data you need.
     Restricts records to the specified sp_label and fig_label,
     and further restricts records to the specified combination of x_list and group_list.
 
