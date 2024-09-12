@@ -359,7 +359,8 @@ def __plot_bar(
     ax, x, y, x_list, df_t,
     horizontal=False,
     group=None, group_list=[],
-    color="#023eff", color_pallete='bright', bar_width=0.8, alpha=0.6,
+    color="#023eff", color_pallete='bright', alpha=0.6,
+    # bar_width=0.8, errorbar = ('ci', 95) # seaborn >= 0.12.0
 ):
     """
     Bar plot
@@ -374,19 +375,19 @@ def __plot_bar(
         barax = sns.barplot(
             data=df_t, ax=ax,
             x=plotx, y=ploty, order=x_list,
-            errorbar=('sd', 1),
             orient="h" if horizontal else "v",
-            color=color, alpha=alpha # width=bar_width, 
+            color=color, alpha=alpha
+            # width=bar_width, errorbar=errorbar,
         )
         legend_handler = None
     else:
         barax = sns.barplot(
             data=df_t, ax=ax,
             x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
-            errorbar=('sd', 1),
             orient="h" if horizontal else "v",
             palette=sns.color_palette(color_pallete, n_colors=len(group_list)),
-            alpha=alpha # width=bar_width, 
+            alpha=alpha 
+            # width=bar_width, errorbar=errorbar,
         )
         # prepare legend
         handlers, labels = barax.get_legend_handles_labels()
