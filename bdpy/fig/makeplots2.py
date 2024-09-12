@@ -376,7 +376,7 @@ def __plot_bar(
             x=plotx, y=ploty, order=x_list,
             errorbar=('sd', 1),
             orient="h" if horizontal else "v",
-            color=color, width=bar_width, alpha=alpha
+            color=color, alpha=alpha # width=bar_width, 
         )
         legend_handler = None
     else:
@@ -386,7 +386,7 @@ def __plot_bar(
             errorbar=('sd', 1),
             orient="h" if horizontal else "v",
             palette=sns.color_palette(color_pallete, n_colors=len(group_list)),
-            width=bar_width, alpha=alpha
+            alpha=alpha # width=bar_width, 
         )
         # prepare legend
         handlers, labels = barax.get_legend_handles_labels()
