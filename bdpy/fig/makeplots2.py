@@ -154,7 +154,7 @@ def makeplots2(
             df_t = __weird_form_to_long(df_t, y, identify_cols=weird_keys)
 
             if removenan:
-                df_t.dropna(subset=[y])
+                df_t = df_t.dropna(subset=[y])
 
             # Plot
             ax = plt.subplot(row_num, col_num, sbpos)
@@ -231,9 +231,7 @@ def makeplots2(
             )
             ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', verticalalignment='top',
                     fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
-
             box_off(ax)
-
             plt.tight_layout()
 
         # Draw legend, X/Y labels, and title ----------------------------
@@ -247,7 +245,6 @@ def makeplots2(
             ax.legend(legend_handler[0], legend_handler[1],
                       loc='upper left', bbox_to_anchor=(0, 1.0), fontsize=tick_fontsize)
             ax.set_axis_off()
-            # plt.tight_layout()
 
         ax = fig.add_axes([0, 0, 1, 1])
         ax.patch.set_alpha(0.0)
@@ -272,6 +269,7 @@ def makeplots2(
             else:
                 ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
 
+        plt.tight_layout()
         figs.append(fig)
 
     if figure is None:
@@ -427,9 +425,10 @@ def __plot_violin(
         violinax = ax.violinplot(data, xpos, vert=not horizontal,
                                  showmeans=True, showextrema=False, showmedians=False, points=points)
         # set color to violin
-        for pc in violinax['bodies']:
+        for pc in violinax['bodies']:  # body color
             pc.set_facecolor(to_rgba(color, alpha=alpha))
             pc.set_linewidth(0)
+        violinax['cmeans'].set_color(to_rgba(color, alpha=alpha))  # mean color
         legend_handler = None
     else:
         n_grp = len(group_list)
@@ -459,10 +458,11 @@ def __plot_violin(
                 widths=w * 0.8)
             # set color to violin
             group_color = to_rgba(color_palette[gi], alpha=alpha)
-            for pc in violinax['bodies']:
+            for pc in violinax['bodies']:  # body color
                 pc.set_facecolor(group_color)
                 pc.set_alpha(alpha)
                 pc.set_linewidth(0)
+            violinax['cmeans'].set_color(group_color)  # mean color
             # prepare legend
             legend_handlers.append(mpatches.Patch(color=group_color))
 
