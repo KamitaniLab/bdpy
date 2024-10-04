@@ -428,7 +428,7 @@ def __plot_violin(
         for pc in violinax['bodies']:  # body color
             pc.set_facecolor(to_rgba(color, alpha=alpha))
             pc.set_linewidth(0)
-        violinax['cmeans'].set_color(to_rgba(color, alpha=alpha))  # mean color
+        violinax['cmeans'].set_color(to_rgba(color))  # mean color
         legend_handler = None
     else:
         n_grp = len(group_list)
@@ -462,7 +462,7 @@ def __plot_violin(
                 pc.set_facecolor(group_color)
                 pc.set_alpha(alpha)
                 pc.set_linewidth(0)
-            violinax['cmeans'].set_color(group_color)  # mean color
+            violinax['cmeans'].set_color(color_palette[gi])  # mean color
             # prepare legend
             legend_handlers.append(mpatches.Patch(color=group_color))
 
