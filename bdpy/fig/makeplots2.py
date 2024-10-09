@@ -154,7 +154,7 @@ def makeplots2(
             df_t = __weird_form_to_long(df_t, y, identify_cols=weird_keys)
 
             if removenan:
-                df_t.dropna(subset=[y])
+                df_t = df_t.dropna(subset=[y])
 
             # Plot
             ax = plt.subplot(row_num, col_num, sbpos)
@@ -231,9 +231,7 @@ def makeplots2(
             )
             ax.text(tpos[0], tpos[1], sp_label, horizontalalignment='left', verticalalignment='top',
                     fontsize=fontsize, bbox=dict(facecolor='white', edgecolor='none'))
-
             box_off(ax)
-
             plt.tight_layout()
 
         # Draw legend, X/Y labels, and title ----------------------------
@@ -247,7 +245,6 @@ def makeplots2(
             ax.legend(legend_handler[0], legend_handler[1],
                       loc='upper left', bbox_to_anchor=(0, 1.0), fontsize=tick_fontsize)
             ax.set_axis_off()
-            # plt.tight_layout()
 
         ax = fig.add_axes([0, 0, 1, 1])
         ax.patch.set_alpha(0.0)
@@ -272,6 +269,7 @@ def makeplots2(
             else:
                 ax.text(0.5, 0.99, '{}: {}'.format(title, fig_label), horizontalalignment='center', fontsize=fontsize)
 
+        plt.tight_layout()
         figs.append(fig)
 
     if figure is None:
@@ -359,7 +357,8 @@ def __plot_bar(
     ax, x, y, x_list, df_t,
     horizontal=False,
     group=None, group_list=[],
-    color="#023eff", color_pallete='bright', bar_width=0.8, alpha=0.6,
+    color="#023eff", color_pallete='bright', alpha=0.6,
+    # bar_width=0.8, errorbar = ('ci', 95) # seaborn >= 0.12.0
 ):
     """
     Bar plot
@@ -374,19 +373,19 @@ def __plot_bar(
         barax = sns.barplot(
             data=df_t, ax=ax,
             x=plotx, y=ploty, order=x_list,
-            errorbar=('sd', 1),
             orient="h" if horizontal else "v",
-            color=color, width=bar_width, alpha=alpha
+            color=color, alpha=alpha
+            # width=bar_width, errorbar=errorbar,
         )
         legend_handler = None
     else:
         barax = sns.barplot(
             data=df_t, ax=ax,
             x=plotx, y=ploty, order=x_list, hue=group, hue_order=group_list,
-            errorbar=('sd', 1),
             orient="h" if horizontal else "v",
             palette=sns.color_palette(color_pallete, n_colors=len(group_list)),
-            width=bar_width, alpha=alpha
+            alpha=alpha 
+            # width=bar_width, errorbar=errorbar,
         )
         # prepare legend
         handlers, labels = barax.get_legend_handles_labels()
@@ -426,9 +425,10 @@ def __plot_violin(
         violinax = ax.violinplot(data, xpos, vert=not horizontal,
                                  showmeans=True, showextrema=False, showmedians=False, points=points)
         # set color to violin
-        for pc in violinax['bodies']:
+        for pc in violinax['bodies']:  # body color
             pc.set_facecolor(to_rgba(color, alpha=alpha))
             pc.set_linewidth(0)
+        violinax['cmeans'].set_color(to_rgba(color))  # mean color
         legend_handler = None
     else:
         n_grp = len(group_list)
@@ -458,10 +458,11 @@ def __plot_violin(
                 widths=w * 0.8)
             # set color to violin
             group_color = to_rgba(color_palette[gi], alpha=alpha)
-            for pc in violinax['bodies']:
+            for pc in violinax['bodies']:  # body color
                 pc.set_facecolor(group_color)
                 pc.set_alpha(alpha)
                 pc.set_linewidth(0)
+            violinax['cmeans'].set_color(color_palette[gi])  # mean color
             # prepare legend
             legend_handlers.append(mpatches.Patch(color=group_color))
 
@@ -592,6 +593,10 @@ def __weird_form_to_long(df, target_col, identify_cols=[]):
     identify_cols: list of str
         A list of columns to keep in the decomposed dataframe, other than target_col.
     """
+    # replace NaN to [np.nan]
+    nans = df[target_col].isna()
+    df[target_col][nans] = [np.nan]
+    # Weird form
     df_result = pd.DataFrame()
     for i, row in df.iterrows():
         tmp = {}
