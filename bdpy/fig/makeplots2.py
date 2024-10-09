@@ -593,6 +593,10 @@ def __weird_form_to_long(df, target_col, identify_cols=[]):
     identify_cols: list of str
         A list of columns to keep in the decomposed dataframe, other than target_col.
     """
+    # replace NaN to [np.nan]
+    nans = df[target_col].isna()
+    df[target_col][nans] = [np.nan]
+    # Weird form
     df_result = pd.DataFrame()
     for i, row in df.iterrows():
         tmp = {}
