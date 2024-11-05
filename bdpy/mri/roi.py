@@ -247,7 +247,7 @@ def add_rois(bdata, roi_files, data_type='volume', prefix_map={}, remove_voxel=T
         # List all ROI mask files
         roi_files_all = []
         for roi_files_pt in roi_files:
-            roi_files_all.extend(glob.glob(roi_files_pt))
+            roi_files_all.extend(sorted(glob.glob(roi_files_pt)))
 
         # Group ROI mask files by directories (prefix)
         roi_group = {}
