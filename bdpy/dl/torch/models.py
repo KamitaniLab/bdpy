@@ -147,7 +147,7 @@ def model_factory(name: str) -> nn.Module:
 
     if name == "alexnet":
         return AlexNet()
-    elif name == "referencenet":
+    elif name == "reference_net":
         return ReferenceNet()
     elif name == "vgg19":
         return VGG19()
