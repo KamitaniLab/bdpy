@@ -83,6 +83,84 @@ class AffineDomain(Domain):
     ) -> None:
         super().__init__()
 
+        raise RuntimeError(
+            "AffineDomain is deprecated. Please use StandardizedDomain instead."
+        )
+
+    def send(self, images: torch.Tensor) -> torch.Tensor:
+        return (images + self._center)  / self._scale
+
+    def receive(self, images: torch.Tensor) -> torch.Tensor:
+        return images * self._scale - self._center
+
+
+class ScaledDomain(Domain):
+    """Image domain scaled by scale.
+
+    The pixel intensity p of the images in this domain is in [0, scale].
+
+    Parameters
+    ----------
+    scale : float
+    device : torch.device | None
+        Device to send/receive images.
+    dtype : torch.dtype | None
+        Data type to send/receive images.
+    """
+
+    def __init__(
+        self,
+        scale: float,
+        *,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+
+        scale = np.array([scale])[np.newaxis, np.newaxis, np.newaxis]
+        self._scale = torch.from_numpy(scale).to(device=device, dtype=dtype)
+
+    def send(self, images: torch.Tensor) -> torch.Tensor:
+        return images / self._scale
+
+    def receive(self, images: torch.Tensor) -> torch.Tensor:
+        return images * self._scale
+
+
+class StandardizedDomain(Domain):
+    """Image domain standardized by center and scale.
+
+    The images in this domain are standardized by center and scale.
+    `domain.reveive(images)` converts the pixel intensity p in [0, 1] to (p - center) / scale.
+
+    Parameters
+    ----------
+    center : float | np.ndarray
+        Center of the affine transformation.
+        If center.ndim == 0, it must be scalar.
+        If center.ndim == 1, it must be 1D vector (C,).
+        If center.ndim == 3, it must be 3D vector (1, C, W, H).
+    scale : float | np.ndarray
+        Scale of the affine transformation.
+        If scale.ndim == 0, it must be scalar.
+        If scale.ndim == 1, it must be 1D vector (C,).
+        If scale.ndim == 3, it must be 3D vector (1, C, W, H).
+    device : torch.device | None
+        Device to send/receive images.
+    dtype : torch.dtype | None
+        Data type to send/receive images.
+    """
+
+    def __init__(
+        self,
+        center: float | np.ndarray,
+        scale: float | np.ndarray,
+        *,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__()
+
         if isinstance(center, (float, int)) or center.ndim == 0:
             center = np.array([center])[np.newaxis, np.newaxis, np.newaxis]
         elif center.ndim == 1:  # 1D vector (C,)
@@ -108,10 +186,10 @@ class AffineDomain(Domain):
         self._scale = torch.from_numpy(scale).to(device=device, dtype=dtype)
 
     def send(self, images: torch.Tensor) -> torch.Tensor:
-        return (images + self._center)  / self._scale
+        return images * self._scale + self._center
 
     def receive(self, images: torch.Tensor) -> torch.Tensor:
-        return images * self._scale - self._center
+        return (images - self._center)  / self._scale
 
 
 class BGRDomain(Domain):
@@ -178,9 +256,10 @@ class BdPyVGGDomain(ComposedDomain):
     ) -> None:
         super().__init__(
             [
-                AffineDomain(
+                ScaledDomain(255., device=device, dtype=dtype),
+                StandardizedDomain(
                     center=np.array([123.0, 117.0, 104.0]),
-                    scale=255.0,
+                    scale=1.,
                     device=device,
                     dtype=dtype,
                 ),
