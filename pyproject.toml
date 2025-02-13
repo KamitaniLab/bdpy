@@ -23,6 +23,7 @@ dependencies = [
     "pyyaml",
     "pandas",
     "tqdm",
+    "typing-extensions>=4.5",
 ]
 
 [project.optional-dependencies]
