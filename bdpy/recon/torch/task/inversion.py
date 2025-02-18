@@ -1,21 +1,24 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, Callable
+from typing import Dict, Iterable, Callable, TYPE_CHECKING
 
 from itertools import chain
 
-import torch
-
-from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
 from bdpy.task import BaseTask
 from bdpy.task.callback import BaseCallback, unused, _validate_callback
 
-FeatureType = Dict[str, torch.Tensor]
+if TYPE_CHECKING:
+    import torch
+
+    from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
+    from ..modules.optimizer import _OptimizerFactoryType, _SchedulerFactoryType
+
+    _FeatureType = Dict[str, torch.Tensor]
 
 
 def _apply_to_features(
-    fn: Callable[[torch.Tensor], torch.Tensor], features: FeatureType
-) -> FeatureType:
+    fn: Callable[[torch.Tensor], torch.Tensor], features: _FeatureType
+) -> _FeatureType:
     return {k: fn(v) for k, v in features.items()}
 
 
@@ -115,10 +118,10 @@ class FeatureInversionTask(BaseTask):
         Latent variable module.
     critic : BaseCritic
         Critic module.
-    optimizer : torch.optim.Optimizer
-        Optimizer.
-    scheduler : torch.optim.lr_scheduler.LRScheduler, optional
-        Learning rate scheduler, by default None.
+    optimizer_factory : _OptimizerFactoryType
+        Factory function for optimizer.
+    scheduler_factory : _SchedulerFactoryType | None, optional
+        Factory function for scheduler, by default None.
     num_iterations : int, optional
         Number of iterations, by default 1.
     callbacks : FeatureInversionCallback | Iterable[FeatureInversionCallback] | None, optional
@@ -135,9 +138,9 @@ class FeatureInversionTask(BaseTask):
     >>> generator = build_generator(...)
     >>> latent = ArbitraryLatent(...)
     >>> critic = TargetNormalizedMSE(...)
-    >>> optimizer = torch.optim.Adam(latent.parameters())
+    >>> optimizer_factory = build_optimizer_factory(...)
     >>> task = FeatureInversionTask(
-    ...     encoder, generator, latent, critic, optimizer, num_iterations=200,
+    ...     encoder, generator, latent, critic, optimizer_factory, num_iterations=200,
     ... )
     >>> target_features = encoder(target_image)
     >>> reconstructed_image = task(target_features)
@@ -149,8 +152,8 @@ class FeatureInversionTask(BaseTask):
         generator: BaseGenerator,
         latent: BaseLatent,
         critic: BaseCritic,
-        optimizer: torch.optim.Optimizer,
-        scheduler: torch.optim.lr_scheduler.LRScheduler = None,
+        optimizer_factory: _OptimizerFactoryType,
+        scheduler_factory: _SchedulerFactoryType | None = None,
         num_iterations: int = 1,
         callbacks: FeatureInversionCallback
         | Iterable[FeatureInversionCallback]
@@ -161,14 +164,14 @@ class FeatureInversionTask(BaseTask):
         self._generator = generator
         self._latent = latent
         self._critic = critic
-        self._optimizer = optimizer
-        self._scheduler = scheduler
+        self._optimizer_factory = optimizer_factory
+        self._scheduler_factory = scheduler_factory
 
         self._num_iterations = num_iterations
 
     def run(
         self,
-        target_features: FeatureType,
+        target_features: _FeatureType,
     ) -> torch.Tensor:
         """Run feature inversion given target features.
 
@@ -217,10 +220,8 @@ class FeatureInversionTask(BaseTask):
         """Reset the state of the task."""
         self._generator.reset_states()
         self._latent.reset_states()
-        self._optimizer = self._optimizer.__class__(
-            chain(
-                self._generator.parameters(),
-                self._latent.parameters(),
-            ),
-            **self._optimizer.defaults,
-        )
+        self._optimizer = self._optimizer_factory(self._generator, self._latent)
+        if self._scheduler_factory is not None:
+            self._scheduler = self._scheduler_factory(self._optimizer)
+        else:
+            self._scheduler = None
