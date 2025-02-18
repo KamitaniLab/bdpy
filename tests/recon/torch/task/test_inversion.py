@@ -171,7 +171,6 @@ class TestFeatureInversionTask(unittest.TestCase):
         self.generator = generator_module.DNNGenerator(LinearGenerator())
         self.latent = DummyNNModuleLatent(self.init_latent.clone())
         self.critic = critic_module.MSE()
-        # self.optimizer = optim.SGD([self.latent.latent], lr=0.1)
         self.optimizer_factory = optimizer_module.build_optimizer_factory(optim.SGD, lr=0.1)
         self.callbacks = DummyFeatureInversionCallback()
 
