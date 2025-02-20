@@ -32,8 +32,8 @@ class FeatureExtractor:
     def __init__(
             self, 
             encoder: nn.Module, 
-            layers: list, 
-            layer_mapping: Optional[dict[str, str]] = None, 
+            layers: List[str], 
+            layer_mapping: Optional[Dict[str, str]] = None, 
             device: str = 'cpu',
             detach: bool = False,
             transform: Optional[callable] = None, 
@@ -80,16 +80,16 @@ class FeatureExtractor:
             )
             self._hook_handler[name] = hook_handle  # Store the actual hook handle
     
-    def __call__(self, x: Union[torch.Tensor, np.ndarray]) -> dict[str, Union[torch.Tensor, np.ndarray]]:
+    def __call__(self, x: Union[torch.Tensor, np.ndarray]) -> Dict[str, Union[torch.Tensor, np.ndarray]]:
         return self.run(x)
     
-    def run(self, x: Union[torch.Tensor, np.ndarray]) -> dict[str, Union[torch.Tensor, np.ndarray]]:
+    def run(self, x: Union[torch.Tensor, np.ndarray]) -> Dict[str, Union[torch.Tensor, np.ndarray]]:
         """
         Feeds input through the encoder and extracts features.
         
         Parameters
         ----------
-        x : torch.Tensor
+        x : torch.Tensor or np.ndarray
             Input tensor to be processed by the encoder.
         
         Returns:
