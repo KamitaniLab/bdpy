@@ -1,24 +1,36 @@
 from __future__ import annotations
 
-from typing import Callable, Iterator, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from functools import partial
 from itertools import chain
 
 if TYPE_CHECKING:
-    from torch.nn import Parameter
+    from typing import Dict, Any, Tuple, Union, Iterable, Callable
+    from typing_extensions import TypeAlias
+    from torch import Tensor
     import torch.optim as optim
     from ..modules import BaseGenerator, BaseLatent
 
-    _OptimizerFactoryType = Callable[[BaseGenerator, BaseLatent], optim.Optimizer]
-    _SchedulerFactoryType = Callable[[optim.Optimizer], optim.lr_scheduler.LRScheduler]
-    _GetParamsFnType = Callable[[BaseGenerator, BaseLatent], Iterator[Parameter]]
+    # NOTE: The definition of `_ParamsT` is the same as in `torch.optim.optimizer`
+    #       in torch>=2.2.0. We define it here for compatibility with older versions.
+    _ParamsT: TypeAlias = Union[
+        Iterable[Tensor], Iterable[Dict[str, Any]], Iterable[Tuple[str, Tensor]]
+    ]
+
+    _OptimizerFactoryType: TypeAlias = Callable[
+        [BaseGenerator, BaseLatent], optim.Optimizer
+    ]
+    _SchedulerFactoryType: TypeAlias = Callable[
+        [optim.Optimizer], optim.lr_scheduler.LRScheduler
+    ]
+    _GetParamsFnType: TypeAlias = Callable[[BaseGenerator, BaseLatent], _ParamsT]
 
 
 def build_optimizer_factory(
     optimizer_class: type[optim.Optimizer],
     *,
     get_params_fn: _GetParamsFnType | None = None,
-    **kwargs
+    **kwargs,
 ) -> _OptimizerFactoryType:
     """Build an optimizer factory.
 
@@ -26,7 +38,7 @@ def build_optimizer_factory(
     ----------
     optimizer_class : type
         Optimizer class.
-    get_params_fn : Callable[[BaseGenerator, BaseLatent], Iterator[Parameter]] | None
+    get_params_fn : Callable[[BaseGenerator, BaseLatent], _ParamsT] | None
         Custom function to get parameters from the generator and the latent.
         If None, it uses `chain(generator.parameters(), latent.parameters())`.
     kwargs : dict
