@@ -32,11 +32,11 @@ class FeatureExtractor:
     def __init__(
             self, 
             encoder: nn.Module, 
-            layers: List[str], 
+            layers: Iterable[str], 
             layer_mapping: Optional[Dict[str, str]] = None, 
             device: str = 'cpu',
             detach: bool = False,
-            transform: Optional[callable] = None, 
+            transform: Optional[Callable[[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]] = None, 
         ):
         """
         Initializes the feature extractor.
@@ -45,7 +45,7 @@ class FeatureExtractor:
         ----------
         encoder : nn.Module 
             The encoder to extract features from.
-        layers : list
+        layers : Iterable[str]
             List of names of layers to extract features.
         layer_mapping : dict, optional
             Mapping of human-readable layer names to actual layer names.
@@ -53,7 +53,7 @@ class FeatureExtractor:
             Device to run the encoder on. Defaults to 'cpu'.
         detach : bool, optional
             Whether to detach the extracted feature tensors. Defaults to False.
-        transform :callable, optional 
+        transform : Callable[[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]], optional 
             A function that receives extracted features dict and returns transformed features.
             Example usage: turning a tuple into a tensor on transformer models.
         """
@@ -100,6 +100,12 @@ class FeatureExtractor:
         """
         if not isinstance(x, torch.Tensor):
             # TODO: From legacy code. Is this necessary?
+            warnings.warn(
+                "In future versions, it will no longer be possible to input ndarrays " \
+                "directly into FeatureExtractor. Please convert the input to torch.Tensor.",
+                DeprecationWarning,
+                stacklevel=2
+            )
             x = torch.tensor(x[np.newaxis], device=self.device)
 
         self._features.clear()  # Clear previous feature maps
