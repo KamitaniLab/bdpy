@@ -35,7 +35,7 @@ class FeatureExtractor:
             layers: Iterable[str], 
             layer_mapping: Optional[Dict[str, str]] = None, 
             device: str = 'cpu',
-            detach: bool = False,
+            detach: bool = True,
             transform: Optional[Callable[[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]] = None, 
         ):
         """
@@ -65,7 +65,7 @@ class FeatureExtractor:
         self.transform = transform
 
         self._features = OrderedDict()  # dict to store extracted features
-        self._hook_handler = {}         # layer name -> hook handler object for deleting them
+        self._hook_handlers = {}         # layer name -> hook handler object for deleting them
         self._register_hooks()
 
         self.encoder.to(self.device)
@@ -78,7 +78,7 @@ class FeatureExtractor:
             hook_handle = layer_obj.register_forward_hook(
                 _Hook(name, self._features, self.detach)
             )
-            self._hook_handler[name] = hook_handle  # Store the actual hook handle
+            self._hook_handlers[name] = hook_handle  # Store the actual hook handle
     
     def __call__(self, x: Union[torch.Tensor, np.ndarray]) -> Dict[str, Union[torch.Tensor, np.ndarray]]:
         return self.run(x)
@@ -122,9 +122,9 @@ class FeatureExtractor:
 
     def __del__(self):
         """Removes all registered hooks when the instance is deleted."""
-        for name, hook in self._hook_handler.items():
-            hook.remove()
-        self._hook_handler.clear()
+        for name, hook_handler in self._hook_handlers.items():
+            hook_handler.remove()
+        self._hook_handlers.clear()
 
 
 class ImageDataset(torch.utils.data.Dataset):
