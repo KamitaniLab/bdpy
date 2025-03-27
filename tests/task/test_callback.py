@@ -9,7 +9,7 @@ from bdpy.task import callback as callback_module
 
 
 # NOTE: setup functions
-def setup_fns() -> list[tuple[Callable, tuple[Any], Any]]:
+def setup_fns() -> list[tuple[Callable, tuple[Any, ...], Any]]:
     def f1(input_: Any) -> None:
         pass
 
@@ -71,7 +71,6 @@ class TestUnused(unittest.TestCase):
             ...
             RuntimeError: Function <function f at ...> is decorated with @unused and must not be called.
         """
-
         params = setup_fns()
         for fn, inputs_, output in params:
             self.assertTrue(
