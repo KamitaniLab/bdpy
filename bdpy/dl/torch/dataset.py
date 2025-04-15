@@ -170,10 +170,7 @@ class ImageDataset(Dataset):
     ):
         self.root_path = root_path
         if stimulus_names is None:
-            stimulus_names = [
-                _removesuffix(path.name, "." + extension)
-                for path in Path(root_path).glob(f"*{extension}")
-            ]
+            stimulus_names = [path.stem for path in Path(root_path).glob(f"*{extension}")]
         self._stimulus_names = stimulus_names
         self._extension = extension
 
@@ -184,7 +181,7 @@ class ImageDataset(Dataset):
         stimulus_name = self._stimulus_names[index]
         image = Image.open(Path(self.root_path) / f"{stimulus_name}.{self._extension}")
         image = image.convert("RGB")
-        return np.array(image) / 255.0, stimulus_name
+        return np.array(image).transpose(2, 0, 1) / 255.0, stimulus_name
 
 
 class RenameFeatureKeys:
