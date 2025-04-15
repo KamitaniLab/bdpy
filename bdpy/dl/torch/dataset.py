@@ -181,7 +181,7 @@ class ImageDataset(Dataset):
         stimulus_name = self._stimulus_names[index]
         image = Image.open(Path(self.root_path) / f"{stimulus_name}.{self._extension}")
         image = image.convert("RGB")
-        return np.array(image).transpose(0, 3, 1, 2) / 255.0, stimulus_name
+        return np.array(image).transpose(2, 0, 1) / 255.0, stimulus_name
 
 
 class RenameFeatureKeys:
