@@ -333,14 +333,14 @@ def __parse_bids_dir(dpath, data_info=None):
     print('%d func session(s) found' % len(ses_dirs))
 
     sessions = []
-    unskip_session_counter = -1
+    unskip_session_counter = 0 # A correction counter to correspond to 'discard_run' when a session is skipped, such as "ses: [2,3]".
     for i, ses_dir in enumerate(ses_dirs):
         session_id = i + 1
 
         # Session selection
         if (not data_info is None) and 'ses' in data_info:
             if session_id not in data_info['ses']:
-                print('Skipping session %02d' % (i + 1))
+                print('Skipping session %02d' % (session_id))
                 continue
         
         # T2 inplane image
@@ -352,7 +352,6 @@ def __parse_bids_dir(dpath, data_info=None):
         # Functionals
         run_files = __aggregate_runs(ses_dir, mri_filetype='nii') + __aggregate_runs(ses_dir, mri_filetype='nii.gz')
         print('Ses %02d: %d run(s) found' % (session_id, len(run_files)))
-        #print(run_files)
 
         # Run selection
         run_files_keep = []
