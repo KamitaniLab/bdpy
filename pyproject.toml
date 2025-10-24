@@ -92,7 +92,7 @@ only-include = ["bdpy"]
 only-include = ["bdpy"]
 
 [tool.ruff]
-select = ["E", "F", "N", "D", "ANN", "B", "NPY", "RUF"]
+select = ["E", "F", "I", "N", "D", "ANN", "B", "NPY", "RUF"]
 ignore = ["E501"]
 exclude = ["tests"]
 
