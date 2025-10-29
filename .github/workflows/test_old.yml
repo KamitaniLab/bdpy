@@ -2,7 +2,7 @@ name: test_old
 
 on:
   push:
-    branches: [ "test_old" ]
+    branches: [ "feat/py36+" ]
 
 jobs:
   test_py36_py37:
@@ -31,6 +31,16 @@ jobs:
       run: |
         (
           set -o pipefail
-          pytest --junitxml=pytest.yml \
-            --cov-report=term-missing:skip-covered --cov=bdpy tests | tee pytest-coverage.txt
+          if [ "${{ matrix.python-version }}" == "3.6" ]; then
+            pytest \
+              --ignore=tests/dl/torch \
+              --ignore=tests/recon/torch \
+              --ignore=tests/task \
+              --junitxml=pytest.yml \
+              --cov-report=term-missing:skip-covered --cov=bdpy tests | tee pytest-coverage.txt
+          else
+            pytest \
+              --junitxml=pytest.yml \
+              --cov-report=term-missing:skip-covered --cov=bdpy tests | tee pytest-coverage.txt
+          fi
         )
