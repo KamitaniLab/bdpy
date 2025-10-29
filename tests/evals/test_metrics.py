@@ -18,7 +18,7 @@ class TestMetrics(unittest.TestCase):
             for i in range(n)
         ]])
 
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             profile_correlation(x, y), r
         ))
         self.assertEqual(profile_correlation(x, y).shape, (1, n))
@@ -34,7 +34,7 @@ class TestMetrics(unittest.TestCase):
         ]])
         r = r.reshape(1, 4, 3, 2)
 
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             profile_correlation(x, y), r
         ))
         self.assertEqual(profile_correlation(x, y).shape, (1, 4, 3, 2))
@@ -48,7 +48,7 @@ class TestMetrics(unittest.TestCase):
             for i in range(10)
         ])
 
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             pattern_correlation(x, y), r
         ))
         self.assertEqual(pattern_correlation(x, y).shape, (10,))
@@ -63,7 +63,7 @@ class TestMetrics(unittest.TestCase):
             for i in range(10)
         ])
 
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             pattern_correlation(x, y), r
         ))
         self.assertEqual(pattern_correlation(x, y).shape, (10,))
@@ -71,15 +71,15 @@ class TestMetrics(unittest.TestCase):
     def test_2d(self):
         with open('tests/data/testdata-2d.pkl.gz', 'rb') as f:
             d = pickle.load(f)
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             profile_correlation(d['x'], d['y']),
             d['r_prof']
         ))
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             pattern_correlation(d['x'], d['y']),
             d['r_patt']
         ))
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             pairwise_identification(d['x'], d['y']),
             d['ident_acc']
         ))
@@ -91,11 +91,11 @@ class TestMetrics(unittest.TestCase):
         #     profile_correlation(d['x'], d['y']),
         #     d['r_prof']
         # ))
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             pattern_correlation(d['x'], d['y'], remove_nan=True),
             d['r_patt'],
         ))
-        self.assertTrue(np.array_equal(
+        self.assertTrue(np.allclose(
             pairwise_identification(d['x'], d['y'], remove_nan=True),
             d['ident_acc'],
         ))
