@@ -2,7 +2,7 @@ name: test_old
 
 on:
   push:
-    branches: [ "feat/py36+" ]
+    branches: [ "test_old" ]
 
 jobs:
   test_py36_py37:
