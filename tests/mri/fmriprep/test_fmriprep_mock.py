@@ -219,16 +219,35 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
             "voxel_j",
             "voxel_k",
         ]
+        # Surface keys: VoxelData -> VertexData, voxel_x/y/z/i/j/k -> vertex_index +
+        # the VertexLeft/VertexRight indicator metadata. The remaining keys
+        # (Session/Run/Block/Label/MotionParameter/Confounds/label submeta) are
+        # identical because production handles them identically for volume and
+        # surface modes.
+        self.surface_check_keys = [
+            "VertexData",
+            "VertexLeft",
+            "VertexRight",
+            "vertex_index",
+        ] + [
+            k for k in self.check_keys
+            if k not in {"VoxelData", "voxel_x", "voxel_y", "voxel_z", "voxel_i", "voxel_j", "voxel_k"}
+        ]
 
     def _num_voxels(self) -> int:
         """Return the voxel count in the mock volume."""
         return int(np.prod(DATA_BUILDER.voxel_shape))
-    
+
     # helper to build expected BData after applying exclude
-    def _expected_after_exclude(self, exclude: Optional[dict] = None) -> bdpy.BData:
+    def _expected_after_exclude(
+        self, exclude: Optional[dict] = None, data_mode: str = "volume_native"
+    ) -> bdpy.BData:
         """Build the expected BData after applying exclusions."""
         return build_expected_bdata_after_exclude(
-            DATA_BUILDER, {"stimulus_name": {"face": 1, "scene": 2}}, exclude=exclude
+            DATA_BUILDER,
+            {"stimulus_name": {"face": 1, "scene": 2}},
+            exclude=exclude,
+            data_mode=data_mode,
         )
     
     # helper to get expected sample count after applying exclude
@@ -307,6 +326,70 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
             for key in self.check_keys:
                 np.testing.assert_array_equal(brain_data.get(key), expected_bdata.get(key))
 
+    def test_create_bdata_fmriprep_surface_native_gm(self) -> None:
+        """Match the surface_native BData against the golden master.
+
+        This test uses a golden-master file; to add or change coverage,
+        regenerate it via ``TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1``.
+        """
+        exclude = {"session/run": [[1, 2], None]}
+        save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_surface.h5"
+        # -------------------------------------------------------------
+        # FOR GOLDEN MASTER UPDATE ONLY:
+        if CREATE_GOLDEN_MASTER:
+            expected_bdata = self._expected_after_exclude(exclude, data_mode="surface_native")
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            expected_bdata.save(save_path)
+        # -------------------------------------------------------------
+
+        expected_bdata = bdpy.BData(str(save_path))
+        bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
+            dpath=self.data_root.as_posix(),
+            data_mode="surface_native",
+            fmriprep_dir="derivatives/fmriprep",
+            label_mapper=self.label_mapper,
+            exclude=exclude,
+            split_task_label=False,
+            with_confounds=True,
+            return_data_labels=True,
+            return_list=True,
+        )
+        self.assertEqual(data_labels_list, [self.subject])
+        self.assertEqual(len(bdata_list), 1)
+        brain_data = bdata_list[0]
+        for key in self.surface_check_keys:
+            np.testing.assert_array_equal(brain_data.get(key), expected_bdata.get(key))
+
+    def test_create_bdata_fmriprep_split_task_label_single_task(self) -> None:
+        """split_task_label=True exercises the per-task split branch.
+
+        The mock dataset uses a single task label (``task-mock``), so this test
+        verifies that:
+        (a) data_labels carry the ``<subject>_<task>`` suffix produced by the
+            split branch (bdpy/mri/fmriprep.py L331-L340);
+        (b) the returned BData is content-identical to the non-split golden
+            master because there is only one task to split on.
+
+        Multi-task split (where bdata_list has more than one element) is
+        covered by test_fmriprep_real.py with actual fMRIPrep outputs.
+        """
+        save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5"
+        expected_bdata = bdpy.BData(str(save_path))
+        bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
+            dpath=self.data_root.as_posix(),
+            data_mode="volume_native",
+            fmriprep_dir="derivatives/fmriprep",
+            label_mapper=self.label_mapper,
+            split_task_label=True,
+            with_confounds=True,
+            return_data_labels=True,
+            return_list=True,
+        )
+        self.assertEqual(data_labels_list, [f"{self.subject}_task-mock"])
+        self.assertEqual(len(bdata_list), 1)
+        brain_data = bdata_list[0]
+        for key in self.check_keys:
+            np.testing.assert_array_equal(brain_data.get(key), expected_bdata.get(key))
 
     def test_create_bdata_fmriprep_surface_native(self) -> None:
         """Create native-surface data with the expected shape."""

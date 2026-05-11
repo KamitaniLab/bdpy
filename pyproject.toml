@@ -111,3 +111,8 @@ convention = "numpy"
 
 [tool.pylint]
 disable = "line-too-long"
+
+[tool.pytest.ini_options]
+markers = [
+    "real_data: tests that require an external fMRIPrep dataset (e.g. OpenNeuro ds006319). Excluded from CI; run with `pytest -m real_data` locally.",
+]

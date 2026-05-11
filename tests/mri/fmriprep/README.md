@@ -60,6 +60,7 @@ Mock golden-master files:
 
 - `./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5`
 - `./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_exclude.h5`
+- `./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_surface.h5`
 
 If you need to regenerate them manually:
 
@@ -68,6 +69,14 @@ TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1 "${PYTHON_BIN:-python}" -m pytest ./tests/m
 ```
 
 ## Real-Data Tests
+
+The real-data tests are marked with `pytest.mark.real_data`, so CI runs `pytest -m "not real_data"` to skip them automatically. To execute them locally, use one of:
+
+```bash
+"${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/test_fmriprep_real.py
+# or, equivalently, select by marker:
+"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/
+```
 
 The real-data workflow is staged because it depends on external data and preprocessing outputs.
 

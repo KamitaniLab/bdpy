@@ -265,10 +265,29 @@ class MockBidsBuilder:
         return 9 + run_no
 
 
+_SURFACE_MODES = (
+    "surface_native",
+    "surface_standard",
+    "surface_standard_41k",
+    "surface_standard_10k",
+)
+
+
 def build_expected_bdata_after_exclude(
-    builder: MockBidsBuilder, label_mapper_dict: Dict[str, Dict[str, int]], exclude: Optional[Dict] = None
+    builder: MockBidsBuilder,
+    label_mapper_dict: Dict[str, Dict[str, int]],
+    exclude: Optional[Dict] = None,
+    data_mode: str = "volume_native",
 ) -> bdpy.BData:
-    """Reconstruct expected BData matching __create_bdata_fmriprep_subject output."""
+    """Reconstruct expected BData matching __create_bdata_fmriprep_subject output.
+
+    Supports ``volume_native`` (default) and the four surface modes
+    (``surface_native``, ``surface_standard``, ``surface_standard_41k``,
+    ``surface_standard_10k``). For surface modes, GIFTI files are loaded
+    via nibabel and L/R hemispheres are hstacked to mirror the production
+    ``BrainData.__load_surface`` path.
+    """
+    is_surf = data_mode in _SURFACE_MODES
 
     class _LabelMapper:
         def __init__(self, l2v_map: Dict[str, Dict[str, int]]):
@@ -325,7 +344,7 @@ def build_expected_bdata_after_exclude(
 
             if filtered_runs:
                 include_sessions[ses] = filtered_runs
-    voxel_list = []
+    braindata_list = []
     motion_list = []
     confounds_dict: Dict[str, Dict[int, np.ndarray]] = {}
     ses_label_list = []
@@ -334,6 +353,7 @@ def build_expected_bdata_after_exclude(
     labels_list = []
     last_xyz = None
     last_ijk = None
+    last_n_vertex: Optional[Tuple[int, int]] = None
     last_run = 0
     last_block = 0
     run_idx = 0
@@ -341,23 +361,39 @@ def build_expected_bdata_after_exclude(
     for i, (ses, runs) in enumerate(include_sessions.items()):
         for j, run in enumerate(runs):
             run_idx += 1
-            epi_path = builder.root / run["volume_native"]
             conf_path = builder.root / run["confounds"]
             base_name = Path(run["confounds"]).name.replace("_desc-confounds_regressors.tsv", "")
             event_path = builder.root / builder.subject / ses / "func" / f"{base_name}_events.tsv"
             bold_path = builder.root / builder.subject / ses / "func" / f"{base_name}_bold.json"
 
-            img_arr = builder.data_map[str(epi_path)]
-            voxel = img_arr.reshape(-1, img_arr.shape[-1], order="F").T
-            voxel_list.append(voxel)
+            if is_surf:
+                left_rel, right_rel = run[data_mode]
+                left_img = nib.load(str(builder.root / left_rel))
+                right_img = nib.load(str(builder.root / right_rel))
+                left_data = np.vstack([d.data for d in left_img.darrays])
+                right_data = np.vstack([d.data for d in right_img.darrays])
+                braindata_run = np.hstack([left_data, right_data])
+                braindata_list.append(braindata_run)
 
-            i_len, j_len, k_len, _ = img_arr.shape
-            ijk = np.array(np.unravel_index(np.arange(i_len * j_len * k_len), (i_len, j_len, k_len), order="F"))
-            ijk_b = np.vstack([ijk, np.ones((1, i_len * j_len * k_len))])
-            affine = np.delete(np.delete(np.eye(5), 3, axis=0), 3, axis=1)
-            xyz = (affine @ ijk_b)[:-1]
-            last_xyz = xyz
-            last_ijk = ijk
+                n_left = int(left_data.shape[1])
+                n_right = int(right_data.shape[1])
+                last_n_vertex = (n_left, n_right)
+                last_ijk = np.array(
+                    [np.hstack([np.arange(n_left), np.arange(n_right)])]
+                )
+            else:
+                epi_path = builder.root / run["volume_native"]
+                img_arr = builder.data_map[str(epi_path)]
+                voxel = img_arr.reshape(-1, img_arr.shape[-1], order="F").T
+                braindata_list.append(voxel)
+
+                i_len, j_len, k_len, _ = img_arr.shape
+                ijk = np.array(np.unravel_index(np.arange(i_len * j_len * k_len), (i_len, j_len, k_len), order="F"))
+                ijk_b = np.vstack([ijk, np.ones((1, i_len * j_len * k_len))])
+                affine = np.delete(np.delete(np.eye(5), 3, axis=0), 3, axis=1)
+                xyz = (affine @ ijk_b)[:-1]
+                last_xyz = xyz
+                last_ijk = ijk
 
             conf_pd = builder.confounds_map[str(conf_path)]
             motion_cols = [c for c in conf_pd.columns if c in ["X", "Y", "Z", "RotX", "RotY", "RotZ"]]
@@ -389,7 +425,7 @@ def build_expected_bdata_after_exclude(
                 label_vals = np.array([np.nan if x == "n/a" else float(x) for x in label_vals])
                 labels.append(np.tile(label_vals, (nsmp, 1)))
 
-            num_vol = voxel.shape[0]
+            num_vol = braindata_list[-1].shape[0]
             ses_label_list.append(np.ones((num_vol, 1)) * (i + 1))
             run_label_list.append(np.ones((num_vol, 1)) * (j + 1) + last_run)
             block_label_list.append(np.vstack(blocks) + last_block)
@@ -397,7 +433,7 @@ def build_expected_bdata_after_exclude(
             last_block = block_label_list[-1][-1]
         last_run = run_label_list[-1][-1]
 
-    braindata = np.vstack(voxel_list)
+    braindata = np.vstack(braindata_list)
     motionparam = np.vstack(motion_list)
     ses_label = np.vstack(ses_label_list)
     run_label = np.vstack(run_label_list)
@@ -411,14 +447,31 @@ def build_expected_bdata_after_exclude(
             if (k + 1) in confounds[c]:
                 conf_val_list.append(confounds[c][k + 1])
             else:
-                run_length = voxel_list[k].shape[0]
+                run_length = braindata_list[k].shape[0]
                 nan_array = np.zeros([run_length, 1])
                 nan_array[:, :] = np.nan
                 conf_val_list.append(nan_array)
         confounds[c] = np.vstack(conf_val_list)
 
     expected_bdata = bdpy.BData()
-    expected_bdata.add(braindata, "VoxelData")
+    if is_surf:
+        expected_bdata.add(braindata, "VertexData")
+        assert last_n_vertex is not None
+        n_left, n_right = last_n_vertex
+        expected_bdata.add_metadata(
+            "VertexLeft",
+            np.array([1] * n_left + [0] * n_right),
+            "",
+            where="VertexData",
+        )
+        expected_bdata.add_metadata(
+            "VertexRight",
+            np.array([0] * n_left + [1] * n_right),
+            "",
+            where="VertexData",
+        )
+    else:
+        expected_bdata.add(braindata, "VoxelData")
     expected_bdata.add(ses_label, "Session")
     expected_bdata.add(run_label, "Run")
     expected_bdata.add(block_label, "Block")
@@ -482,13 +535,19 @@ def build_expected_bdata_after_exclude(
     for idx, col in enumerate(label_cols):
         expected_bdata.add_metadata(col, np.array([np.nan if i != idx else 1 for i in range(len(label_cols))], dtype=float), f"Label {col}", where="Label")
 
-    if last_xyz is not None and last_ijk is not None:
-        expected_bdata.add_metadata("voxel_x", last_xyz[0, :], "Voxel x coordinate", where="VoxelData")
-        expected_bdata.add_metadata("voxel_y", last_xyz[1, :], "Voxel y coordinate", where="VoxelData")
-        expected_bdata.add_metadata("voxel_z", last_xyz[2, :], "Voxel z coordinate", where="VoxelData")
-        expected_bdata.add_metadata("voxel_i", last_ijk[0, :], "Voxel i index", where="VoxelData")
-        expected_bdata.add_metadata("voxel_j", last_ijk[1, :], "Voxel j index", where="VoxelData")
-        expected_bdata.add_metadata("voxel_k", last_ijk[2, :], "Voxel k index", where="VoxelData")
+    if is_surf:
+        if last_ijk is not None:
+            expected_bdata.add_metadata(
+                "vertex_index", last_ijk[0, :], "Vertex index", where="VertexData"
+            )
+    else:
+        if last_xyz is not None and last_ijk is not None:
+            expected_bdata.add_metadata("voxel_x", last_xyz[0, :], "Voxel x coordinate", where="VoxelData")
+            expected_bdata.add_metadata("voxel_y", last_xyz[1, :], "Voxel y coordinate", where="VoxelData")
+            expected_bdata.add_metadata("voxel_z", last_xyz[2, :], "Voxel z coordinate", where="VoxelData")
+            expected_bdata.add_metadata("voxel_i", last_ijk[0, :], "Voxel i index", where="VoxelData")
+            expected_bdata.add_metadata("voxel_j", last_ijk[1, :], "Voxel j index", where="VoxelData")
+            expected_bdata.add_metadata("voxel_k", last_ijk[2, :], "Voxel k index", where="VoxelData")
 
     vmap = act_label_map.dump()
     for k in vmap:

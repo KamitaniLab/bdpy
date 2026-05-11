@@ -2,7 +2,7 @@
 
 This document summarizes what the current test suite covers, what remains untested, and known implementation issues observed during test reorganization.
 
-_Last updated: 2026-04-06_
+_Last updated: 2026-05-11_
 
 ## Test Coverage Summary
 
@@ -46,8 +46,8 @@ Top-level orchestrator. Parses with `FmriprepData`, applies exclusions (`subject
 | --- | --- |
 | Test status | Partially covered; known issues remain |
 | Real-data dependency | Replaced by mock data |
-| Existing tests | `TestCreateBdataFmriprepMock`: golden masters (with/without exclusion), surface modes, empty list when subject excluded / `TestFmriprepDataFailures` (execution failures): missing confounds, missing motion columns, unknown labels |
-| Gaps / issues | (1) Potential mutation-while-iterating issue: deleting from `fmriprep.data` (`OrderedDict`) during iteration may raise `RuntimeError: dictionary changed size during iteration` on Python 3.8. (2) No direct test for `split_task_label=True`. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
+| Existing tests | `TestCreateBdataFmriprepMock`: golden masters (with/without exclusion for `volume_native`; `surface_native` with `with_confounds=True`), surface-standard shape variants, `split_task_label=True` for single-task mock data, empty list when subject excluded / `TestFmriprepDataFailures` (execution failures): missing confounds, missing motion columns, unknown labels |
+| Gaps / issues | (1) Potential mutation-while-iterating issue: deleting from `fmriprep.data` (`OrderedDict`) during iteration may raise `RuntimeError: dictionary changed size during iteration` on Python 3.8. (2) `split_task_label=True` mock test exercises the branch with a single task only; the multi-task case (where `bdata_list` has multiple elements) is covered by `test_fmriprep_real.py`. Extending `MockBidsBuilder` for multi-task is a possible follow-up. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
 
 ### BrainData (class)
 
@@ -57,7 +57,7 @@ For surface: loads left/right GIFTI via nibabel and concatenates.
 
 | Item | Details |
 | --- | --- |
-| Test status | Surface path covered; volume path mostly indirect |
+| Test status | Surface path covered at the value level via `TestCreateBdataFmriprepMock.test_create_bdata_fmriprep_surface_native_gm`; volume path mostly indirect |
 | Real-data dependency | Replaced by mock data |
 | Existing tests | `TestBrainDataMock`: paired surface load, one-side missing, empty darray, vertex-count mismatch, invalid dtype |
 | Gaps / issues | (1) No direct unit test for volume loader (`__load_volume`), only indirect coverage through `__create_bdata_fmriprep_subject`. (2) String identity checks (`is` / `is not`) are used for dtype and should be equality checks (`==` / `!=`). (3) No direct test for xyz/ijk extraction on 3D volume input. |
@@ -122,4 +122,5 @@ Loads NIfTI via `nipy.load_image` and returns `(data, xyz, ijk)` for 3D/4D input
 - `create_bdata_fmriprep` has a potential dictionary-mutation bug while iterating over `OrderedDict`.
 - `BrainData` contains `is`-based string comparisons that should be equality comparisons.
 - `__get_xyz` and `__load_mri` appear to be outside the current main path.
-- `split_task_label=True` still has no direct test coverage.
+- `split_task_label=True` is now exercised by a mock test for the single-task case (`TestCreateBdataFmriprepMock.test_create_bdata_fmriprep_split_task_label_single_task`). Multi-task mock coverage (multiple elements in `bdata_list`) would require extending `MockBidsBuilder`.
+- Real-data tests (`test_fmriprep_real.py`) are marked with `pytest.mark.real_data`; run `pytest -m "not real_data"` to skip them in CI.

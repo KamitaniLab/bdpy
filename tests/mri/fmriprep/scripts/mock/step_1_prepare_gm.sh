@@ -3,6 +3,7 @@ PYTHON_BIN="${PYTHON_BIN:-python}"
 mock_gm_h5_path_list=(
   ./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_exclude.h5
   ./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5
+  ./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_surface.h5
 )
 
 need_mock_gm=0

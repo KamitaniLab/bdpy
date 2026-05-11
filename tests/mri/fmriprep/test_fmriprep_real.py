@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from .test_fmriprep_utils import (
     CREATE_GOLDEN_MASTER,
@@ -12,6 +13,7 @@ from .test_fmriprep_utils import (
 )
 
 
+@pytest.mark.real_data
 class TestCreateBdataFmriprepReal(RealDatasetMixin):
     """Test the create_bdata_fmriprep function with real fMRIPrep output data."""
 
