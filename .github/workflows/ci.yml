@@ -29,8 +29,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pytest pytest-cov pytest-github-actions-annotate-failures
+        python -m pip install pytest pytest-cov "pytest-github-actions-annotate-failures!=0.3.0"
         pip install .[dev]
+      # NOTE: pytest-github-actions-annotate-failures v0.3.0 causes INTERNALERROR in Python 3.8 and 3.9.
+      # c.f. https://github.com/pytest-dev/pytest-github-actions-annotate-failures/issues/106
 
     # https://stackoverflow.com/questions/985876/tee-and-exit-status
     - name: Test with pytest
