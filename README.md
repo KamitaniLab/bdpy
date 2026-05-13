@@ -58,6 +58,16 @@ To install the latest development version ("master" branch of the repository), p
 $ pip install git+https://github.com/KamitaniLab/bdpy.git
 ```
 
+## Installation (Python 3.6~3.8)
+For Python 3.6, use the following commands:
+
+```shell
+$ pip install "Cython==0.29.36" "numpy"
+$ pip install bdpy
+```
+
+
+
 ## Packages
 
 - bdata: BdPy data format (BData) core package

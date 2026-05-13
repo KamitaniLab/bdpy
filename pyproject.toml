@@ -15,15 +15,18 @@ license = { file = "LICENSE" }
 keywords = ["neuroscience", "neuroimaging", "brain decoding", "fmri", "machine learning"]
 
 dependencies = [
-    "numpy>=1.20",
+    "numpy>=1.19; python_version < '3.7'",
+    "numpy>=1.20; python_version >= '3.7'",
     "scipy",
     "scikit-learn",
-    "h5py",
+    "h5py>=3.0; python_version >= '3.7'",
+    "h5py<3.0; python_version < '3.7'",
     "hdf5storage",
     "pyyaml",
     "pandas",
     "tqdm",
-    "typing-extensions>=4.5",
+    "typing-extensions>=4.1.0; python_version < '3.8'",
+    "typing-extensions>=4.5.0; python_version >= '3.8'"
 ]
 
 [project.optional-dependencies]
@@ -42,7 +45,8 @@ fig = [
 mri = [
     "numpy<1.24",
     "nibabel==3.2",
-    "nipy"
+    "nipy>=0.6.0; python_version >= '3.8'",
+    "nipy<0.6.0; python_version < '3.8'"
 ]
 pipeline = [
     "hydra-core",
@@ -65,9 +69,8 @@ Homepage = "https://github.com/KamitaniLab/bdpy"
 Repository = "https://github.com/KamitaniLab/bdpy"
 "Bug Tracker" = "https://github.com/KamitaniLab/bdpy/issues"
 
-[tool.rye]
-managed = true
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "bdpy[dev]",
     "jupyter",
     "pytest",
@@ -75,6 +78,9 @@ dev-dependencies = [
     "ruff",
     "mypy"
 ]
+
+[tool.uv]
+default-groups = ["dev"]
 
 [tool.hatch.metadata]
 allow-direct-references = true

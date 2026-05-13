@@ -1,8 +1,12 @@
 '''learning module'''
 
-
+import sys
 from abc import ABCMeta, abstractmethod
-from typing import cast, Any, Protocol, Optional, Dict, TypedDict
+from typing import cast, Any, Optional, Dict
+if sys.version_info >= (3, 8):
+    from typing import TypedDict, Protocol
+else:
+    from typing_extensions import TypedDict, Protocol
 
 import os
 import warnings
