@@ -170,7 +170,7 @@ class ImageDataset(Dataset):
     ):
         self.root_path = root_path
         if stimulus_names is None:
-            stimulus_names = [path.stem for path in Path(root_path).glob(f"*{extension}")]
+            stimulus_names = sorted(path.stem for path in Path(root_path).glob(f"*{extension}"))
         self._stimulus_names = stimulus_names
         self._extension = extension
 

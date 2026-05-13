@@ -69,9 +69,5 @@ class TestFeatureExtractor(unittest.TestCase):
             self.assertEqual(features[layer].shape, shape)
 
 
-class TestImageDataset(unittest.TestCase):
-    ...
-
-
 if __name__ == '__main__':
     unittest.main()
