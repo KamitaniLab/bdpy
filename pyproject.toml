@@ -69,9 +69,8 @@ Homepage = "https://github.com/KamitaniLab/bdpy"
 Repository = "https://github.com/KamitaniLab/bdpy"
 "Bug Tracker" = "https://github.com/KamitaniLab/bdpy/issues"
 
-[tool.rye]
-managed = true
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "bdpy[dev]",
     "jupyter",
     "pytest",
@@ -79,6 +78,9 @@ dev-dependencies = [
     "ruff",
     "mypy"
 ]
+
+[tool.uv]
+default-groups = ["dev"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
