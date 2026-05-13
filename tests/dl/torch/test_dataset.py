@@ -25,46 +25,46 @@ class TestImageDataset(unittest.TestCase):
     def setUp(self) -> None:
         self.tmpdir = tempfile.TemporaryDirectory()
         root = Path(self.tmpdir.name)
-        _save_image(root / "a.jpg", r=200, g=100, b=50)
-        _save_image(root / "b.jpg", r=10, g=20, b=30)
-        _save_image(root / "c.jpg", r=0, g=128, b=255)
+        _save_image(root / "a.png", r=200, g=100, b=50)
+        _save_image(root / "b.png", r=10, g=20, b=30)
+        _save_image(root / "c.png", r=0, g=128, b=255)
         self.root = root
 
     def tearDown(self) -> None:
         self.tmpdir.cleanup()
 
     def test_getitem_returns_chw_shape(self):
-        dataset = ImageDataset(self.root, stimulus_names=["a"])
+        dataset = ImageDataset(self.root, stimulus_names=["a"], extension="png")
         arr, _ = dataset[0]
         self.assertEqual(arr.shape, (3, _H, _W))
 
     def test_getitem_preserves_channels(self):
         # R=200 G=100 B=50 — verifies C axis maps to the correct channel.
-        dataset = ImageDataset(self.root, stimulus_names=["a"])
+        dataset = ImageDataset(self.root, stimulus_names=["a"], extension="png")
         arr, _ = dataset[0]
         self.assertTrue(np.allclose(arr[0], 200 / 255.0))
         self.assertTrue(np.allclose(arr[1], 100 / 255.0))
         self.assertTrue(np.allclose(arr[2], 50 / 255.0))
 
     def test_dataloader_integration_batch_shape(self):
-        dataset = ImageDataset(self.root, stimulus_names=["a", "b"])
+        dataset = ImageDataset(self.root, stimulus_names=["a", "b"], extension="png"    )
         loader = DataLoader(dataset, batch_size=2)
         batch_images, _ = next(iter(loader))
         self.assertEqual(tuple(batch_images.shape), (2, 3, _H, _W))
 
     def test_value_range_normalized_to_unit_interval(self):
-        dataset = ImageDataset(self.root, stimulus_names=["a", "b", "c"])
+        dataset = ImageDataset(self.root, stimulus_names=["a", "b", "c"], extension="png")
         for i in range(len(dataset)):
             arr, _ = dataset[i]
             self.assertGreaterEqual(float(arr.min()), 0.0)
             self.assertLessEqual(float(arr.max()), 1.0)
 
     def test_len_matches_stimulus_names(self):
-        dataset = ImageDataset(self.root, stimulus_names=["a", "b", "c"])
+        dataset = ImageDataset(self.root, stimulus_names=["a", "b", "c"], extension="png")
         self.assertEqual(len(dataset), 3)
 
     def test_explicit_stimulus_names_respected(self):
-        dataset = ImageDataset(self.root, stimulus_names=["a", "c"])
+        dataset = ImageDataset(self.root, stimulus_names=["a", "c"], extension="png")
         self.assertEqual(len(dataset), 2)
         _, label0 = dataset[0]
         _, label1 = dataset[1]
@@ -72,16 +72,16 @@ class TestImageDataset(unittest.TestCase):
         self.assertEqual(label1, "c")
 
     def test_auto_detected_stimulus_names_use_stem(self):
-        dataset = ImageDataset(self.root)
+        dataset = ImageDataset(self.root, extension="png")
         self.assertEqual(set(dataset._stimulus_names), {"a", "b", "c"})
 
     def test_explicit_stimulus_names_preserve_input_order(self):
-        dataset = ImageDataset(self.root, stimulus_names=["c", "a", "b"])
+        dataset = ImageDataset(self.root, stimulus_names=["c", "a", "b"], extension="png")
         labels = [dataset[i][1] for i in range(len(dataset))]
         self.assertEqual(labels, ["c", "a", "b"])
 
     def test_auto_detected_stimulus_names_are_sorted(self):
-        dataset = ImageDataset(self.root)
+        dataset = ImageDataset(self.root, extension="png")
         self.assertEqual(dataset._stimulus_names, ["a", "b", "c"])
 
 
