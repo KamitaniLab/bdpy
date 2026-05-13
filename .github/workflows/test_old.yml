@@ -2,11 +2,11 @@ name: test_old
 
 on:
   push:
-    branches: [ "test_old" ]
+    branches: [ "maintenance/legacy" ]
 
 jobs:
   test_py36_py37:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
