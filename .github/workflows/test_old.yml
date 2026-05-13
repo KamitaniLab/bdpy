@@ -22,6 +22,7 @@ jobs:
         pip install .[dev]
 
     - name: Test with pytest
+      shell: bash
       run: |
         (
           set -o pipefail
