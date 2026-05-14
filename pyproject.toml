@@ -92,9 +92,11 @@ only-include = ["bdpy"]
 only-include = ["bdpy"]
 
 [tool.ruff]
+exclude = ["tests"]
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "D", "ANN", "B", "NPY", "RUF"]
 ignore = ["E501"]
-exclude = ["tests"]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "__init__.py" = ["F401"]
