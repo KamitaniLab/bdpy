@@ -157,9 +157,16 @@ class ImageDataset(Dataset):
     root_path : str | Path
         Path to the root directory of images.
     stimulus_names : list[str], optional
-        List of stimulus names. If None, all stimulus names are used.
+        List of stimulus names. If provided, images are returned in the given
+        order. If None, all images found under ``root_path`` are used in
+        alphabetical order.
     extension : str, optional
         Extension of the image files.
+
+    Notes
+    -----
+    Images are returned as float64 arrays in CHW (channels, height, width)
+    format with pixel values normalized to [0, 1].
     """
 
     def __init__(
@@ -170,10 +177,7 @@ class ImageDataset(Dataset):
     ):
         self.root_path = root_path
         if stimulus_names is None:
-            stimulus_names = [
-                _removesuffix(path.name, "." + extension)
-                for path in Path(root_path).glob(f"*{extension}")
-            ]
+            stimulus_names = sorted(path.stem for path in Path(root_path).glob(f"*{extension}"))
         self._stimulus_names = stimulus_names
         self._extension = extension
 
@@ -184,7 +188,7 @@ class ImageDataset(Dataset):
         stimulus_name = self._stimulus_names[index]
         image = Image.open(Path(self.root_path) / f"{stimulus_name}.{self._extension}")
         image = image.convert("RGB")
-        return np.array(image) / 255.0, stimulus_name
+        return np.array(image).transpose(2, 0, 1) / 255.0, stimulus_name
 
 
 class RenameFeatureKeys:
