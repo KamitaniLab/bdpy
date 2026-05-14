@@ -157,9 +157,16 @@ class ImageDataset(Dataset):
     root_path : str | Path
         Path to the root directory of images.
     stimulus_names : list[str], optional
-        List of stimulus names. If None, all stimulus names are used.
+        List of stimulus names. If provided, images are returned in the given
+        order. If None, all images found under ``root_path`` are used in
+        alphabetical order.
     extension : str, optional
         Extension of the image files.
+
+    Notes
+    -----
+    Images are returned as float64 arrays in CHW (channels, height, width)
+    format with pixel values normalized to [0, 1].
     """
 
     def __init__(
