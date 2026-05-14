@@ -92,15 +92,20 @@ only-include = ["bdpy"]
 only-include = ["bdpy"]
 
 [tool.ruff]
-select = ["E", "F", "N", "D", "ANN", "B", "NPY", "RUF"]
-ignore = ["E501", "ANN101", "D213", "D203"]
-exclude = ["test"]
+exclude = ["tests"]
 
-[tool.ruff.extend-per-file-ignores]
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "D", "ANN", "B", "NPY", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.extend-per-file-ignores]
 "__init__.py" = ["F401"]
 
-[tool.ruff.flake8-annotations]
+[tool.ruff.lint.flake8-annotations]
 mypy-init-return = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
 
 [tool.pylint]
 disable = "line-too-long"
