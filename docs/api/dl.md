@@ -1,6 +1,6 @@
 # dl
 
-Deep learning utilities.
+Deep learning utilities (Caffe, PyTorch).
 
 ## dl.caffe
 
@@ -9,5 +9,3 @@ Deep learning utilities.
 ## dl.torch
 
 ::: bdpy.dl.torch
-    options:
-      show_submodules: true

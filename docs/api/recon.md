@@ -8,6 +8,8 @@ Image reconstruction methods.
 
 ## recon.torch
 
-::: bdpy.recon.torch
-    options:
-      show_submodules: true
+::: bdpy.recon.torch.icnn
+
+::: bdpy.recon.torch.modules
+
+::: bdpy.recon.torch.task

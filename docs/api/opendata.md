@@ -2,6 +2,4 @@
 
 Open data utilities.
 
-::: bdpy.opendata
-    options:
-      show_submodules: true
+::: bdpy.opendata.openneuro

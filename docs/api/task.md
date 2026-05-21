@@ -2,6 +2,6 @@
 
 Task abstractions.
 
-::: bdpy.task
-    options:
-      show_submodules: true
+::: bdpy.task.core
+
+::: bdpy.task.callback

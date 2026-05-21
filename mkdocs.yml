@@ -41,14 +41,38 @@ markdown_extensions:
 plugins:
   - search
   - mkdocstrings:
+      default_handler: python
       handlers:
         python:
           options:
+            # Docstring parsing
             docstring_style: numpy
-            show_source: false
-            show_bases: true
-            show_submodules: true
+            docstring_section_style: list
+            merge_init_into_class: true
+            docstring_options:
+              ignore_init_summary: true
+              trim_doctest_flags: true
+            # Signatures
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            line_length: 80
+            # Headings / TOC
+            show_root_heading: true
+            show_root_toc_entry: true
+            show_root_full_path: false
+            show_object_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            heading_level: 2
+            # Members
+            show_submodules: false
+            inherited_members: false
             members_order: source
+            filters: ["!^_"]
+            # Bases / source
+            show_bases: true
+            show_source: false
 
 nav:
   - Home: index.md
