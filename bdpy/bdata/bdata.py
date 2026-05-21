@@ -1,24 +1,6 @@
 """BrainDecoderToolbox2/BdPy data class.
 
 This file is a part of BdPy.
-
-API list
---------
-
-- Data modification
-    - add
-    - update
-    - add_metadata
-    - rename_metadata
-    - set_metadatadescription
-- Data access
-    - select
-    - get
-    - get_metadata
-    - show_metadata
-- File I/O
-    - load
-    - save
 """
 
 
