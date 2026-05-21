@@ -2,4 +2,4 @@
 
 Dataset utilities.
 
-::: bdpy.dataset.utils
+::: bdpy.dataset

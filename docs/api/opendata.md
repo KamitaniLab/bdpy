@@ -2,4 +2,4 @@
 
 Open data utilities.
 
-::: bdpy.opendata.openneuro
+::: bdpy.opendata

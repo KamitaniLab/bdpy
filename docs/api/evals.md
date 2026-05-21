@@ -2,4 +2,4 @@
 
 Evaluation metrics.
 
-::: bdpy.evals.metrics
+::: bdpy.evals

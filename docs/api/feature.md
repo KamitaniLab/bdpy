@@ -2,6 +2,4 @@
 
 DNN feature engineering utilities.
 
-## feature.feature
-
-::: bdpy.feature.feature
+::: bdpy.feature
