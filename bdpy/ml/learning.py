@@ -69,6 +69,7 @@ class BaseLearning(object):
 #-----------------------------------------------------------------------
 class Classification(BaseLearning):
     '''Classification class
+
     Parameters
     ----------
     x_train, y_train : array_like

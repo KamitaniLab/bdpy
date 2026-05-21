@@ -33,6 +33,7 @@ def makeplots2(
         verbose=False,
 ):
     '''Make plots.
+
     Parameters
     ----------
     df : pandas.core.frame.DataFrame
@@ -55,6 +56,7 @@ def makeplots2(
     tick_fontsize : int
     style : str
     verbose : bool
+
     Returns
     -------
     fig : matplotlib.figure.Figure or list of matplotlib.figure.Figure
