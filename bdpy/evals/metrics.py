@@ -160,13 +160,25 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True, r
 
 
 def remove_nan_value(array, nan_flag=None, return_nan_flag=False):
-    '''Helper function:
-    Remove columns (units) which contain nan values
+    '''Remove columns (units) which contain NaN values.
 
-    array (numpy.array) ... shape should be [sample x units]
-    nan_flag (numpy.array or list) ... if exist, remove columns according to the nan_flag
-    return_nan_flag (bool) ... if True, return nan_flag to remove columns of the array.
+    Parameters
+    ----------
+    array : numpy.ndarray
+        Input array of shape (n_samples, n_units).
+    nan_flag : numpy.ndarray or list, optional
+        Boolean mask of columns to remove. If not given, it is computed from
+        ``array``.
+    return_nan_flag : bool, optional
+        If True, also return the NaN flag used for removal (default: False).
 
+    Returns
+    -------
+    nan_removed_array : numpy.ndarray
+        Array with NaN-containing columns removed.
+    nan_flag : numpy.ndarray
+        Boolean mask used for removal. Only returned when
+        ``return_nan_flag=True``.
     '''
 
     if nan_flag is None:

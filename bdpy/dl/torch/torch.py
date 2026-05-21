@@ -156,7 +156,8 @@ class ImageDataset(torch.utils.data.Dataset):
             preload: bool = False,
             preload_limit: float = np.inf
     ):
-        '''
+        '''Initialize ImageDataset.
+
         Parameters
         ----------
         images : List[str]
