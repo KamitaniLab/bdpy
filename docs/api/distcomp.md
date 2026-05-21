@@ -2,4 +2,6 @@
 
 Distributed computation utilities.
 
-::: bdpy.distcomp
+## distcomp.distcomp
+
+::: bdpy.distcomp.distcomp

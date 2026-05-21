@@ -10,6 +10,18 @@ Image reconstruction methods.
 
 ::: bdpy.recon.torch.icnn
 
-::: bdpy.recon.torch.modules
+### recon.torch.modules
 
-::: bdpy.recon.torch.task
+::: bdpy.recon.torch.modules.encoder
+
+::: bdpy.recon.torch.modules.generator
+
+::: bdpy.recon.torch.modules.latent
+
+::: bdpy.recon.torch.modules.critic
+
+::: bdpy.recon.torch.modules.optimizer
+
+### recon.torch.task
+
+::: bdpy.recon.torch.task.inversion

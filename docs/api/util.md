@@ -2,4 +2,14 @@
 
 Miscellaneous utilities.
 
-::: bdpy.util
+## util.utils
+
+::: bdpy.util.utils
+
+## util.info
+
+::: bdpy.util.info
+
+## util.math
+
+::: bdpy.util.math

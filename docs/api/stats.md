@@ -2,4 +2,6 @@
 
 Statistical utilities.
 
-::: bdpy.stats
+## stats.corr
+
+::: bdpy.stats.corr
