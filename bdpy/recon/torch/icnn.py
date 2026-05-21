@@ -126,10 +126,10 @@ def reconstruct(features,
     image_size : tuple, optional
       Size of the image (h x w x c).
 
-    crop_generator_output=True, : bool, optional (default: True)
+    crop_generator_output : bool, optional
       If True, outputs of the generator are cropped into `image_size`.
 
-    initial_image : numpy.ndarar, optionaly
+    initial_image : numpy.ndarray, optional
 
     preproc, postproc : func, optional
       Pre- and post-processing functions on reconstructed data. Note that the
@@ -164,7 +164,7 @@ def reconstruct(features,
     feature_size : tuple, optional
       Size of features fed to the generator.
 
-    initial_feature : numpy.ndarary, optional
+    initial_feature : numpy.ndarray, optional
       Initial generator features.
 
     feature_upper_bound, feature_lower_bound : scalar, optional
@@ -194,7 +194,7 @@ def reconstruct(features,
     disp_interval : int, optional
       Display information for every N iterations.
 
-    device : str, optional (default: 'cpu')
+    device : str, optional
       PyTorch device (e.g., 'cuda:0', 'cpu').
 
     Returns

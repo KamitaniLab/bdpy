@@ -17,7 +17,7 @@ def corrcoef(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
     ----------
     x, y : array_like
         Matrix or vector
-    var : str, 'row' or 'col'
+    var : {'row', 'col'}
         Specifying whether rows (default) or columns represent variables
 
     Returns
@@ -84,7 +84,7 @@ def corrmat(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
     ----------
     x, y : array_like
         Matrix or vector
-    var : str, 'row' or 'col'
+    var : {'row', 'col'}
         Specifying whether rows (default) or columns represent variables
 
     Returns

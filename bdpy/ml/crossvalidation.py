@@ -14,7 +14,7 @@ def cvindex_groupwise(group, nfolds=None, return_bool=False, exclusive=None):
 
     Parameters
     ----------
-    group : array-like (shape =  (n_samples, )
+    group : array-like of shape (n_samples,)
         Group labels (e.g., run labels, block labels, ...)
     n_folds : int, optional
         Number of folds (default: the number of unique elements in `group`)
@@ -145,7 +145,7 @@ def make_cvindex_generator(group, folds=None, exclusive=None, return_bool=False)
 
     Parameters
     ----------
-    group : array-like (shape =  (n_samples, )
+    group : array-like of shape (n_samples,)
         Group labels (e.g., run labels, block labels, ...)
     folds : list, optional
         List of CV folds(training and test labels in each fold)
