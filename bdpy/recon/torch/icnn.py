@@ -95,7 +95,7 @@ def reconstruct(features,
     n_iter : int, optional
       The total number of iterations.
 
-    loss_function : func, optional
+    loss_func : func, optional
       Loss function.
 
     optimizer : torch.optim.Optimizer
@@ -191,7 +191,7 @@ def reconstruct(features,
     snapshot_postprocess : func, optional
       Postprocessing function applied on the snapshots.
 
-    display_interval : int, optional
+    disp_interval : int, optional
       Display information for every N iterations.
 
     device : str, optional (default: 'cpu')

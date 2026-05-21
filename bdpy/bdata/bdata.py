@@ -364,7 +364,7 @@ class BData(object):
         ----------
         condition : str
             Condition specifying columns.
-        retrun_index : bool, optional
+        return_index : bool, optional
             If True, return index of selected columns (default: False).
         verbose : bool, optional
             If True, display verbose messages (default: True).
@@ -484,7 +484,7 @@ class BData(object):
         ----------
         condition : str
             Condition specifying columns.
-        retrun_index : bool, optional
+        return_index : bool, optional
             If True, return index of selected columns (default: False).
         verbose : bool, optional
             If True, display verbose messages (default: True).
@@ -515,7 +515,7 @@ class BData(object):
         ----------
         condition : str
             Condition specifying columns.
-        retrun_index : bool, optional
+        return_index : bool, optional
             If True, return index of selected columns (default: False).
         verbose : bool, optional
             If True, display verbose messages (default: True).

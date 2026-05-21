@@ -20,7 +20,7 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
     ----------
     bdata_list : list of BData
         Data to be concatenated
-    successsive : list, optional
+    successive : list, optional
         Sucessive columns. The values of columns specified here are inherited
         from the preceding data.
     metadata_merge : str, optional
@@ -183,7 +183,7 @@ def concat_dataset(data_list, successive=[]):
     ----------
     data_list : list of BData
         Data to be concatenated
-    successsive : list, optional
+    successive : list, optional
         Sucessive columns. The values of columns specified here are inherited
         from the preceding data.
 

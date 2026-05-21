@@ -80,11 +80,11 @@ def normalize_sample(x, group=[], mode='PercentSignalChange', baseline='All',
         Input data array (sample num * feature num)
     group : array_like
         Group vector (length = sample num)
-    Mode : str
+    mode : str
         Normalization mode ('PercentSignalChange', 'Zscore', 'DivideMean', or 'SubtractMean'; default = 'PercentSignalChange')
-    Baseline : array_like or str
+    baseline : array_like or str
         Baseline index vector (default: 'All')
-    ZeroThreshold : float
+    zero_threshold : float
         Zero threshold (default: 1)
 
     Returns
