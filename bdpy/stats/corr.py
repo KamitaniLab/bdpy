@@ -22,7 +22,7 @@ def corrcoef(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
 
     Returns
     -------
-    r
+    r : numpy.ndarray
         Correlation coefficients
     """
     # Convert vectors to arrays
@@ -89,7 +89,7 @@ def corrmat(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
 
     Returns
     -------
-    rmat
+    rmat : numpy.ndarray
         Correlation matrix
     """
     # Fix x and y to represent variables in each row
