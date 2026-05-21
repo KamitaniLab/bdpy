@@ -1,5 +1,3 @@
-# pipeline
-
-::: bdpy.pipeline
+::: bdpy.recon.torch.task
     options:
         show_submodules: true

@@ -1,5 +1,3 @@
-# pipeline
-
-::: bdpy.pipeline
+::: bdpy.dl.torch.domain
     options:
         show_submodules: true

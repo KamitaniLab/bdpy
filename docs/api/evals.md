@@ -1,5 +1,5 @@
 # evals
 
-Evaluation metrics.
-
 ::: bdpy.evals
+    options:
+        show_submodules: true
