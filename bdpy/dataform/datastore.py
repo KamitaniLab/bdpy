@@ -33,18 +33,19 @@ class DataStore(object):
     extractor : func, optional
         Function to extract data from files.
 
-    Example
-    -------
+    Examples
+    --------
 
-    # Suppose you have mat files in `/path/to/data/dir/`. Each file has name
-    # such as `subject1_V1.mat`, and contains variable `data`.
+    Suppose you have mat files in ``/path/to/data/dir/``. Each file has a name
+    such as ``subject1_V1.mat`` and contains variable ``data``.
 
-    datastore = DataStore('/path/to/data/dir/',
-                          file_type='mat',
-                          pattern='.*/(.*?)_(.*?).mat',
-                          extractor=lambda x: x['data'])
-
-    dat = datastore.get('subject1', 'V1')
+    >>> datastore = DataStore(
+    ...     '/path/to/data/dir/',
+    ...     file_type='mat',
+    ...     pattern=r'.*/(.*?)_(.*?).mat',
+    ...     extractor=lambda x: x['data'],
+    ... )
+    >>> dat = datastore.get('subject1', 'V1')
 
     TODO
     ----
@@ -199,23 +200,19 @@ class DirStore(object):
     def get(self, **kargs):
         '''Returns data specified by kargs.
 
-        Example
-        -------
+        Examples
+        --------
 
-        Files are organized as below:
+        Suppose files are organized as ``<dpath>/<layer>/<subject>/<roi>/<image>.mat``.
 
-            <dpath>/<layer>/<subject>/<roi>/<image>.mat
+        >>> ds = DirStore('./data/dir',
+        ...               dirs_pattern=['layer', 'subject', 'roi'],
+        ...               file_pattern='<image>.mat',
+        ...               variable='feat')
+        >>> data = ds.get(layer='conv1', subject='TH', roi='VC', image='Image_001')
 
-        Then,
-
-            ds = DirStore('./data/dir',
-                          dirs_pattern=['layer', 'subject', 'roi'],
-                          file_pattern='<image>.mat',
-                          variable='feat')
-            data = ds.get(layer='conv1', subject='TH', roi='VC', image='Image_001')
-
-        the above code reads ./data/dir/conv1/subject/TH/VC/Image_001.mat and
-        returns variable 'feat' in the file.
+        The above code reads ``./data/dir/conv1/TH/VC/Image_001.mat`` and
+        returns variable ``'feat'`` in the file.
         '''
 
         # Sub-directories

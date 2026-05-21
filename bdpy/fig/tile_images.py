@@ -40,68 +40,62 @@ def tile_images(images, ncols=None, columned=False, labels=None, fig=None,
     -------
     matplotlib.figure.Figure
 
-    Example
-    -------
+    Examples
+    --------
 
-      images = ['/path/to/image0.jpg', '/path/to/image1.jpg', '/path/to/image2.jpg']
-      plt.figure()
-      tile_images(images)
+    Three images in a single row (default: all images in one row):
 
-      +------------------------------+
-      | +--------+--------+--------+ |
-      | | image0 | image1 | image2 | |
-      | +--------+--------+--------+ |
-      +------------------------------+
+    >>> tile_images([image0, image1, image2])
+    +------------------------------+
+    | +--------+--------+--------+ |
+    | | image0 | image1 | image2 | |
+    | +--------+--------+--------+ |
+    +------------------------------+
 
-      images = ['/path/to/image0.jpg', '/path/to/image1.jpg', .. '/path/to/image5.jpg']
-      plt.figure()
-      tile_images(images, ncols=2)
+    Six images in two columns:
 
-      +---------------------+
-      | +--------+--------+ |
-      | | image0 | image1 | |
-      | +--------+--------+ |
-      | | image2 | image3 | |
-      | +--------+--------+ |
-      | | image4 | image5 | |
-      | +--------+--------+ |
-      +---------------------+
+    >>> tile_images([image0, image1, image2, image3, image4, image5], ncols=2)
+    +---------------------+
+    | +--------+--------+ |
+    | | image0 | image1 | |
+    | +--------+--------+ |
+    | | image2 | image3 | |
+    | +--------+--------+ |
+    | | image4 | image5 | |
+    | +--------+--------+ |
+    +---------------------+
 
-      images = [['/path/to/A0.jpg', '/path/to/A1.jpg', ..., '/path/to/A5.jpg'],
-                ['/path/to/B0.jpg', '/path/to/B1.jpg', ..., '/path/to/B5.jpg'],
-      plt.figure()
-      tile_images(images, ncols=3)
+    Two groups of images, tiled by row (``columned=False``, default):
 
-      +------------------+
-      | +----+----+----+ |
-      | | A0 | A1 | A2 | |
-      | +----+----+----+ |
-      | | A3 | A4 | A5 | |
-      | +----+----+----+ |
-      | +----+----+----+ |
-      | | B0 | B1 | B2 | |
-      | +----+----+----+ |
-      | | B3 | B4 | B5 | |
-      | +----+----+----+ |
-      +------------------+
+    >>> tile_images([[A0, A1, A2, A3, A4, A5], [B0, B1, B2, B3, B4, B5]], ncols=3)
+    +------------------+
+    | +----+----+----+ |
+    | | A0 | A1 | A2 | |
+    | +----+----+----+ |
+    | | A3 | A4 | A5 | |
+    | +----+----+----+ |
+    | +----+----+----+ |
+    | | B0 | B1 | B2 | |
+    | +----+----+----+ |
+    | | B3 | B4 | B5 | |
+    | +----+----+----+ |
+    +------------------+
 
-      images = [['/path/to/A0.jpg', '/path/to/A1.jpg', ..., '/path/to/A5.jpg'],
-                ['/path/to/B0.jpg', '/path/to/B1.jpg', ..., '/path/to/B5.jpg'],
-      plt.figure()
-      tile_images(images, ncols=3, columned=True)
+    Two groups of images, groups sharing columns (``columned=True``):
 
-      +------------------+
-      | +----+----+----+ |
-      | | A0 | A1 | A2 | |
-      | +----+----+----+ |
-      | | B0 | B1 | B2 | |
-      | +----+----+----+ |
-      | +----+----+----+ |
-      | | A3 | A4 | A5 | |
-      | +----+----+----+ |
-      | | B3 | B4 | B5 | |
-      | +----+----+----+ |
-      +------------------+
+    >>> tile_images([[A0, A1, A2, A3, A4, A5], [B0, B1, B2, B3, B4, B5]], ncols=3, columned=True)
+    +------------------+
+    | +----+----+----+ |
+    | | A0 | A1 | A2 | |
+    | +----+----+----+ |
+    | | B0 | B1 | B2 | |
+    | +----+----+----+ |
+    | +----+----+----+ |
+    | | A3 | A4 | A5 | |
+    | +----+----+----+ |
+    | | B3 | B4 | B5 | |
+    | +----+----+----+ |
+    +------------------+
     '''
 
     # Fix `images` to a list of lists

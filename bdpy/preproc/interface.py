@@ -177,32 +177,26 @@ def shift_sample(x, group=[], shift_size = 1, verbose = True):
     index_map : array_like
         Vector mapping row indexes from y to x (length: group num)
 
-    Example
-    -------
+    Examples
+    --------
 
-    import numpy as np
-    from bdpy.preprocessor import shift_sample
-
-    x = np.array([[  1,  2,  3 ],
-                  [ 11, 12, 13 ],
-                  [ 21, 22, 23 ],
-                  [ 31, 32, 33 ],
-                  [ 41, 42, 43 ],
-                  [ 51, 52, 53 ]])
-    grp = np.array([ 1, 1, 1, 2, 2, 2 ])
-
-    shift_size = 1
-
-    y, index = shift_sample(x, grp, shift_size)
-
-    # >>> y
-    # array([[11, 12, 13],
-    #        [21, 22, 23],
-    #        [41, 42, 43],
-    #        [51, 52, 53]])
-
-    # >>> index
-    # array([0, 1, 3, 4])
+    >>> import numpy as np
+    >>> from bdpy.preproc import shift_sample
+    >>> x = np.array([[ 1,  2,  3],
+    ...               [11, 12, 13],
+    ...               [21, 22, 23],
+    ...               [31, 32, 33],
+    ...               [41, 42, 43],
+    ...               [51, 52, 53]])
+    >>> grp = np.array([1, 1, 1, 2, 2, 2])
+    >>> y, index = shift_sample(x, grp, shift_size=1, verbose=False)
+    >>> y
+    array([[11, 12, 13],
+           [21, 22, 23],
+           [41, 42, 43],
+           [51, 52, 53]])
+    >>> index
+    array([0, 1, 3, 4])
     """
 
     if verbose:
