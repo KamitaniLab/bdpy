@@ -57,15 +57,16 @@ class BData(object):
     file_type : {'Matlab', 'HDF5', 'None'}, optional
         File type (default: None)
 
-    If `file_name` was not given, BData.__init__() creates an empty
-    dataset and metadata.
-
     Attributes
     ----------
     dataset : numpy.ndarray (dtype=float)
         Dataset array
     metadata : MetaData object
         Meta-data object
+
+    Notes
+    -----
+    If `file_name` was not given, an empty dataset and metadata are created.
     """
 
     def __init__(self, file_name: Optional[str] = None, file_type: Optional[str] = None) -> None:
