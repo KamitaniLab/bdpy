@@ -25,6 +25,10 @@ theme:
     - navigation.top
     - search.highlight
     - content.code.copy
+    - navigation.footer
+
+watch:
+  - bdpy
 
 plugins:
   - search
