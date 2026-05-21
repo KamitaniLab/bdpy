@@ -1,0 +1,62 @@
+site_name: BdPy
+site_description: Brain decoder toolbox for Python
+site_url: https://kamitanilab.github.io/bdpy/
+repo_url: https://github.com/KamitaniLab/bdpy
+repo_name: KamitaniLab/bdpy
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_bases: true
+            show_submodules: true
+            members_order: source
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - API Reference:
+    - Overview: api/index.md
+    - bdata: api/bdata.md
+    - dataform: api/dataform.md
+    - dataset: api/dataset.md
+    - distcomp: api/distcomp.md
+    - dl: api/dl.md
+    - evals: api/evals.md
+    - feature: api/feature.md
+    - fig: api/fig.md
+    - ml: api/ml.md
+    - mri: api/mri.md
+    - opendata: api/opendata.md
+    - pipeline: api/pipeline.md
+    - preproc: api/preproc.md
+    - recon: api/recon.md
+    - stats: api/stats.md
+    - task: api/task.md
+    - util: api/util.md
