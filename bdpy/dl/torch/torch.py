@@ -17,128 +17,114 @@ from . import models
 _tensor_t = Union[np.ndarray, torch.Tensor]
 
 
-class FeatureExtractor(object):
+class _Hook:
+    """Forward hook class for FeatureExtractor."""
+    def __init__(self, layer_name, features_dict, detach):
+        self.layer_name = layer_name
+        self.features_dict = features_dict
+        self.detach = detach
+
+    def __call__(self, module, input, output):
+        self.features_dict[self.layer_name] = output.detach() if self.detach else output
+
+
+class FeatureExtractor:
     def __init__(
-            self, encoder: nn.Module, layers: Iterable[str],
-            layer_mapping: Optional[Dict[str, str]] = None,
-            device: str = 'cpu', detach: bool = True
-    ):
-        '''Feature extractor.
-
+            self, 
+            encoder: nn.Module, 
+            layers: Iterable[str], 
+            layer_mapping: Optional[Dict[str, str]] = None, 
+            device: str = 'cpu',
+            detach: bool = True,
+            transform: Optional[Callable[[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]] = None, 
+        ):
+        """
+        Initializes the feature extractor.
+        
         Parameters
         ----------
-        encoder : torch.nn.Module
-            Network model we want to extract features from.
+        encoder : nn.Module 
+            The encoder to extract features from.
         layers : Iterable[str]
-            List of layer names we want to extract features from.
-        layer_mapping : Dict[str, str], optional
-            Mapping from (human-readable) layer names to layer names in the model.
-            If None, layers will be directly used as layer names in the model.
+            List of names of layers to extract features.
+        layer_mapping : dict, optional
+            Mapping of human-readable layer names to actual layer names.
         device : str, optional
-            Device name (default: 'cpu').
+            Device to run the encoder on. Defaults to 'cpu'.
         detach : bool, optional
-            If True, detach the feature activations from the computation graph
-        '''
+            Whether to detach the extracted feature tensors. Defaults to False.
+        transform : Callable[[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]], optional 
+            A function that receives extracted features dict and returns transformed features.
+            Example usage: turning a tuple into a tensor on transformer models.
+        """
+        self.encoder = encoder
+        self.layers = layers
+        self.layer_mapping = layer_mapping if layer_mapping else {layer: layer for layer in layers}
+        self.device = device
+        self.detach = detach
+        self.transform = transform
 
-        self._encoder = encoder
-        self.__layers = layers
-        self.__layer_map = layer_mapping
-        self.__detach = detach
-        self.__device = device
+        self._features = OrderedDict()  # dict to store extracted features
+        self._hook_handlers = {}         # layer name -> hook handler object for deleting them
+        self._register_hooks()
 
-        if detach:
-            self._extractor = FeatureExtractorHandleDetach()
-        else:
-            self._extractor = FeatureExtractorHandle()
+        self.encoder.to(self.device)
 
-        self._encoder.to(self.__device)
-
-        for layer in self.__layers:
-            if self.__layer_map is not None:
-                layer = self.__layer_map[layer]
-            layer_object = models._parse_layer_name(self._encoder, layer)
-            layer_object.register_forward_hook(self._extractor)
-
-    def __call__(self, x: _tensor_t) -> Dict[str, np.ndarray] | Dict[str, torch.Tensor]:
+    def _register_hooks(self):
+        """Registers forward hooks to extract features from specified layers."""
+        for name in self.layers:
+            mapped_name = self.layer_mapping[name]
+            layer_obj = models._parse_layer_name(self.encoder, mapped_name)
+            hook_handle = layer_obj.register_forward_hook(
+                _Hook(name, self._features, self.detach)
+            )
+            self._hook_handlers[name] = hook_handle  # Store the actual hook handle
+    
+    def __call__(self, x: Union[torch.Tensor, np.ndarray]) -> Dict[str, Union[torch.Tensor, np.ndarray]]:
         return self.run(x)
-
-    def run(self, x: _tensor_t) -> Dict[str, np.ndarray] | Dict[str, torch.Tensor]:
-        '''Extract feature activations from the specified layers.
-
+    
+    def run(self, x: Union[torch.Tensor, np.ndarray]) -> Dict[str, Union[torch.Tensor, np.ndarray]]:
+        """
+        Feeds input through the encoder and extracts features.
+        
         Parameters
         ----------
-        x : numpy.ndarray or torch.Tensor
-            Input image (numpy.ndarray or torch.Tensor).
-
-        Returns
-        -------
-        features : Dict[str, Union[numpy.ndarray, torch.Tensor]]
-            Feature activations from the specified layers.
-            Each key is the layer name and each value is the feature activation.
-        '''
-
-        self._extractor.clear()
+        x : torch.Tensor or np.ndarray
+            Input tensor to be processed by the encoder.
+        
+        Returns:
+        ----------
+        dict[str, Union[torch.Tensor, np.ndarray]]
+            A dictionary containing features extracted from the specified layers, 
+            optionally transformed.
+        """
         if not isinstance(x, torch.Tensor):
-            xt = torch.tensor(x[np.newaxis], device=self.__device)
-        else:
-            xt = x
+            # TODO: From legacy code. Is this necessary?
+            warnings.warn(
+                "In future versions, it will no longer be possible to input ndarrays " \
+                "directly into FeatureExtractor. Please convert the input to torch.Tensor.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+            x = torch.tensor(x[np.newaxis], device=self.device)
 
-        self._encoder.forward(xt)
+        self._features.clear()  # Clear previous feature maps
+        _ = self.encoder(x)  # Forward pass to capture features
 
-        features: Dict[str, torch.Tensor] = {
-            layer: self._extractor.outputs[i]
-            for i, layer in enumerate(self.__layers)
-        }
-        if not self.__detach:
-            return features
+        # Shallow copy the dict to avoid features changed after returning
+        features = self._features.copy()
+        if self.transform:
+            features = self.transform(features)
+        if self.detach:
+            # TODO: From legacy code. "detach" but it's actually also "numpy".
+            features = {layer: feat.cpu().numpy() for layer, feat in features.items()}
+        return features
 
-        return {
-            k: v.cpu().detach().numpy()
-            for k, v in features.items()
-        }
-    
     def __del__(self):
-        '''
-        Remove forward hooks for the FeatureExtractor while keeping
-        other forward hooks in the model.
-        '''
-        for layer in self.__layers:
-            if self.__layer_map is not None:
-                layer = self.__layer_map[layer]
-            layer_object = models._parse_layer_name(self._encoder, layer)
-            for key, hook in layer_object._forward_hooks.items():
-                if hook == self._extractor:
-                    del layer_object._forward_hooks[key]
-
-
-class FeatureExtractorHandle(object):
-    def __init__(self):
-        self.outputs: List[torch.Tensor] = []
-
-    def __call__(
-            self,
-            module: nn.Module, module_in: Any,
-            module_out: torch.Tensor
-    ) -> None:
-        self.outputs.append(module_out)
-
-    def clear(self):
-        self.outputs = []
-
-
-class FeatureExtractorHandleDetach(object):
-    def __init__(self):
-        self.outputs: List[torch.Tensor] = []
-
-    def __call__(
-            self,
-            module: nn.Module, module_in: Any,
-            module_out: torch.Tensor
-    ) -> None:
-        self.outputs.append(module_out.detach().clone())
-
-    def clear(self):
-        self.outputs = []
+        """Removes all registered hooks when the instance is deleted."""
+        for name, hook_handler in self._hook_handlers.items():
+            hook_handler.remove()
+        self._hook_handlers.clear()
 
 
 class ImageDataset(torch.utils.data.Dataset):
