@@ -366,6 +366,7 @@ class ModelTraining(object):
                     y_norm = self.Y_normalize['std']
                 Y = (Y - y_mean) / y_norm
                 Y[np.isinf(Y)] = 0
+                Y[np.isnan(Y)] = 0
 
             if not self.Y_sort is None:
                 print('Sorting Y')
