@@ -385,7 +385,7 @@ class BrainData(object):
 
     @property
     def xyz(self):
-        if self.__dtype is 'surface':
+        if self.__dtype == 'surface':
             raise NotImplementedError('Vertex xyz coordinates are not implemented yet.')
         return self.__xyz
 
@@ -395,7 +395,7 @@ class BrainData(object):
 
     @property
     def n_vertex(self):
-        if self.__dtype is not 'surface':
+        if self.__dtype != 'surface':
             raise TypeError('Not surface data.')
         return self.__n_vertex
 
