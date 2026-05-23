@@ -20,7 +20,7 @@
 #### Show data
 
     # Show 'key' and 'description' of metadata
-    bdata.show_meatadata()
+    bdata.show_metadata()
 
     # Get 'value' of the metadata specified by 'key'
     voxel_x = bdata.get_metadata('voxel_x', where='VoxelData')
