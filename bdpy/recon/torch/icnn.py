@@ -80,11 +80,13 @@ def reconstruct(features,
 
         Example:
 
+        ```python
         features = {
             'conv1': np.array([...]),
             'conv2': np.array([...]),
             ...
         }
+        ```
 
     encoder : torch.nn.Module
         Encoder network.
