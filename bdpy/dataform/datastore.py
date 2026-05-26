@@ -209,9 +209,9 @@ class DirStore(object):
         ...               dirs_pattern=['layer', 'subject', 'roi'],
         ...               file_pattern='<image>.mat',
         ...               variable='feat')
-        >>> data = ds.get(layer='conv1', subject='TH', roi='VC', image='Image_001')
+        >>> data = ds.get(layer='conv1', subject='sub-01', roi='VC', image='Image_001')
 
-        The above code reads ``./data/dir/conv1/TH/VC/Image_001.mat`` and
+        The above code reads ``./data/dir/conv1/sub-01/VC/Image_001.mat`` and
         returns variable ``'feat'`` in the file.
         '''
 

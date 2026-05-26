@@ -10,13 +10,13 @@ import numpy as np
 def cvindex_groupwise(group, nfolds=None, return_bool=False, exclusive=None):
     '''Return k-fold iterator for group-wise cross-validation (e.g, run-wise, block-wise, ...)
 
-    n_folds` specification are not supported yet.
+    `nfolds` specification are not supported yet.
 
     Parameters
     ----------
     group : array-like of shape (n_samples,)
         Group labels (e.g., run labels, block labels, ...)
-    n_folds : int, optional
+    nfolds : int, optional
         Number of folds (default: the number of unique elements in `group`)
     return_bool : bool, optional
         Return boolean arrays if True (default: False)

@@ -77,6 +77,7 @@ plugins:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Features and DecodedFeatures: dataform_features.md
   - API Reference:
     - Overview: api/index.md
     - bdata:

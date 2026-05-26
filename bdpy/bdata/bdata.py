@@ -281,7 +281,7 @@ class BData(object):
 
         Parameters
         ----------
-        key : str
+        metakey : str
             Meta-data key
         description : str
             Meta-data description

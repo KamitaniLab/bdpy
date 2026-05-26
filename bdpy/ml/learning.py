@@ -177,10 +177,6 @@ class CrossValidation(BaseLearning):
     def run(self):
         '''Run cross-validation
 
-        Parameters
-        ----------
-        None
-
         Returns
         -------
         None

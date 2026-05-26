@@ -154,7 +154,7 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
     Parameters
     ----------
     bdata : BData
-    roi_mask : str or list
+    label : str or list
         ROI label file(s).
 
     Returns
