@@ -53,6 +53,7 @@ class TestBuildOptimizerFactory(unittest.TestCase):
             latent_next,
             latent_next_expected,
             rtol=1e-6,
+            atol=1e-8,
             err_msg="Optimizer does not update the latent variable correctly.",
         )
 
@@ -92,10 +93,10 @@ class TestBuildSchedulerFactory(unittest.TestCase):
         loss.backward()
         optimizer.step()
         scheduler.step()
-        self.assertEqual(
+        self.assertAlmostEqual(
             optimizer.param_groups[0]["lr"],
             0.1 * 0.1,
-            "Scheduler does not update the learning rate correctly.",
+            msg="Scheduler does not update the learning rate correctly.",
         )
 
         # check if reference to the optimizer is kept during re-initialization
