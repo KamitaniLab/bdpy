@@ -16,27 +16,27 @@ def extract_image_features(image_file, net, layers=[], crop_center=False, image_
     Parameters
     ----------
     image_file : str or list
-      (List of) path to the input image file(s).
+        (List of) path to the input image file(s).
     net : Caffe network instance
     layers : list
-      List of DNN layers of which features are returned.
+        List of DNN layers of which features are returned.
     crop_center : bool (default: False)
-      Crop the center of an image or not.
+        Crop the center of an image or not.
     image_preproc : list (default: [])
-      List of additional preprocessing functions. The function input/output
-      should be a PIL.Image instance. The preprocessing functions are applied
-      after RGB conversion, center-cropping, and resizing of the input image.
+        List of additional preprocessing functions. The function input/output
+        should be a PIL.Image instance. The preprocessing functions are applied
+        after RGB conversion, center-cropping, and resizing of the input image.
     save_dir : None or str (default: None)
-      Save the features in the specified directory if not None.
+        Save the features in the specified directory if not None.
     verbose : bool (default: False)
-      Output verbose messages or not.
+        Output verbose messages or not.
     return_features: bool (default: True)
-      Return the extracted features or not.
+        Return the extracted features or not.
 
     Returns
     -------
     dict
-      Dictionary in which keys are DNN layers and values are features.
+        Dictionary in which keys are DNN layers and values are features.
     '''
 
     if isinstance(image_file, str):

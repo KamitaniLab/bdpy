@@ -12,9 +12,9 @@ def average_elemwise(arrays: List[np.ndarray], keepdims: bool = False) -> np.nda
     Parameters
     ----------
     arrays : list of ndarrays
-      List of arrays.
+        List of arrays.
     keepdims : bool
-      Keep dimension in returned array or not.
+        Keep dimension in returned array or not.
 
     Return
     ------

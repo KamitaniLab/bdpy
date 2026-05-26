@@ -76,135 +76,135 @@ def reconstruct(features,
     Parameters
     ----------
     features : dict
-      Target DNN features. Keys are layer names and values are feature values.
+        Target DNN features. Keys are layer names and values are feature values.
 
-      Example:
+        Example:
 
-      features = {
-        'conv1': np.array([...]),
-        'conv2': np.array([...]),
-        ...
-      }
+        features = {
+            'conv1': np.array([...]),
+            'conv2': np.array([...]),
+            ...
+        }
 
     encoder : torch.nn.Module
-      Encoder network.
+        Encoder network.
 
     generator : torch.nn.Module, optional
-      Generator network.
+        Generator network.
 
     n_iter : int, optional
-      The total number of iterations.
+        The total number of iterations.
 
     loss_func : func, optional
-      Loss function.
+        Loss function.
 
     optimizer : torch.optim.Optimizer
-      Optimizer.
+        Optimizer.
 
     lr : tuple, optional
-      Learning rate.
-      The learning rate will linearly decrease from lr[0] to lr[1] over iterations.
+        Learning rate.
+        The learning rate will linearly decrease from lr[0] to lr[1] over iterations.
 
     momentum : tuple, optional
-      Momentum.
-      The momentum will linearly decrease from momentum[0] to momentum[1] over iterations.
+        Momentum.
+        The momentum will linearly decrease from momentum[0] to momentum[1] over iterations.
 
     decay : tuple, optional
-      Decay reate of images or features.
-      The decay rate will linearly decrease from decay[0] to decay[1] over iterations.
+        Decay reate of images or features.
+        The decay rate will linearly decrease from decay[0] to decay[1] over iterations.
 
     layer_weights : dict, optional
-      Weights of layers in the loss function.
-      If None, equal weights are used for all layers.
+        Weights of layers in the loss function.
+        If None, equal weights are used for all layers.
 
     masks : dict, optional
-      Masks of DNN features.
+        Masks of DNN features.
 
     channels : dict, optional
-      The channel numbers of each layer used in the loss function.
+        The channel numbers of each layer used in the loss function.
 
     image_size : tuple, optional
-      Size of the image (h x w x c).
+        Size of the image (h x w x c).
 
     crop_generator_output : bool, optional
-      If True, outputs of the generator are cropped into `image_size`.
+        If True, outputs of the generator are cropped into `image_size`.
 
     initial_image : numpy.ndarray, optional
 
     preproc, postproc : func, optional
-      Pre- and post-processing functions on reconstructed data. Note that the
-      preprocessing is applied only once before starting reconstruction iteration.
-      The post-processing is applied after the completion of reconstruction iterations
-      (before returning the reconstructed data) as well as before saving snapshots
-      during the iterations.
+        Pre- and post-processing functions on reconstructed data. Note that the
+        preprocessing is applied only once before starting reconstruction iteration.
+        The post-processing is applied after the completion of reconstruction iterations
+        (before returning the reconstructed data) as well as before saving snapshots
+        during the iterations.
 
     encoder_preproc : func, optional
-      Preprocessing function on encoder's input. Note that the preprocessings
-      are applied in every iterations.
+        Preprocessing function on encoder's input. Note that the preprocessings
+        are applied in every iterations.
 
     generator_preproc, generator_postproc : func, optional
-      Pre- and post-processing functions on generator's input and output. Note
-      that the pre- and post-processings are applied in every iterations.
+        Pre- and post-processing functions on generator's input and output. Note
+        that the pre- and post-processings are applied in every iterations.
 
     gradient_normalization : bool, optional
 
     jittering : bool, optional
-      If True, reconstructed images are randomly shifted in each iteration.
+        If True, reconstructed images are randomly shifted in each iteration.
 
     jitter_size : int, optional
-      The number of pixels shifted in the jittering.
+        The number of pixels shifted in the jittering.
 
     blurring : bool, optional
-      If True, Gaussian smoothing is applied on the reconstructed images in each iteration.
+        If True, Gaussian smoothing is applied on the reconstructed images in each iteration.
 
     sigma : tuple, optional
-      The size of Gaussian kernel in the blurring.
-      The sigma rate will linearly decrease from sigma[0] to sigma[1] over iterations.
+        The size of Gaussian kernel in the blurring.
+        The sigma rate will linearly decrease from sigma[0] to sigma[1] over iterations.
 
     feature_size : tuple, optional
-      Size of features fed to the generator.
+        Size of features fed to the generator.
 
     initial_feature : numpy.ndarray, optional
-      Initial generator features.
+        Initial generator features.
 
     feature_upper_bound, feature_lower_bound : scalar, optional
-      Upper and lower bound of generator features.
+        Upper and lower bound of generator features.
 
     return_loss : bool, optional
-      If True, the function returns loss history.
+        If True, the function returns loss history.
 
     output_dir : str, optional
-      Path to output directory.
+        Path to output directory.
 
     save_snapshot : bool, optional
-      If True, snapshots (intermediate reconstructed images) will be saved.
+        If True, snapshots (intermediate reconstructed images) will be saved.
 
     snapshot_dir : str, optional
-      Path to the directory to save snapshots.
+        Path to the directory to save snapshots.
 
     snapshot_ext : str, optional
-      File extension (e.g., 'jpg', 'tiff') of snapshots.
+        File extension (e.g., 'jpg', 'tiff') of snapshots.
 
     snapshot_interval : int, optional
-      Save snapshots for every N iterations.
+        Save snapshots for every N iterations.
 
     snapshot_postprocess : func, optional
-      Postprocessing function applied on the snapshots.
+        Postprocessing function applied on the snapshots.
 
     disp_interval : int, optional
-      Display information for every N iterations.
+        Display information for every N iterations.
 
     device : str, optional
-      PyTorch device (e.g., 'cuda:0', 'cpu').
+        PyTorch device (e.g., 'cuda:0', 'cpu').
 
     Returns
     -------
     numpy.ndarray
-      A reconstructed image.
+        A reconstructed image.
     list, optional
-      Loss history.
+        Loss history.
     numpy.ndarray, optional
-      The final input features to the generator.
+        The final input features to the generator.
 
     Note
     ----
@@ -214,7 +214,7 @@ def reconstruct(features,
     Reference
     ---------
     Shen et al. (2019) Deep image reconstruction from human brain activity.
-      PLOS Computational Biology. https://doi.org/10.1371/journal.pcbi.1006633
+        PLOS Computational Biology. https://doi.org/10.1371/journal.pcbi.1006633
     '''
 
     if return_final_feat:

@@ -44,7 +44,7 @@ class EnsembleClassifier(object):
         ----------
         X : array of shape (n_samples, n_features)
         Y : array of shape (n_smaples,) or (n_samples, i, j, k, ...)
-          i * j * k * ... = n_targets
+            i * j * k * ... = n_targets
 
         Returns
         -------
@@ -76,7 +76,7 @@ class EnsembleClassifier(object):
         X : array of shape (n_samples, n_features)
         y : array of shape (n_samples,)
         target : int
-          Zero-based index of a target variable.
+            Zero-based index of a target variable.
 
         Returns
         -------
@@ -174,7 +174,7 @@ class EnsembleClassifier(object):
         ----------
         X : array of shape (n_samples, n_features)
         target : int
-          Zero-based index of a target variable.
+            Zero-based index of a target variable.
 
         Returns
         -------

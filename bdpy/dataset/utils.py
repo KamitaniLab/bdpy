@@ -23,13 +23,13 @@ def download_file(url: str, destination: str, progress_bar: bool = True, md5sum:
     Parameters
     ----------
     url: str
-      File URL.
+        File URL.
     destination: str
-      Path to save the file.
+        Path to save the file.
     progress_bar: bool = True
-      Show progress bar if True.
+        Show progress bar if True.
     md5sum: Union[str, None] = None
-      md5sum hash of the file.
+        md5sum hash of the file.
 
     Returns
     -------
@@ -62,13 +62,13 @@ def download_splitted_file(file_list: List[FileDict], destination: str, progress
     Parameters
     ----------
     file_list: List[FileDict]
-      List of split files.
+        List of split files.
     destination: str
-      Path to save the file.
+        Path to save the file.
     progress_bar: bool = True
-      Show progress bar if True.
+        Show progress bar if True.
     md5sum: Union[str, None] = None
-      md5sum hash of the file.
+        md5sum hash of the file.
 
     Returns
     -------

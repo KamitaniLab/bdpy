@@ -217,9 +217,9 @@ class ModelTraining(object):
     Attributes
     ----------
     model
-       Prediction model instance
+        Prediction model instance
     X, Y : array_like
-       Input and target data
+        Input and target data
     id : str
         Training ID
     model_parameters : dict

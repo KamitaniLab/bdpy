@@ -178,9 +178,9 @@ class BData(object):
         Parameters
         ----------
         key : str
-           Name of columns to be updated.
+            Name of columns to be updated.
         dat : np.ndarray
-           New data array.
+            New data array.
 
         Returns
         -------
