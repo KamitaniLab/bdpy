@@ -53,18 +53,18 @@ class Features(object):
     Parameters
     ----------
     dpath: str or list
-       (List of) DNN feature directory(ies)
+        (List of) DNN feature directory(ies)
     ext: str
         DNN feature file extension (default: mat)
 
     Attributes
     ----------
     labels: list
-       List of stimulus labels
+        List of stimulus labels
     index: list
-       List of stimulus index (one-based)
+        List of stimulus index (one-based)
     layers: list
-       List of DNN layers
+        List of DNN layers
     '''
 
     def __init__(
@@ -295,7 +295,7 @@ class DecodedFeatures(object):
     Parameters
     ----------
     path: str
-       Path to the decoded feature directory
+        Path to the decoded feature directory
     '''
 
     def __init__(

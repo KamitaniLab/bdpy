@@ -14,33 +14,33 @@ def make_paradigm(event_files, num_vols, tr=2., cond_col=2, label_col=None, regr
     Parameters
     ----------
     event_files : list
-      List of task event files.
+        List of task event files.
     num_vols : list
-      List of the number of volumes in each run.
+        List of the number of volumes in each run.
     tr : int or float
-      TR in sec.
+        TR in sec.
     cond_col : int
-      Index of the condition column in the task event files.
+        Index of the condition column in the task event files.
     label_col : int
-      Index of the label column in the task event files.
+        Index of the label column in the task event files.
     regressors : list
-      Names of regressors (conditions) included in the design matrix.
+        Names of regressors (conditions) included in the design matrix.
     ignore_col : int
-      Index of the column to be ingored.
+        Index of the column to be ingored.
     ignore_value : list
-      List of values to be ignored.
+        List of values to be ignored.
     design : 'block' or 'event_related
-      Specifying experimental design.
+        Specifying experimental design.
     trial_wise : bool
-      Returns trial-wise design matrix if True.
+        Returns trial-wise design matrix if True.
 
     Returns
     -------
     dict
-      paradigm : nipy.Paradigm
-      condition_labels : labels for task regressors
-      run_regressors : nuisance regressors for runs
-      run_regressors_label : labels for the run regressors
+        paradigm : nipy.Paradigm
+        condition_labels : labels for task regressors
+        run_regressors : nuisance regressors for runs
+        run_regressors_label : labels for the run regressors
     '''
 
     onset = []

@@ -1,0 +1,3 @@
+# distcomp
+
+::: bdpy.distcomp

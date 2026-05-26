@@ -131,6 +131,7 @@ class BaseCallback:
 
     For example, the following callback class logs the start and end of the task.
 
+    ```python
     >>> class Callback(BaseCallback):
     ...     def on_task_start(self):
     ...         print("Task started.")
@@ -144,6 +145,7 @@ class BaseCallback:
     >>> outputs = some_task(inputs)  # Run the task
     Task started.
     Task ended.
+    ```
 
     The set of available events that can be hooked into depends on the task.
     See the base class of the corresponding task for the list of all events.

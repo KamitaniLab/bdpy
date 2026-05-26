@@ -30,3 +30,5 @@ test_versions
 
 *.code-workspace
 
+site/
+

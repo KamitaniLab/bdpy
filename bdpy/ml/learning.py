@@ -69,6 +69,7 @@ class BaseLearning(object):
 #-----------------------------------------------------------------------
 class Classification(BaseLearning):
     '''Classification class
+
     Parameters
     ----------
     x_train, y_train : array_like
@@ -176,10 +177,6 @@ class CrossValidation(BaseLearning):
     def run(self):
         '''Run cross-validation
 
-        Parameters
-        ----------
-        None
-
         Returns
         -------
         None
@@ -220,9 +217,9 @@ class ModelTraining(object):
     Attributes
     ----------
     model
-       Prediction model instance
+        Prediction model instance
     X, Y : array_like
-       Input and target data
+        Input and target data
     id : str
         Training ID
     model_parameters : dict

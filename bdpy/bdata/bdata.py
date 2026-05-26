@@ -1,24 +1,6 @@
 """BrainDecoderToolbox2/BdPy data class.
 
 This file is a part of BdPy.
-
-API list
---------
-
-- Data modification
-    - add
-    - update
-    - add_metadata
-    - rename_metadata
-    - set_metadatadescription
-- Data access
-    - select
-    - get
-    - get_metadata
-    - show_metadata
-- File I/O
-    - load
-    - save
 """
 
 
@@ -57,15 +39,16 @@ class BData(object):
     file_type : {'Matlab', 'HDF5', 'None'}, optional
         File type (default: None)
 
-    If `file_name` was not given, BData.__init__() creates an empty
-    dataset and metadata.
-
     Attributes
     ----------
     dataset : numpy.ndarray (dtype=float)
         Dataset array
     metadata : MetaData object
         Meta-data object
+
+    Notes
+    -----
+    If `file_name` was not given, an empty dataset and metadata are created.
     """
 
     def __init__(self, file_name: Optional[str] = None, file_type: Optional[str] = None) -> None:
@@ -195,9 +178,9 @@ class BData(object):
         Parameters
         ----------
         key : str
-           Name of columns to be updated.
+            Name of columns to be updated.
         dat : np.ndarray
-           New data array.
+            New data array.
 
         Returns
         -------
@@ -298,7 +281,7 @@ class BData(object):
 
         Parameters
         ----------
-        key : str
+        metakey : str
             Meta-data key
         description : str
             Meta-data description
@@ -364,7 +347,7 @@ class BData(object):
         ----------
         condition : str
             Condition specifying columns.
-        retrun_index : bool, optional
+        return_index : bool, optional
             If True, return index of selected columns (default: False).
         verbose : bool, optional
             If True, display verbose messages (default: True).
@@ -484,7 +467,7 @@ class BData(object):
         ----------
         condition : str
             Condition specifying columns.
-        retrun_index : bool, optional
+        return_index : bool, optional
             If True, return index of selected columns (default: False).
         verbose : bool, optional
             If True, display verbose messages (default: True).
@@ -515,7 +498,7 @@ class BData(object):
         ----------
         condition : str
             Condition specifying columns.
-        retrun_index : bool, optional
+        return_index : bool, optional
             If True, return index of selected columns (default: False).
         verbose : bool, optional
             If True, display verbose messages (default: True).

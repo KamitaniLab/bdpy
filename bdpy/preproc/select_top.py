@@ -18,11 +18,11 @@ def select_top(data: np.ndarray, value: np.ndarray, num: int, axis: Optional[int
     Parameters
     ----------
     data : array
-       Data matrix
+        Data matrix
     value : array_like
-       Vector of values
+        Vector of values
     num : int
-       Number of selected features
+        Number of selected features
 
     Returns
     -------

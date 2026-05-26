@@ -17,12 +17,12 @@ def corrcoef(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
     ----------
     x, y : array_like
         Matrix or vector
-    var : str, 'row' or 'col'
+    var : {'row', 'col'}
         Specifying whether rows (default) or columns represent variables
 
     Returns
     -------
-    r
+    r : numpy.ndarray
         Correlation coefficients
     """
     # Convert vectors to arrays
@@ -84,12 +84,12 @@ def corrmat(x: np.ndarray, y: np.ndarray, var: str = 'row') -> np.ndarray:
     ----------
     x, y : array_like
         Matrix or vector
-    var : str, 'row' or 'col'
+    var : {'row', 'col'}
         Specifying whether rows (default) or columns represent variables
 
     Returns
     -------
-    rmat
+    rmat : numpy.ndarray
         Correlation matrix
     """
     # Fix x and y to represent variables in each row

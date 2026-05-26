@@ -1,0 +1,125 @@
+site_name: BdPy
+site_description: Brain decoder toolbox for Python
+site_url: https://kamitanilab.github.io/bdpy/
+repo_url: https://github.com/KamitaniLab/bdpy
+repo_name: KamitaniLab/bdpy
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+    - navigation.footer
+
+watch:
+  - bdpy
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            # Docstring parsing
+            docstring_style: numpy
+            docstring_section_style: list
+            merge_init_into_class: true
+            docstring_options:
+              ignore_init_summary: true
+              trim_doctest_flags: true
+            # Signatures
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            line_length: 80
+            # Headings / TOC
+            show_root_heading: false
+            show_root_toc_entry: false
+            show_root_full_path: false
+            show_object_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            heading_level: 2
+            # Members
+            show_submodules: false
+            inherited_members: false
+            members_order: source
+            filters: ["!^_"]
+            # Bases / source
+            show_bases: true
+            show_source: false
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Features and DecodedFeatures: dataform_features.md
+  - API Reference:
+    - Overview: api/index.md
+    - bdata:
+      - Overview: api/bdata/index.md
+      - bdata: api/bdata/bdata.md
+      - featureselector: api/bdata/featureselector.md
+      - metadata: api/bdata/metadata.md
+      - utils: api/bdata/utils.md
+    - dataform: api/dataform.md
+    - dataset: api/dataset.md
+    - distcomp: api/distcomp.md
+    - dl:
+      - Overview: api/dl/index.md
+      - torch:
+        - base: api/dl/torch/base.md
+        - dataset: api/dl/torch/dataset.md
+        - domain: api/dl/torch/domain.md
+        - models: api/dl/torch/models.md
+        - torch: api/dl/torch/torch.md
+      - caffe: api/dl/caffe.md
+    - evals: api/evals.md
+    - feature: api/feature.md
+    - fig: api/fig.md
+    - ml:
+      - Overview: api/ml/index.md
+      - crossvalidation: api/ml/crossvalidation.md
+      - ensemble: api/ml/ensemble.md
+      - learning: api/ml/learning.md
+      - model: api/ml/model.md
+      - regress: api/ml/regress.md
+      - searchlight: api/ml/searchlight.md
+    - mri: api/mri.md
+    - opendata: api/opendata.md
+    - pipeline: api/pipeline.md
+    - preproc: api/preproc.md
+    - recon:
+      - Overview: api/recon/index.md
+      - torch:
+        - modules: api/recon/torch/modules.md
+        - task: api/recon/torch/task.md
+        - icnn: api/recon/torch/icnn.md
+      - utils: api/recon/utils.md
+    - stats: api/stats.md
+    - task: api/task.md
+    - util: api/util.md
