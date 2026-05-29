@@ -25,7 +25,7 @@ class TestPreprocessorInterface(unittest.TestCase):
         test_output_x, test_output_ind = interface.average_sample(
             x, group, verbose=True)
 
-        np.testing.assert_array_equal(test_output_x, exp_output_x)
+        np.testing.assert_allclose(test_output_x, exp_output_x, rtol=1e-12, atol=1e-12)
         np.testing.assert_array_equal(test_output_ind, exp_output_ind)
 
     @classmethod
@@ -43,7 +43,7 @@ class TestPreprocessorInterface(unittest.TestCase):
 
         test_output = interface.detrend_sample(x, group, verbose=True)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     @classmethod
     def test_detrend_sample_nokeepmean(cls):
@@ -59,7 +59,7 @@ class TestPreprocessorInterface(unittest.TestCase):
         test_output = interface.detrend_sample(
             x, group, keep_mean=False, verbose=True)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     @classmethod
     def test_normalize_sample(cls):
@@ -77,7 +77,7 @@ class TestPreprocessorInterface(unittest.TestCase):
 
         test_output = interface.normalize_sample(x, group, verbose=True)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     @classmethod
     def test_shift_sample_singlegroup(cls):

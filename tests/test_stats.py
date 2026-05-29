@@ -20,7 +20,7 @@ class TestStats(unittest.TestCase):
 
         test_output = bdst.corrcoef(x, y)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     def test_corrcoef_matrix_matrix_varcol(self):
         '''Test for corrcoef (matrix and matrix, var=col)'''
@@ -33,7 +33,7 @@ class TestStats(unittest.TestCase):
 
         test_output = bdst.corrcoef(x, y, var='col')
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     def test_corrcoef_vector_vector(self):
         '''Test for corrcoef (vector and vector)'''
@@ -45,7 +45,7 @@ class TestStats(unittest.TestCase):
 
         test_output = bdst.corrcoef(x, y)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     def test_corrcoef_hvector_hvector(self):
         '''Test for corrcoef (horizontal vector and horizontal vector)'''
@@ -57,7 +57,7 @@ class TestStats(unittest.TestCase):
 
         test_output = bdst.corrcoef(x, y)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     def test_corrcoef_vvector_vvector(self):
         '''Test for corrcoef (vertical vector and vertical vector)'''
@@ -69,7 +69,7 @@ class TestStats(unittest.TestCase):
 
         test_output = bdst.corrcoef(x, y)
 
-        np.testing.assert_array_equal(test_output, exp_output)
+        np.testing.assert_allclose(test_output, exp_output, rtol=1e-12, atol=1e-12)
 
     def test_corrcoef_matrix_vector_varrow(self):
         '''Test for corrcoef (matrix and vector, var=row)'''

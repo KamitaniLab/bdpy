@@ -18,9 +18,9 @@ class TestMetrics(unittest.TestCase):
             for i in range(n)
         ]])
 
-        self.assertTrue(np.allclose(
-            profile_correlation(x, y), r
-        ))
+        np.testing.assert_allclose(
+            profile_correlation(x, y), r, rtol=1e-12, atol=1e-12
+        )
         self.assertEqual(profile_correlation(x, y).shape, (1, n))
 
         # Multi-d array
@@ -34,9 +34,9 @@ class TestMetrics(unittest.TestCase):
         ]])
         r = r.reshape(1, 4, 3, 2)
 
-        self.assertTrue(np.allclose(
-            profile_correlation(x, y), r
-        ))
+        np.testing.assert_allclose(
+            profile_correlation(x, y), r, rtol=1e-12, atol=1e-12
+        )
         self.assertEqual(profile_correlation(x, y).shape, (1, 4, 3, 2))
 
     def test_pattern_correlation(self):
@@ -48,9 +48,9 @@ class TestMetrics(unittest.TestCase):
             for i in range(10)
         ])
 
-        self.assertTrue(np.allclose(
-            pattern_correlation(x, y), r
-        ))
+        np.testing.assert_allclose(
+            pattern_correlation(x, y), r, rtol=1e-12, atol=1e-12
+        )
         self.assertEqual(pattern_correlation(x, y).shape, (10,))
 
         # Multi-d array
@@ -63,26 +63,23 @@ class TestMetrics(unittest.TestCase):
             for i in range(10)
         ])
 
-        self.assertTrue(np.allclose(
-            pattern_correlation(x, y), r
-        ))
+        np.testing.assert_allclose(
+            pattern_correlation(x, y), r, rtol=1e-12, atol=1e-12
+        )
         self.assertEqual(pattern_correlation(x, y).shape, (10,))
 
     def test_2d(self):
         with open('tests/data/testdata-2d.pkl.gz', 'rb') as f:
             d = pickle.load(f)
-        self.assertTrue(np.allclose(
-            profile_correlation(d['x'], d['y']),
-            d['r_prof']
-        ))
-        self.assertTrue(np.allclose(
-            pattern_correlation(d['x'], d['y']),
-            d['r_patt']
-        ))
-        self.assertTrue(np.allclose(
-            pairwise_identification(d['x'], d['y']),
-            d['ident_acc']
-        ))
+        np.testing.assert_allclose(
+            profile_correlation(d['x'], d['y']), d['r_prof'], rtol=1e-12, atol=1e-12
+        )
+        np.testing.assert_allclose(
+            pattern_correlation(d['x'], d['y']), d['r_patt'], rtol=1e-12, atol=1e-12
+        )
+        np.testing.assert_allclose(
+            pairwise_identification(d['x'], d['y']), d['ident_acc'], rtol=1e-12, atol=1e-12
+        )
 
     def test_2d_nan(self):
         with open('tests/data/testdata-2d-nan.pkl.gz', 'rb') as f:
@@ -91,14 +88,14 @@ class TestMetrics(unittest.TestCase):
         #     profile_correlation(d['x'], d['y']),
         #     d['r_prof']
         # ))
-        self.assertTrue(np.allclose(
+        np.testing.assert_allclose(
             pattern_correlation(d['x'], d['y'], remove_nan=True),
-            d['r_patt'],
-        ))
-        self.assertTrue(np.allclose(
+            d['r_patt'], rtol=1e-12, atol=1e-12
+        )
+        np.testing.assert_allclose(
             pairwise_identification(d['x'], d['y'], remove_nan=True),
-            d['ident_acc'],
-        ))
+            d['ident_acc'], rtol=1e-12, atol=1e-12
+        )
 
 if __name__ == '__main__':
     unittest.main()

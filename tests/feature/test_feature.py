@@ -26,7 +26,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (channel-wise) + SD (all)
         feat_valid = ((feat - feat_mean_ch) / feat_std_all) * feat_std0 + feat_mean0
@@ -35,7 +35,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (all) + SD (channel-wise)
         feat_valid = ((feat - feat_mean_all) / feat_std_ch) * feat_std0 + feat_mean0
@@ -44,7 +44,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (all) + SD (all)
         feat_valid = ((feat - feat_mean_all) / feat_std_all) * feat_std0 + feat_mean0
@@ -53,7 +53,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (channel-wise) + SD (channel-wise), self-mean shift
         feat_valid = ((feat - feat_mean_ch) / feat_std_ch) * feat_std0 + feat_mean_ch
@@ -62,7 +62,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift='self', scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (channel-wise) + SD (channel-wise), self-mean shift and self-SD scale
         feat_valid = ((feat - feat_mean_ch) / feat_std_ch) * feat_std_ch + feat_mean_ch
@@ -71,7 +71,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift='self', scale='self',
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
     def test_normalize_feature_3d(self):
         feat = np.random.rand(64, 16, 16)
@@ -94,7 +94,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (channel-wise) + SD (all)
         feat_valid = ((feat - feat_mean_ch) / feat_std_all) * feat_std0 + feat_mean0
@@ -103,7 +103,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (all) + SD (channel-wise)
         feat_valid = ((feat - feat_mean_all) / feat_std_ch) * feat_std0 + feat_mean0
@@ -112,7 +112,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (all) + SD (all)
         feat_valid = ((feat - feat_mean_all) / feat_std_all) * feat_std0 + feat_mean0
@@ -121,7 +121,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift=feat_mean0, scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (channel-wise) + SD (channel-wise), self-mean shift
         feat_valid = ((feat - feat_mean_ch) / feat_std_ch) * feat_std0 + feat_mean_ch
@@ -130,7 +130,7 @@ class TestUtilFeature(unittest.TestCase):
                                       shift='self', scale=feat_std0,
                                       std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
         # Mean (channel-wise) + SD (channel-wise), self-mean shift and self-SD scale
         feat_valid = ((feat - feat_mean_ch) / feat_std_ch) * feat_std_ch + feat_mean_ch
@@ -146,7 +146,7 @@ class TestUtilFeature(unittest.TestCase):
                                       channel_wise_std=False,
                                       scale=feat_std0, std_ddof=1)
 
-        np.testing.assert_array_equal(feat_test, feat_valid)
+        np.testing.assert_allclose(feat_test, feat_valid, rtol=1e-12, atol=1e-12)
 
 
 if __name__ == '__main__':
