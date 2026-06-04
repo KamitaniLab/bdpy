@@ -9,6 +9,9 @@ on:
   pull_request:
     branches: [ "dev" ]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -43,9 +46,18 @@ jobs:
             --cov-report=term-missing:skip-covered --cov=bdpy tests | tee pytest-coverage.txt
         )
 
-    - name: Upload coverage comment
-      if: always()
-      uses: MishaKav/pytest-coverage-comment@v1.7.2
+    - name: Save PR number
+      if: ${{ always() && github.event_name == 'pull_request' && matrix.python-version == '3.11' }}
+      run: |
+        echo "${{ github.event.pull_request.number }}" > pr_number.txt
+
+    - name: Upload coverage artifact
+      if: ${{ always() && github.event_name == 'pull_request' && matrix.python-version == '3.11' }}
+      uses: actions/upload-artifact@v7
       with:
-        pytest-coverage-path: pytest-coverage.txt
-        junitxml-path: pytest.yml
+        name: coverage-report
+        path: |
+          pytest-coverage.txt
+          pytest.yml
+          pr_number.txt
+        retention-days: 3

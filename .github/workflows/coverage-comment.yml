@@ -1,0 +1,47 @@
+name: coverage-comment
+
+on:
+  workflow_run:
+    workflows: [ "ci" ]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: write
+
+jobs:
+  comment:
+    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    # Do not checkout or execute PR code in this workflow; it can write PR comments.
+    - name: Download coverage artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: coverage-report
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        path: coverage-report
+
+    - name: Read PR number
+      id: pr
+      run: |
+        number="$(tr -d '[:space:]' < coverage-report/pr_number.txt)"
+        case "$number" in
+          ''|*[!0-9]*)
+            echo "::error::Invalid PR number in coverage artifact"
+            exit 1
+            ;;
+        esac
+        echo "number=$number" >> "$GITHUB_OUTPUT"
+
+    - name: Upload coverage comment
+      uses: MishaKav/pytest-coverage-comment@v1.7.2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        issue-number: ${{ steps.pr.outputs.number }}
+        pytest-coverage-path: coverage-report/pytest-coverage.txt
+        junitxml-path: coverage-report/pytest.yml
