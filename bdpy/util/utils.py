@@ -43,7 +43,7 @@ def create_groupvector(group_label: Union[List, np.ndarray], group_size: Union[L
         >>> bdpy.util.create_groupvector([ 1, 2, 3 ], [ 2, 4, 2 ])
         array([1, 1, 2, 2, 2, 2, 3, 3])
     """
-    group_vector = []
+    group_vector: list = []
 
     if isinstance(group_size, int):
         # When 'group_size' is integer, create array in which each group label

@@ -122,7 +122,7 @@ class BareGenerator(NNModuleGenerator):
         """Initialize the generator."""
         super().__init__()
         self._activation = activation
-        self._domain = InternalDomain()
+        self._domain: InternalDomain = InternalDomain()
 
     def reset_states(self) -> None:
         """Reset the state of the generator."""

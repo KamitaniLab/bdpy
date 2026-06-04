@@ -51,10 +51,10 @@ class BData(object):
 
     def __init__(self, file_name: Optional[str] = None, file_type: Optional[str] = None) -> None:
         """Initialize BData instance."""
-        self.__dataset = np.ndarray((0, 0), dtype=float)
+        self.__dataset: np.ndarray = np.ndarray((0, 0), dtype=float)
         self.__metadata = MetaData()
-        self.__header = {}
-        self.__vmap = {}
+        self.__header: dict = {}
+        self.__vmap: dict = {}
 
         if file_name is not None:
             self.load(file_name, file_type)
@@ -368,7 +368,7 @@ class BData(object):
         """
         expr_rpn = FeatureSelector(condition).rpn
 
-        stack = []
+        stack: list = []
         buf_sel = []
 
         for i in expr_rpn:
