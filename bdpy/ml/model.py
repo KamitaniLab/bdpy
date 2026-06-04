@@ -1,22 +1,23 @@
-'''ML models'''
+"""ML models"""
 
 
 __all__ = []
 
 import copy
+import warnings
 from itertools import product
 
-from bdpy.preproc import select_top
 import numpy as np
 from numpy.linalg import norm
 from scipy import stats
 from sklearn.svm import SVC
 from tqdm import tqdm
-import warnings
+
+from bdpy.preproc import select_top
 
 
 class EnsembleClassifier(object):
-    '''Ensemble classifier.'''
+    """Ensemble classifier."""
 
     def __init__(
             self,
@@ -39,7 +40,7 @@ class EnsembleClassifier(object):
         self._randobj = np.random.RandomState()
 
     def fit(self, X, Y):
-        '''
+        """
         Parameters
         ----------
         X : array of shape (n_samples, n_features)
@@ -49,8 +50,7 @@ class EnsembleClassifier(object):
         Returns
         -------
         self
-        '''
-
+        """
         if Y.ndim == 1:
             self._n_targets = 1
             self._estimators.update({0: {}})
@@ -70,7 +70,7 @@ class EnsembleClassifier(object):
         return self
 
     def _fit(self, X, y, target=0):
-        '''
+        """
         Parameters
         ----------
         X : array of shape (n_samples, n_features)
@@ -81,8 +81,7 @@ class EnsembleClassifier(object):
         Returns
         -------
         self
-        '''
-
+        """
         self._classes.update({target: np.unique(y)})
         y_pairs = self.__get_pairs(self._classes[target])
 
@@ -144,7 +143,7 @@ class EnsembleClassifier(object):
         return self
 
     def predict(self, X):
-        '''
+        """
         Parameters
         ----------
         X : array of shape (n_samples, n_features)
@@ -152,7 +151,7 @@ class EnsembleClassifier(object):
         Returns
         -------
         y_pred : array of shape (n_samples,)
-        '''
+        """
         if self._n_targets == 1:
             return self._predict(X)
 
@@ -169,7 +168,7 @@ class EnsembleClassifier(object):
         return y_pred
 
     def _predict(self, X, target=0):
-        '''
+        """
         Parameters
         ----------
         X : array of shape (n_samples, n_features)
@@ -179,8 +178,7 @@ class EnsembleClassifier(object):
         Returns
         -------
         y_pred : array of shape (n_samples,)
-        '''
-
+        """
         pred_pairs = []
         dv_pairs = []
         for (y0, y1), estimators in self._estimators[target].items():
@@ -225,8 +223,7 @@ class EnsembleClassifier(object):
         return [(y0, y1) for y0, y1 in product(classes, classes) if y0 < y1]
 
     def __undersample(self, x, y):
-        '''The original version was implemented by Misato Tanaka.'''
-
+        """The original version was implemented by Misato Tanaka."""
         y_uniq = np.unique(y)
         min_sample_num = np.min([np.sum(y == u) for u in y_uniq])
 
@@ -250,7 +247,7 @@ class EnsembleClassifier(object):
         return x, y
 
     def __voxel_selection(self, x, y, n_voxel=100):
-        '''Voxel selection based on f values of one-way ANOVA.'''
+        """Voxel selection based on f values of one-way ANOVA."""
         y_uniq = np.unique(y)
         x_sub = [x[y == k, :] for k in y_uniq]
         f, p = stats.f_oneway(*x_sub)
@@ -258,7 +255,7 @@ class EnsembleClassifier(object):
         return index
 
     def __voting(self, y, dv, target=0):
-        '''
+        """
         Parameters
         ----------
         y : array of (n_samples, n_pairs)
@@ -267,7 +264,7 @@ class EnsembleClassifier(object):
         Returns
         -------
         y_pred : array of (n_samples)
-        '''
+        """
         vote = []  # (n_samples, n_classes)
         dv = np.abs(dv)
         for _y, _dv in zip(y, dv):

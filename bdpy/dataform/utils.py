@@ -2,8 +2,9 @@
 
 from typing import List, Union
 
-from bdpy.dataform import Features
 import numpy as np
+
+from bdpy.dataform import Features
 
 
 def get_multi_features(features: List[Features], layer: str, labels: Union[List[str], np.ndarray]) -> np.ndarray:

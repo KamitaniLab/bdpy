@@ -1,6 +1,6 @@
-'''
+"""
 Base classes.
-'''
+"""
 
 
 __all__ = [
@@ -9,23 +9,20 @@ __all__ = [
 ]
 
 
-from typing import Any, Type, Iterable, List, Dict, Tuple, Callable, Union, Optional
-
-import os
+from typing import Any, Dict, Iterable, Optional, Type, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 
-
 _tensor_t = Union[np.ndarray, torch.Tensor]
 
 
 class DnnFeatureExtractorBase(object):
-    '''
+    """
     Base class for PyTorch DNN feature extractors.
 
-    '''
+    """
 
     def __init__(self, model: Optional[nn.Module] = None, model_cls: Optional[Type[nn.Module]] = None, layers: Iterable[str] = [], device: str = 'cpu', init_args={}):
         self.model = model
@@ -41,22 +38,22 @@ class DnnFeatureExtractorBase(object):
         self.model.to(self.device)
 
     def init(self) -> None:
-        '''
+        """
         Custom initialization method.
         `init_args` in `__init__()` is passed to this function.
-        '''
+        """
         return None
 
     def preprocess(self, x: Any) -> Any:
-        '''
+        """
         Preprocesses the input for the DNN model.
-        '''
+        """
         return x
 
     def extract_features(self, x: Any) -> Dict[str, np.ndarray]:
-        '''
+        """
         Extracts features from the given input using the DNN model.
-        '''
+        """
         raise NotImplementedError("Subclass must implement extract_features method.")
 
     def __call__(self, x: Any, **kwargs) -> Dict[str, _tensor_t]:
@@ -64,10 +61,10 @@ class DnnFeatureExtractorBase(object):
 
 
 class ReconstructionBase(object):
-    '''
+    """
     Base class for reconstruction.
 
-    '''
+    """
 
     def __init__(self, model: Optional[nn.Module] = None, model_cls: Optional[Type[nn.Module]] = None, layers: Iterable[str] = [], device: str = 'cpu', init_args={}):
         self.model = model
@@ -83,22 +80,22 @@ class ReconstructionBase(object):
         self.model.to(self.device)
 
     def init(self) -> None:
-        '''
+        """
         Custom initialization method.
         `init_args` in `__init__()` is passed to this function.
-        '''
+        """
         return None
 
     def preprocess(self, x: Any) -> Any:
-        '''
+        """
         Preprocesses the input for the DNN model.
-        '''
+        """
         return x
 
     def reconstruct(self, x: Any) -> Any:
-        '''
+        """
         Reconstruction from the given input.
-        '''
+        """
         raise NotImplementedError("Subclass must implement reconstruct method.")
 
     def __call__(self, x: Any, **kwargs) -> Any:

@@ -7,9 +7,11 @@ This file is a part of BdPy.
 __all__ = ['select_top']
 
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 import numpy as np
-from .util import print_start_msg, print_finish_msg
+
+from .util import print_finish_msg, print_start_msg
 
 
 def select_top(data: np.ndarray, value: np.ndarray, num: int, axis: Optional[int] = 0, verbose: Optional[bool] = True) -> Tuple[np.ndarray, np.ndarray]:

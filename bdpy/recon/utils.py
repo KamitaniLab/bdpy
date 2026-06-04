@@ -1,4 +1,4 @@
-'''Reconstruction utilities.'''
+"""Reconstruction utilities."""
 
 
 import numpy as np
@@ -6,12 +6,11 @@ import scipy.ndimage as nd
 
 
 def clip_extreme(x, pct=1):
-    '''
+    """
     Clip extreme values.
 
     Original version was written by Shen Guo-Hua.
-    '''
-
+    """
     if pct < 0:
         pct = 0.
 
@@ -25,12 +24,11 @@ def clip_extreme(x, pct=1):
 
 
 def gaussian_blur(img, sigma):
-    '''
+    """
     Smooth the image with gaussian filter.
 
     Original version was written by Shen Guo-Hua.
-    '''
-
+    """
     if sigma > 0:
         img[0] = nd.filters.gaussian_filter(img[0], sigma, order=0)
         img[1] = nd.filters.gaussian_filter(img[1], sigma, order=0)
@@ -39,17 +37,17 @@ def gaussian_blur(img, sigma):
 
 
 def image_norm(img):
-    '''
+    """
     Calculate the norm of the RGB for each pixel.
 
     Original version was written by Shen Guo-Hua.
-    '''
+    """
     img_norm = np.sqrt(img[0] ** 2 + img[1] ** 2 + img[2] ** 2)
     return img_norm
 
 
 def normalize_image(img):
-    '''
+    """
     Normalize the image.
 
     Map the minimum pixel to 0; map the maximum pixel to 255.
@@ -57,8 +55,7 @@ def normalize_image(img):
 
 
     Original version was written by Shen Guo-Hua.
-    '''
-
+    """
     img = img - img.min()
     if img.max() > 0:
         img = img * (255.0 / img.max())
@@ -67,8 +64,7 @@ def normalize_image(img):
 
 
 def make_feature_masks(features, masks, channels):
-    '''Make feature masks.
-
+    """Make feature masks.
 
     Parameters
     ----------
@@ -104,8 +100,7 @@ def make_feature_masks(features, masks, channels):
     ----
     Original version was written by Shen Guo-Hua.
 
-    '''
-
+    """
     feature_masks = {}
     for layer in features.keys():
         if (masks is None or masks == {} or masks == [] or (layer not in masks.keys())) and (channels is None or channels == {} or channels == [] or (layer not in channels.keys())):  # use all features and all channels

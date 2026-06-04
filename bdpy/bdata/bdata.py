@@ -7,22 +7,20 @@ This file is a part of BdPy.
 __all__ = ['BData']
 
 
-from typing import Optional, Tuple, Union
-
-import os
-import warnings
-import time
 import datetime
 import inspect
+import os
 import re
+import time
+import warnings
+from typing import Optional, Tuple, Union
 
 import h5py
 import numpy as np
 import scipy.io as sio
 
-from .metadata import MetaData
 from .featureselector import FeatureSelector
-
+from .metadata import MetaData
 
 # BData class ##########################################################
 

@@ -5,8 +5,15 @@ This file is a part of BdPy
 """
 
 
-from .preprocessor import Average,Detrender,Normalize,Regressout,ReduceOutlier,ShiftSample
-from .util import print_start_msg, print_finish_msg
+from .preprocessor import (
+    Average,
+    Detrender,
+    Normalize,
+    ReduceOutlier,
+    Regressout,
+    ShiftSample,
+)
+from .util import print_finish_msg, print_start_msg
 
 
 def average_sample(x, group=[], verbose=True):
@@ -27,7 +34,6 @@ def average_sample(x, group=[], verbose=True):
     index_map : array_like
         Vector mapping row indexes from y to x (length = group num)
     """
-
     if verbose:
         print_start_msg()
 
@@ -56,7 +62,6 @@ def detrend_sample(x, group=[], keep_mean=True, verbose=True):
     y : array
         Detrended data array (group num * feature num)
     """
-
     if verbose:
         print_start_msg()
 
@@ -92,7 +97,6 @@ def normalize_sample(x, group=[], mode='PercentSignalChange', baseline='All',
     y : array
         Normalized data array (sample num * feature num)
     """
-
     if verbose:
         print_start_msg()
 
@@ -106,8 +110,7 @@ def normalize_sample(x, group=[], mode='PercentSignalChange', baseline='All',
 
 
 def reduce_outlier(x, group=[], std=True, maxmin=True, remove=False, dimension=1, n_iter=10, std_threshold=3, max_value=None, min_value=None, verbose=True):
-    '''Outlier reduction.'''
-
+    """Outlier reduction."""
     if verbose:
         print_start_msg()
 
@@ -124,7 +127,7 @@ def reduce_outlier(x, group=[], std=True, maxmin=True, remove=False, dimension=1
     
 
 def regressout(x, group=[], regressor=[], remove_dc=True, linear_detrend=True, verbose=True):
-    '''Remove nuisance regressors.
+    """Remove nuisance regressors.
 
     Parameters
     ----------
@@ -143,8 +146,7 @@ def regressout(x, group=[], regressor=[], remove_dc=True, linear_detrend=True, v
     -------
     y : array, shape = (n_sample, n_feature)
         Signal without nuisance regressors.
-    '''
-
+    """
     if verbose:
         print_start_msg()
 
@@ -179,7 +181,6 @@ def shift_sample(x, group=[], shift_size = 1, verbose = True):
 
     Examples
     --------
-
     >>> import numpy as np
     >>> from bdpy.preproc import shift_sample
     >>> x = np.array([[ 1,  2,  3],
@@ -198,7 +199,6 @@ def shift_sample(x, group=[], shift_size = 1, verbose = True):
     >>> index
     array([0, 1, 3, 4])
     """
-
     if verbose:
         print_start_msg()
 

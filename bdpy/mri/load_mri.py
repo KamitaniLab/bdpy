@@ -1,18 +1,18 @@
-'''load_mri'''
+"""load_mri"""
 
 
-import numpy as np
 import nipy
+import numpy as np
 
 
 def load_mri(fpath):
-    '''Load a MRI image.
+    """Load a MRI image.
 
     - Returns data as 2D array (sample x voxel)
     - Returns voxle xyz coordinates (3 x voxel)
     - Returns voxel ijk indexes (3 x voxel)
     - Data, xyz, and ijk are flattened by Fortran-like index order
-    '''
+    """
     img = nipy.load_image(fpath)
 
     data = img.get_data()

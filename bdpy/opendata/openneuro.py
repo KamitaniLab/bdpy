@@ -1,15 +1,14 @@
+import json
 import os
 import re
 import shutil
-import json
 from glob import glob
 
 from bdpy import makedir_ifnot
 
 
 def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./', bids_dir='bids', fmap=False, dry_run=False):
-    '''Create BIDS dataset for OpenNeuro.'''
-
+    """Create BIDS dataset for OpenNeuro."""
     if not source_type == 'bids_daily':
         raise NotImplementedError('Source type %s not supported.' % source_type)
 
@@ -119,7 +118,7 @@ def makedata(src, source_type='bids_daily', output_dir='./output', root_dir='./'
 
                 # T2 inplane image
                 src_inplane = ses['inplane']
-                if not src_inplane is None:
+                if src_inplane is not None:
                     rename_table = {
                         os.path.basename(src_inplane).split('_')[0]: subject,       # SUbject ID
                         os.path.basename(src_inplane).split('_')[1]: session_label, # Session label
@@ -236,7 +235,7 @@ def __parse_bids_dir(dpath, data_info=None):
 
         # Session selection
         skip = False
-        if (not data_info is None) and 'ses' in data_info:
+        if (data_info is not None) and 'ses' in data_info:
             if isinstance(data_info['ses'], int) and (i + 1) != data_info['ses']:
                 skip = True
             elif isinstance(data_info['ses'], list) and (i + 1) not in data_info['ses']:
@@ -261,7 +260,7 @@ def __parse_bids_dir(dpath, data_info=None):
 
         # Run selection
         run_files_keep = []
-        if (not data_info is None) and 'discard_run' in data_info:
+        if (data_info is not None) and 'discard_run' in data_info:
             for j, rf in enumerate(run_files):
                 skip_run = False
                 if isinstance(data_info['discard_run'], int) and (j + 1) == data_info['discard_run']:

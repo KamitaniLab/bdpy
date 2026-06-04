@@ -1,26 +1,26 @@
-'''learning module'''
+"""learning module"""
 
 import sys
 from abc import ABCMeta, abstractmethod
-from typing import cast, Any, Optional, Dict
-if sys.version_info >= (3, 8):
-    from typing import TypedDict, Protocol
-else:
-    from typing_extensions import TypedDict, Protocol
+from typing import Any, Dict, Optional, cast
 
-import os
-import warnings
-import uuid
-import pickle
+if sys.version_info >= (3, 8):
+    from typing import Protocol, TypedDict
+else:
+    from typing_extensions import Protocol, TypedDict
+
 import copy
-import yaml
 import glob
-from time import time, sleep
+import os
+import pickle
+import uuid
 from datetime import datetime
+from time import sleep, time
 
 import numpy as np
+import yaml
 
-from bdpy.dataform import save_array, load_array
+from bdpy.dataform import load_array, save_array
 from bdpy.distcomp import DistComp
 from bdpy.util import makedir_ifnot
 
@@ -39,7 +39,7 @@ class SortIndex(TypedDict):
 
 #-----------------------------------------------------------------------
 class BaseLearning(object):
-    '''Base class for learning'''
+    """Base class for learning"""
 
     __metaclass__ = ABCMeta
 
@@ -52,14 +52,14 @@ class BaseLearning(object):
         pass
 
     def add_preprocessing(self, func, args=None):
-        '''Add preprocessing function'''
+        """Add preprocessing function"""
         self._preprocessing.append({
             'func': func,
             'args': args
         })
 
     def add_postprocessing(self, func, args=None):
-        '''Add postprocessing function'''
+        """Add postprocessing function"""
         self._postprocessing.append({
             'func': func,
             'args': args
@@ -68,7 +68,7 @@ class BaseLearning(object):
 
 #-----------------------------------------------------------------------
 class Classification(BaseLearning):
-    '''Classification class
+    """Classification class
 
     Parameters
     ----------
@@ -89,7 +89,7 @@ class Classification(BaseLearning):
         Predicted labels
     prediction_accuracy
         Prediction accuracy
-   '''
+    """
 
     def __init__(self, x_train=None, y_train=None, x_test=None, y_test=None,
                  classifier=None, verbose='off'):
@@ -109,8 +109,7 @@ class Classification(BaseLearning):
         self.prediction_accuracy = None
 
     def run(self):
-        '''Run classification'''
-
+        """Run classification"""
         self.classifier_trained = copy.deepcopy(self.classifier)
 
         for p in self._preprocessing:
@@ -135,7 +134,7 @@ class Classification(BaseLearning):
 
 #-----------------------------------------------------------------------
 class CrossValidation(BaseLearning):
-    '''Cross-validation class
+    """Cross-validation class
 
     Parameters
     ----------
@@ -156,7 +155,7 @@ class CrossValidation(BaseLearning):
         Trained classifier in each fold
     prediction_accuracy : list
         Prediction accuracy in each fold
-    '''
+    """
 
     def __init__(self, x, y, classifier=None, index=None,
                  keep_classifiers=False, verbose='off'):
@@ -175,13 +174,12 @@ class CrossValidation(BaseLearning):
         self.prediction_accuracy = []
 
     def run(self):
-        '''Run cross-validation
+        """Run cross-validation
 
         Returns
         -------
         None
-        '''
-
+        """
         cls = Classification(x_train=None, y_train=None, x_test=None, y_test=None,
                              classifier=self.classifier, verbose='off')
         for p in self._preprocessing:
@@ -212,7 +210,7 @@ class CrossValidation(BaseLearning):
 
 #-----------------------------------------------------------------------
 class ModelTraining(object):
-    '''Model training with chunking and distributed computation class.
+    """Model training with chunking and distributed computation class.
 
     Attributes
     ----------
@@ -239,7 +237,7 @@ class ModelTraining(object):
     save_path : str
     verbose : int (0 or 1)
         Verbosity level.
-    '''
+    """
 
     def __init__(
             self, model: SupportsFit, X: np.ndarray, Y: np.ndarray,
@@ -285,8 +283,7 @@ class ModelTraining(object):
         self.__pickle_protocol = 4
 
     def run(self):
-        '''Run training.'''
-
+        """Run training."""
         # Chunking
         if self.chunk_axis is None:
             self.__chunking = False
@@ -310,12 +307,12 @@ class ModelTraining(object):
             distcomp = self.distcomp
 
         # X normalization
-        if not self.X_normalize is None:
+        if self.X_normalize is not None:
             print('Normalizing X')
             self.X = (self.X - self.X_normalize['mean']) / self.X_normalize['std']
             self.X[np.isinf(self.X)] = 0
 
-        if not self.X_sort is None:
+        if self.X_sort is not None:
             print('Sorting X')
             self.X = self.X[self.X_sort['index'], :]
 
@@ -353,7 +350,7 @@ class ModelTraining(object):
                 Y = self.Y
 
             # Y preprocessing
-            if not self.Y_normalize is None:
+            if self.Y_normalize is not None:
                 print('Normalizing Y')
                 if self.__chunking:
                     y_mean = np.take(self.Y_normalize['mean'], [i_chunk], axis=self.chunk_axis)
@@ -364,7 +361,7 @@ class ModelTraining(object):
                 Y = (Y - y_mean) / y_norm
                 Y[np.isinf(Y)] = 0
 
-            if not self.Y_sort is None:
+            if self.Y_sort is not None:
                 print('Sorting Y')
                 Y = Y[self.Y_sort['index'], :]
 
@@ -420,7 +417,7 @@ class ModelTraining(object):
                 else:
                     info = {}
 
-                if not '_status' in info:
+                if '_status' not in info:
                     info.update({'_status': {}})
 
                 info['_status'].update({
@@ -462,7 +459,7 @@ class ModelTraining(object):
         return None
 
     def __output_file(self, chunk=0):
-        '''Define output files.'''
+        """Define output files."""
         output_files = []
         if self.save_format == 'pickle':
             # Save the model instance as pickle.
@@ -511,7 +508,7 @@ class ModelTraining(object):
 
 #-----------------------------------------------------------------------
 class ModelTest(object):
-    '''Model test (prediction) class.'''
+    """Model test (prediction) class."""
 
     def __init__(
             self, model: SupportsPredict, X: np.ndarray,
@@ -537,8 +534,7 @@ class ModelTest(object):
         self.__Y_shape = None
 
     def run(self):
-        '''Run test.'''
-
+        """Run test."""
         if self.dtype is not None:
             self.X = self.X.astype(self.dtype)
 

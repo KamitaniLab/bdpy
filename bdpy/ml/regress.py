@@ -25,7 +25,6 @@ def add_bias(x, axis=0):
     y : array_like
         Data matrix with bias terms
     """
-
     if axis == 0:
         vlen = x.shape[1]
         y = np.concatenate((x, np.array([np.ones(vlen)])), axis=0)

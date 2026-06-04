@@ -1,8 +1,7 @@
 import warnings
 
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -35,7 +34,7 @@ def makeplots(
         removenan=True,
         verbose=False, colors=None, reverse_x=False
 ):
-    '''Make plots.
+    """Make plots.
 
     Parameters
     ----------
@@ -61,8 +60,7 @@ def makeplots(
     Returns
     -------
     fig : matplotlib.figure.Figure or list of matplotlib.figure.Figure
-    '''
-
+    """
     x_keys       = sorted(df[x].unique())
     subplot_keys = sorted(df[subplot].unique()) if subplot is not None else [None]
     figure_keys  = sorted(df[figure].unique()) if figure is not None else [None]

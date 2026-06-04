@@ -1,4 +1,4 @@
-'''Figure module
+"""Figure module
 
 This file is a part of BdPy.
 
@@ -10,7 +10,7 @@ box_off
     Remove upper and right axes
 draw_footnote
     Draw footnote on a figure
-'''
+"""
 
 
 __all__ = [
@@ -27,8 +27,7 @@ import seaborn as sns
 
 
 def makefigure(figtype='a4landscape'):
-    '''Create a figure'''
-
+    """Create a figure"""
     if figtype == 'a4landscape':
         figsize = (11.7, 8.3)
     elif figtype == 'a4portrait':
@@ -40,8 +39,7 @@ def makefigure(figtype='a4landscape'):
 
 
 def box_off(ax):
-    '''Remove upper and right axes'''
-
+    """Remove upper and right axes"""
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.xaxis.set_ticks_position('bottom')
@@ -49,7 +47,7 @@ def box_off(ax):
 
 
 def draw_footnote(fig, string, fontsize=9):
-    '''Draw footnote on a figure'''
+    """Draw footnote on a figure"""
     ax = fig.add_axes([0., 0., 1., 1.])
     ax.text(0.5, 0.01, string, horizontalalignment='center', fontsize=fontsize)
     ax.patch.set_alpha(0.0)

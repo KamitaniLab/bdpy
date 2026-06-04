@@ -1,16 +1,16 @@
-'''bdpy.mri.image'''
+"""bdpy.mri.image"""
 
 
 from itertools import product
 
-import numpy as np
 import nibabel
+import numpy as np
 
 from bdpy.mri import load_mri
 
 
 def export_brain_image(brain_data, template, xyz=None, out_file=None):
-    '''Export a brain data array as a brain image.
+    """Export a brain data array as a brain image.
 
     Parameters
     ----------
@@ -24,8 +24,7 @@ def export_brain_image(brain_data, template, xyz=None, out_file=None):
     Returns
     -------
     nibabel.Nifti1Image
-    '''
-
+    """
     if brain_data.ndim == 1:
         brain_data = brain_data[np.newaxis, :]
 

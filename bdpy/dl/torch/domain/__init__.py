@@ -1,1 +1,7 @@
-from .core import Domain, InternalDomain, IrreversibleDomain, ComposedDomain, KeyValueDomain
+from .core import (
+    ComposedDomain,
+    Domain,
+    InternalDomain,
+    IrreversibleDomain,
+    KeyValueDomain,
+)

@@ -1,4 +1,4 @@
-'''PyTorch implementation of iCNN reconstruction.
+"""PyTorch implementation of iCNN reconstruction.
 
 Contributions:
 
@@ -9,22 +9,21 @@ implementation as well as fixed bugs and improved performance.
 
 Developed and tested on Python 3.8 + PyTorch 1.7.1.
 
-'''
+"""
 
-
-from typing import Callable
 
 import os
 import warnings
+from typing import Callable
 
 import numpy as np
-from PIL import Image
 import torch
 import torch.optim as optim
+from PIL import Image
 
-from bdpy.dl.torch import FeatureExtractor
-from bdpy.recon.utils import make_feature_masks, gaussian_blur
 from bdpy.dataform import save_array
+from bdpy.dl.torch import FeatureExtractor
+from bdpy.recon.utils import gaussian_blur, make_feature_masks
 from bdpy.util import makedir_ifnot
 
 
@@ -70,7 +69,7 @@ def reconstruct(features,
                 return_generator_feature=False,
                 return_final_feat=False,
                 device='cpu'):
-    '''
+    """
     Reconstruction an image.
 
     Parameters
@@ -217,8 +216,7 @@ def reconstruct(features,
     ---------
     Shen et al. (2019) Deep image reconstruction from human brain activity.
         PLOS Computational Biology. https://doi.org/10.1371/journal.pcbi.1006633
-    '''
-
+    """
     if return_final_feat:
         warnings.warn('`return_final_feat` is deprecated and will be removed in future release. Please use `return_z` instead.', UserWarning)
     if return_generator_feature:

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Callable, Iterator
-import warnings
 
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
+
 from bdpy.dl.torch.domain import Domain, InternalDomain
 
 

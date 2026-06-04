@@ -4,8 +4,8 @@ import numpy as np
 import PIL
 import PIL.ImageDraw
 import PIL.ImageFont
-import matplotlib
 from matplotlib import font_manager
+
 
 def expand2square(pil_img, background_color):
     width, height = pil_img.size
@@ -64,7 +64,6 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
         List of id names.
         This list is required when `id_show` is True.
     """
-
     #------------------------------------
     # Setting
     #------------------------------------
@@ -72,7 +71,7 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
     for condition in condition_list:
         if not condition.get("image_filepath_list") and not condition.get("image_list"):
             raise RuntimeError("The element of `condition_list` needs `image_filepath_list` or `image_list`.")
-            return;
+            return
         elif condition.get("image_filepath_list") and not condition.get("image_list"):
             condition["image_list"] = condition["image_filepath_list"]
 
@@ -105,7 +104,7 @@ def draw_group_image_set(condition_list, background_color = (255, 255, 255),
             # Load image
             an_image = image_list[tind]
             if an_image is None: # skip
-                continue;
+                continue
             elif isinstance(an_image, str): # str: filepath
                 image_obj = PIL.Image.open(an_image)
             elif isinstance(an_image, np.ndarray): # np.ndarray: array

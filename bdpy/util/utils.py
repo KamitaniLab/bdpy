@@ -6,17 +6,15 @@ This file is a part of BdPy.
 
 from __future__ import division
 
-
 __all__ = ['create_groupvector',
            'divide_chunks',
            'get_refdata',
            'makedir_ifnot']
 
 
-from typing import List, Union
-
 import os
 import warnings
+from typing import List, Union
 
 import numpy as np
 

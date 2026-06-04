@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from typing import Iterable, Callable, Dict
-
 from pathlib import Path
+from typing import Callable, Dict, Iterable
 
-from PIL import Image
 import numpy as np
+from PIL import Image
 from torch.utils.data import Dataset
 
 from bdpy.dataform import DecodedFeatures, Features
-
 
 _FeatureTypeNP = Dict[str, np.ndarray]
 

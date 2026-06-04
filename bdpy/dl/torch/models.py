@@ -1,10 +1,9 @@
 """Model definitions."""
 
 
-from typing import Dict, Union, Optional, Sequence
-
 import re
 from functools import reduce
+from typing import Dict, Optional, Sequence, Union
 
 import torch
 import torch.nn as nn
@@ -24,7 +23,6 @@ def layer_map(net: str) -> Dict[str, str]:
         Layer map. Keys are human-readable layer names, and values are
         corresponding layer names in the network.
     """
-
     maps = {
         'vgg19': {
             'conv1_1': 'features[0]',
@@ -144,7 +142,6 @@ def _parse_layer_name(model: nn.Module, layer_name: str) -> nn.Module:
 
 def model_factory(name: str) -> nn.Module:
     """Make a model instrance."""
-
     if name == "alexnet":
         return AlexNet()
     elif name == "reference_net":

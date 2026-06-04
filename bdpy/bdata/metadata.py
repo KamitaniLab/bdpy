@@ -16,7 +16,6 @@ class MetaData(object):
     'value', and 'description'.
     """
 
-
     def __init__(self, key=None, value=None, description=None):
         if key is None:
             key = []
@@ -69,7 +68,6 @@ class MetaData(object):
             Function applied to meta-data value when meta-data named `key` already exists.
             It should take two args: new and old meta-data values.
         """
-
         # If `value` is None, `set` does not update the value.
         is_novalue = True if value is None else False
 

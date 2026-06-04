@@ -1,16 +1,15 @@
-'''PyTorch module.'''
+"""PyTorch module."""
 
 from __future__ import annotations
 
-from typing import Iterable, List, Dict, Union, Tuple, Any, Callable, Optional
-from collections import OrderedDict
 import os
 import warnings
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
-from PIL import Image
 import torch
 import torch.nn as nn
+from PIL import Image
 
 from . import models
 
@@ -23,7 +22,7 @@ class FeatureExtractor(object):
             layer_mapping: Optional[Dict[str, str]] = None,
             device: str = 'cpu', detach: bool = True
     ):
-        '''Feature extractor.
+        """Feature extractor.
 
         Parameters
         ----------
@@ -38,8 +37,7 @@ class FeatureExtractor(object):
             Device name (default: 'cpu').
         detach : bool, optional
             If True, detach the feature activations from the computation graph
-        '''
-
+        """
         self._encoder = encoder
         self.__layers = layers
         self.__layer_map = layer_mapping
@@ -63,7 +61,7 @@ class FeatureExtractor(object):
         return self.run(x)
 
     def run(self, x: _tensor_t) -> Dict[str, np.ndarray] | Dict[str, torch.Tensor]:
-        '''Extract feature activations from the specified layers.
+        """Extract feature activations from the specified layers.
 
         Parameters
         ----------
@@ -75,8 +73,7 @@ class FeatureExtractor(object):
         features : Dict[str, Union[numpy.ndarray, torch.Tensor]]
             Feature activations from the specified layers.
             Each key is the layer name and each value is the feature activation.
-        '''
-
+        """
         self._extractor.clear()
         if not isinstance(x, torch.Tensor):
             xt = torch.tensor(x[np.newaxis], device=self.__device)
@@ -98,10 +95,10 @@ class FeatureExtractor(object):
         }
     
     def __del__(self):
-        '''
+        """
         Remove forward hooks for the FeatureExtractor while keeping
         other forward hooks in the model.
-        '''
+        """
         for layer in self.__layers:
             if self.__layer_map is not None:
                 layer = self.__layer_map[layer]
@@ -142,7 +139,7 @@ class FeatureExtractorHandleDetach(object):
 
 
 class ImageDataset(torch.utils.data.Dataset):
-    '''Pytoch dataset for images.'''
+    """Pytoch dataset for images."""
 
     def __init__(
             self, images: List[str],
@@ -156,7 +153,7 @@ class ImageDataset(torch.utils.data.Dataset):
             preload: bool = False,
             preload_limit: float = np.inf
     ):
-        '''Initialize ImageDataset.
+        """Initialize ImageDataset.
 
         Parameters
         ----------
@@ -184,8 +181,7 @@ class ImageDataset(torch.utils.data.Dataset):
         Note
         ----
         - Images are converted to RGB. Alpha channels in RGBA images are ignored.
-        '''
-
+        """
         warnings.warn(
             "dl.torch.torch.ImageDataset is deprecated. Please consider using " \
             "bdpy.dl.torch.dataset.ImageDataset instead.",
@@ -219,7 +215,7 @@ class ImageDataset(torch.utils.data.Dataset):
                 preload_size += data_size
 
         self.data_path = images
-        if not labels is None:
+        if labels is not None:
             self.labels = labels
         else:
             self.labels = image_labels
@@ -261,7 +257,7 @@ class ImageDataset(torch.utils.data.Dataset):
             data = np.stack([data, data, data], axis=2)
 
         # Resize the image
-        if not self.__resize is None:
+        if self.__resize is not None:
             data = np.array(Image.fromarray(data).resize(self.__resize, resample=2))  # bicubic
 
         # Reshape
@@ -274,7 +270,7 @@ class ImageDataset(torch.utils.data.Dataset):
         data = (data / 255.) * self.__scale
 
         # Centering
-        if not self.__rgb_mean is None:
+        if self.__rgb_mean is not None:
             data[0] -= self.__rgb_mean[0]
             data[1] -= self.__rgb_mean[1]
             data[2] -= self.__rgb_mean[2]

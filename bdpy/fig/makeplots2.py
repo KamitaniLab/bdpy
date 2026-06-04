@@ -1,13 +1,12 @@
 from itertools import product
-
 from typing import Callable
 
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.colors import to_rgba
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.colors import to_rgba
 
 from bdpy.fig import box_off
 
@@ -32,7 +31,7 @@ def makeplots2(
         makeplots_kws={},
         verbose=False,
 ):
-    '''Make plots.
+    """Make plots.
 
     Parameters
     ----------
@@ -60,7 +59,7 @@ def makeplots2(
     Returns
     -------
     fig : matplotlib.figure.Figure or list of matplotlib.figure.Figure
-    '''
+    """
     # Check plot keys
     x_keys       = sorted(df[x].unique())
     group_keys   = sorted(df[group].unique()) if group is not None else [None]
@@ -408,11 +407,11 @@ def __plot_violin(
     group=None, group_list=[],
     color='#023eff', color_palette='bright', width=0.8, alpha=0.4, points=100,
 ):
-    '''
+    """
     Violin plot.
     * Since seaborn's violin plot does not support drawing control of mean values, 
     this is the only plot sub function based on matplotlib.
-    '''
+    """
     if group is None:
         # prepare data
         xpos = np.arange(len(x_list))
