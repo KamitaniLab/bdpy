@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Python version used to collect and report coverage (single source of truth).
+  COVERAGE_PYTHON: "3.11"
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -47,12 +51,12 @@ jobs:
         )
 
     - name: Save PR number
-      if: ${{ always() && github.event_name == 'pull_request' && matrix.python-version == '3.11' }}
+      if: ${{ always() && github.event_name == 'pull_request' && matrix.python-version == env.COVERAGE_PYTHON }}
       run: |
         echo "${{ github.event.pull_request.number }}" > pr_number.txt
 
     - name: Upload coverage artifact
-      if: ${{ always() && github.event_name == 'pull_request' && matrix.python-version == '3.11' }}
+      if: ${{ always() && github.event_name == 'pull_request' && matrix.python-version == env.COVERAGE_PYTHON }}
       uses: actions/upload-artifact@v7
       with:
         name: coverage-report
