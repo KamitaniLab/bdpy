@@ -5,6 +5,7 @@ from typing import Iterable
 
 import torch
 import torch.nn as nn
+
 from bdpy.dl.torch import FeatureExtractor
 from bdpy.dl.torch.domain import Domain, InternalDomain
 

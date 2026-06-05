@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import Callable, Iterator
-import warnings
 
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
+
 from bdpy.dl.torch.domain import Domain, InternalDomain
 
 
@@ -121,7 +122,7 @@ class BareGenerator(NNModuleGenerator):
         """Initialize the generator."""
         super().__init__()
         self._activation = activation
-        self._domain = InternalDomain()
+        self._domain: InternalDomain = InternalDomain()
 
     def reset_states(self) -> None:
         """Reset the state of the generator."""

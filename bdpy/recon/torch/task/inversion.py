@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, Callable, TYPE_CHECKING
-
-from itertools import chain
+from typing import TYPE_CHECKING, Callable, Dict, Iterable
 
 from bdpy.task import BaseTask
-from bdpy.task.callback import BaseCallback, unused, _validate_callback
+from bdpy.task.callback import BaseCallback, unused
 
 if TYPE_CHECKING:
     import torch
 
-    from ..modules import BaseEncoder, BaseGenerator, BaseLatent, BaseCritic
+    from ..modules import BaseCritic, BaseEncoder, BaseGenerator, BaseLatent
     from ..modules.optimizer import _OptimizerFactoryType, _SchedulerFactoryType
 
     _FeatureType = Dict[str, torch.Tensor]

@@ -18,7 +18,7 @@ import numpy as np
 import torch
 from torchvision.transforms import InterpolationMode, Resize
 
-from .core import Domain, InternalDomain, IrreversibleDomain, ComposedDomain
+from .core import ComposedDomain, Domain, InternalDomain, IrreversibleDomain
 
 
 def _bgr2rgb(images: torch.Tensor) -> torch.Tensor:

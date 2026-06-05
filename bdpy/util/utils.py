@@ -6,17 +6,15 @@ This file is a part of BdPy.
 
 from __future__ import division
 
-
 __all__ = ['create_groupvector',
            'divide_chunks',
            'get_refdata',
            'makedir_ifnot']
 
 
-from typing import List, Union
-
 import os
 import warnings
+from typing import List, Union
 
 import numpy as np
 
@@ -45,7 +43,7 @@ def create_groupvector(group_label: Union[List, np.ndarray], group_size: Union[L
         >>> bdpy.util.create_groupvector([ 1, 2, 3 ], [ 2, 4, 2 ])
         array([1, 1, 2, 2, 2, 2, 3, 3])
     """
-    group_vector = []
+    group_vector: list = []
 
     if isinstance(group_size, int):
         # When 'group_size' is integer, create array in which each group label

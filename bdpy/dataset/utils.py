@@ -1,12 +1,10 @@
 """Dataset utilities."""
 
-from typing import List, TypedDict, Union
-
 import hashlib
-import inspect
 import os
 import subprocess
 import urllib.request
+from typing import List, TypedDict, Union
 
 from tqdm import tqdm
 

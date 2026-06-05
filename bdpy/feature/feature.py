@@ -7,7 +7,7 @@ def normalize_feature(feature,
                       std_ddof=1,
                       shift=None, scale=None,
                       scaling_only=False):
-    '''Normalize feature.
+    """Normalize feature.
 
     Parameters
     ----------
@@ -28,8 +28,7 @@ def normalize_feature(feature,
     -------
     ndarray
         Normalized (and scaled/shifted) features.
-    '''
-
+    """
     if feature.ndim == 1:
         axes_along = None
     else:
@@ -58,9 +57,9 @@ def normalize_feature(feature,
     else:
         feat_n = ((feature - feat_mean) / feat_std)
 
-        if not scale is None:
+        if scale is not None:
             feat_n = feat_n * scale
-        if not shift is None:
+        if shift is not None:
             feat_n = feat_n + shift
 
     if not feature.shape == feat_n.shape:

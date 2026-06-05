@@ -1,4 +1,4 @@
-'''Utilities for searchlight analysis.'''
+"""Utilities for searchlight analysis."""
 
 
 __all__ = ['get_neighbors']
@@ -8,7 +8,7 @@ import numpy as np
 
 
 def get_neighbors(xyz, space_xyz, shape='sphere', size=9):
-    '''
+    """
     Returns neighboring voxels (cluster).
 
     Parameters
@@ -26,8 +26,7 @@ def get_neighbors(xyz, space_xyz, shape='sphere', size=9):
     -------
     cluster_index : array_like, dtype=bool, shape=(N,)
         Boolean index of voxels in the cluster.
-    '''
-
+    """
     # Input check
     if isinstance(xyz, list):
         xyz = np.array(xyz)

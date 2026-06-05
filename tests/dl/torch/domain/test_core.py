@@ -130,7 +130,7 @@ class TestKeyValueDomain(unittest.TestCase):
 
 if __name__ == "__main__":
     #unittest.main()
-    composed_domain = core_module.ComposedDomain([
+    composed_domain: core_module.ComposedDomain = core_module.ComposedDomain([
         DummyDoubleDomain(),
         DummyAddDomain(),
     ])

@@ -1,20 +1,19 @@
-'''Distributed computation module
+"""Distributed computation module
 
 This file is a part of BdPy.
-'''
+"""
 
 
 __all__ = ['DistComp']
 
 
 import os
-import warnings
 import sqlite3
-from contextlib import closing
+import warnings
 
 
 class DistComp(object):
-    '''Distributed computation class'''
+    """Distributed computation class"""
 
     def __init__(self, backend='file', comp_id=None, lockdir='tmp', db_path='./distcomp.db'):
         self.__backend = backend # 'file' or 'sqlite3'
@@ -107,7 +106,7 @@ class DistComp(object):
         return is_locked
 
     def __lockfilename(self, comp_id):
-        '''Return the lock file path'''
+        """Return the lock file path"""
         return os.path.join(self.lockdir, comp_id + '.lock')
 
     def __init_db(self):
@@ -117,7 +116,7 @@ class DistComp(object):
         return None
 
     def __status_db(self, comp_id):
-        '''Return status of `comp_id`.'''
+        """Return status of `comp_id`."""
         with sqlite3.connect(self.__db_path, isolation_level='EXCLUSIVE') as db:
             r = [row[0] for row in db.execute('SELECT STATUS FROM computation WHERE name = "%s"' % comp_id)]
             if len(r) == 0:

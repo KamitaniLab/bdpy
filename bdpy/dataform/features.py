@@ -1,28 +1,25 @@
-'''DNN features class
-
+"""DNN features class
 
 This file is a part of BdPy.
-'''
+"""
 
 
 from __future__ import print_function
 
+__all__ = ['DecodedFeatures', 'Features', 'save_feature']
 
-__all__ = ['Features', 'DecodedFeatures', 'save_feature']
-
-from typing import Any, Optional, Union, List, Dict
-
-from functools import partial
-import os
 import glob
-import sqlite3
+import os
 import pickle
+import sqlite3
 import warnings
+from functools import partial
 from multiprocessing import Pool
+from typing import Any, Dict, List, Optional, Union
 
+import hdf5storage
 import numpy as np
 import scipy.io as sio
-import hdf5storage
 
 
 def _load_array_with_key(key: str, path: str) -> np.ndarray:
@@ -48,7 +45,7 @@ def _determine_num_parallel(num_files: int) -> int:
 
 
 class Features(object):
-    '''DNN features class.
+    """DNN features class.
 
     Parameters
     ----------
@@ -65,7 +62,7 @@ class Features(object):
         List of stimulus index (one-based)
     layers: list
         List of DNN layers
-    '''
+    """
 
     def __init__(
             self, dpath: Union[str, List[str]] = [],
@@ -119,7 +116,7 @@ class Features(object):
         return self.__feature_index
 
     def get(self, layer: str, label: Union[str, List[str], None] = None) -> np.ndarray:
-        '''Return features in `layer`.
+        """Return features in `layer`.
 
         Parameters
         ----------
@@ -132,8 +129,7 @@ class Features(object):
         -------
         numpy.ndarray, shape=(n_samples, shape_layers)
             DNN features
-        '''
-
+        """
         if label is None:
             return self.get_features(layer)
 
@@ -197,7 +193,7 @@ class Features(object):
         return s
 
     def get_features(self, layer: str) -> np.ndarray:
-        '''Return features in `layer`.
+        """Return features in `layer`.
 
         Parameters
         ----------
@@ -208,8 +204,7 @@ class Features(object):
         -------
         numpy.ndarray, shape=(n_samples, shape_layers)
             DNN features
-        '''
-
+        """
         if layer == self.__c_feature_name:
             assert isinstance(self.__features, np.ndarray)
             return self.__features  # self.__features could be None
@@ -290,13 +285,13 @@ class Features(object):
 
 
 class DecodedFeatures(object):
-    '''Decoded features class.
+    """Decoded features class.
 
     Parameters
     ----------
     path: str
         Path to the decoded feature directory
-    '''
+    """
 
     def __init__(
             self, path: str, keys: Optional[List[str]] = None, file_ext: str = 'mat',
@@ -359,8 +354,7 @@ class DecodedFeatures(object):
         return self.__db.get_selected_values('label')
 
     def get(self, layer=None, subject=None, roi=None, fold=None, label=None, image=None):
-        '''Returns decoded features as an array.'''
-
+        """Returns decoded features as an array."""
         if image is not None:
             if label is None:
                 warnings.warn('`image` will be deprecated.')
@@ -499,13 +493,13 @@ class FileDatabase(object):
         return [a[-1] for a in self.__res]
 
     def get_available_values(self, key: str):
-        if not key in self.__keys:
+        if key not in self.__keys:
             return None
         self.__cursor.execute('SELECT DISTINCT {} FROM files'.format(key))
         return [a[0] for a in self.__cursor.fetchall()]
 
     def get_selected_values(self, key):
-        if not key in self.__keys:
+        if key not in self.__keys:
             return None
         # NOTE: self.__res could be None
         # This design forces users to call get_file() before get_selected_values()
@@ -517,7 +511,7 @@ class FileDatabase(object):
 
 
 def save_feature(feature: np.ndarray, base_dir: str, layer: str, label: str, verbose: bool = False):
-    '''
+    """
     Save features.
 
     Parameters
@@ -531,8 +525,7 @@ def save_feature(feature: np.ndarray, base_dir: str, layer: str, label: str, ver
     Returns
     -------
     None
-    '''
-
+    """
     save_dir = os.path.join(base_dir, layer)
     os.makedirs(save_dir, exist_ok=True)
 

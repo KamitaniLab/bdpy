@@ -1,14 +1,12 @@
 """Key-value store."""
 
 
-from typing import List, Tuple, Union, Optional
-
 import os
 import sqlite3
 from pathlib import Path
+from typing import List, Optional, Union
 
 import numpy as np
-
 
 _array_t = np.ndarray
 _path_t = Union[str, Path]

@@ -1,15 +1,10 @@
 import csv
 import glob
-import itertools
 import os
 import re
-import json
 from collections import OrderedDict
 
 import numpy as np
-import nipy
-import nibabel
-import pandas as pd
 
 #import bdpy
 from .fmriprep import create_bdata_singlesubject
@@ -21,8 +16,7 @@ def create_bdata_spm_domestic(dpath, data_mode='volume_native',
                               with_confounds=False,
                               return_data_labels=False,
                               return_list=False):
-    '''Create BData from SPM outputs (Kamitani lab domestic data structure).'''
-
+    """Create BData from SPM outputs (Kamitani lab domestic data structure)."""
     print('BIDS data path: %s' % dpath)
 
     # Label mapper
@@ -84,7 +78,7 @@ def create_bdata_spm_domestic(dpath, data_mode='volume_native',
                 ex_runs = exclude['session/run'][i]
                 if ex_runs is not None and len(ex_runs) != 0:
                     run_survive = [run for j, run in enumerate(spm_out.data[sub][ses])
-                                   if not j + 1 in ex_runs]
+                                   if j + 1 not in ex_runs]
                     spm_out.data[sub][ses] = run_survive
 
     # Split data
@@ -156,7 +150,7 @@ def create_bdata_spm_domestic(dpath, data_mode='volume_native',
 
 
 class SpmDomestic(object):
-    '''SPM outputs (domestic data structure) class.'''
+    """SPM outputs (domestic data structure) class."""
 
     def __init__(self, datapath=None):
         self.__datapath = datapath

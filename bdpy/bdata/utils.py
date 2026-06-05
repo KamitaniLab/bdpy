@@ -1,9 +1,8 @@
 """Utility functions for BData."""
 
 
-from typing import List
-
 import copy
+from typing import List
 
 import numpy as np
 
@@ -40,7 +39,6 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
 
         data = vstack([data0, data1, data2], successive=['Session', 'Run', 'Block'])
     """
-
     suc_cols = {s : 0 for s in successive}
 
     dat = BData()  # Concatenated BData
@@ -136,7 +134,7 @@ def resolve_vmap(bdata_list):
             new_dsvalues = copy.deepcopy(ds_values)  # to update
 
             # Sanity check
-            if not vmap_key in ds.metadata.key:
+            if vmap_key not in ds.metadata.key:
                 raise ValueError('%s not found in metadata.' % vmap_key)
             if type(vmap) is not dict:
                 raise TypeError('`vmap` should be a dictionary.')
@@ -197,7 +195,6 @@ def concat_dataset(data_list, successive=[]):
 
         data = concat_dataset([data0, data1, data2], successive=['Session', 'Run', 'Block'])
     """
-
     return vstack(data_list, successive=successive)
 
 
@@ -213,7 +210,6 @@ def metadata_equal(d0, d1, strict=False):
     -------
     bool
     """
-
     equal = True
 
     # Strict check

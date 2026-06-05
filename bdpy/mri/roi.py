@@ -1,13 +1,13 @@
-'''Utilities for ROIs'''
+"""Utilities for ROIs"""
 
 
-import os
 import glob
-import re
 import hashlib
+import os
+import re
 
-import numpy as np
 import nibabel.freesurfer
+import numpy as np
 
 from bdpy.mri import load_mri
 
@@ -19,7 +19,7 @@ def add_roimask(
         verbose=True,
         round=None
 ):
-    '''Add an ROI mask to `bdata`.
+    """Add an ROI mask to `bdata`.
 
     Parameters
     ----------
@@ -32,8 +32,7 @@ def add_roimask(
     Returns
     -------
     bdata : BData
-    '''
-
+    """
     if isinstance(roi_mask, str):
         roi_mask = [roi_mask]
 
@@ -101,7 +100,7 @@ def add_roimask(
 
 
 def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
-    '''Get ROI flags.
+    """Get ROI flags.
 
     Parameters
     ----------
@@ -117,8 +116,7 @@ def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
     -------
     roi_flag : array, shape = (n_rois, n_voxels)
         ROI flag array
-    '''
-
+    """
     epi_voxel_size = epi_xyz_array.shape[1]
 
     if verbose:
@@ -149,7 +147,7 @@ def get_roiflag(roi_xyz_list, epi_xyz_array, verbose=True):
 
 
 def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=False):
-    '''Add ROI label(s) to `bdata`.
+    """Add ROI label(s) to `bdata`.
 
     Parameters
     ----------
@@ -160,7 +158,7 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
     Returns
     -------
     bdata : BData
-    '''
+    """
 
     def add_roilabel_file(bdata, label, vertex_data=['VertexData'], prefix='', verbose=False):
         # Read the label file
@@ -236,8 +234,7 @@ def add_roilabel(bdata, label, vertex_data=['VertexData'], prefix='', verbose=Fa
 
 
 def add_rois(bdata, roi_files, data_type='volume', prefix_map={}, remove_voxel=True):
-    '''Add ROIs in bdata from files.'''
-
+    """Add ROIs in bdata from files."""
     roi_prefix_from_annot = {'lh.aparc.a2009s.annot': 'freesurfer_destrieux',
                              'rh.aparc.a2009s.annot': 'freesurfer_destrieux',
                              'lh.aparc.annot': 'freesurfer_dk',
@@ -315,8 +312,7 @@ def add_rois(bdata, roi_files, data_type='volume', prefix_map={}, remove_voxel=T
 
 
 def merge_rois(bdata, roi_name, merge_expr):
-    '''Merage ROIs.'''
-
+    """Merage ROIs."""
     print('Adding merged ROI %s' % roi_name)
 
     # Get tokens
@@ -388,14 +384,13 @@ def merge_rois(bdata, roi_name, merge_expr):
 
 
 def add_hcp_rois(bdata, overwrite=False):
-    '''Add HCP ROIs in `bdata`.
+    """Add HCP ROIs in `bdata`.
 
     Note
     ----
     This function assumes that the HCP ROIs (splitted by left and right) are
     named as "hcp180_r_lh.L_{}__*_ROI" and "hcp180_r_rh.R_{}__*_ROI".
-    '''
-
+    """
     hcp180_rois = [
         '1', '10d', '10pp', '10r', '10v', '11l', '13l', '2', '23c', '23d',
         '24dd', '24dv', '25', '31a', '31pd', '31pv', '33pr', '3a', '3b', '4',
@@ -467,8 +462,7 @@ def add_hcp_rois(bdata, overwrite=False):
 
 
 def add_hcp_visual_cortex(bdata, overwrite=False):
-    '''Add HCP-based visual cortex in `bdata`.'''
-
+    """Add HCP-based visual cortex in `bdata`."""
     # Whole VC
     vc_rois = [
         'V1', 'V2', 'V3', 'V4',

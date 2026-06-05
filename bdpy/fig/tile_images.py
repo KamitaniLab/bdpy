@@ -1,15 +1,15 @@
 import math
 from itertools import product
 
-import PIL
 import matplotlib.pyplot as plt
+import PIL
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 
 def tile_images(images, ncols=None, columned=False, labels=None, fig=None,
                 wspace=0, hspace=0.1, horizontal_margin=0.05, vertical_margin=0.05,
                 label_position='inside', label_fontsize=12, label_color='black'):
-    '''Create tiled images.
+    """Create tiled images.
 
     Parameters
     ----------
@@ -42,7 +42,6 @@ def tile_images(images, ncols=None, columned=False, labels=None, fig=None,
 
     Examples
     --------
-
     Three images in a single row (default: all images in one row):
 
     >>> tile_images([image0, image1, image2])
@@ -96,8 +95,7 @@ def tile_images(images, ncols=None, columned=False, labels=None, fig=None,
     | | B3 | B4 | B5 | |
     | +----+----+----+ |
     +------------------+
-    '''
-
+    """
     # Fix `images` to a list of lists
     if not isinstance(images, list):
         images = [[images]]

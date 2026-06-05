@@ -1,4 +1,4 @@
-'''bdpy.evals.metrics'''
+"""bdpy.evals.metrics"""
 
 import warnings
 
@@ -7,8 +7,7 @@ from scipy.spatial.distance import cdist
 
 
 def profile_correlation(x, y):
-    '''Profile correlation.'''
-
+    """Profile correlation."""
     sample_axis = 0
 
     orig_shape = x.shape
@@ -35,8 +34,7 @@ def profile_correlation(x, y):
 
 
 def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
-    '''Pattern correlation.'''
-
+    """Pattern correlation."""
     sample_axis = 0
 
     orig_shape = x.shape
@@ -74,11 +72,10 @@ def pattern_correlation(x, y, mean=None, std=None, remove_nan=True):
 
 
 def pattern_cross_correlation(x, y, mean=None, std=None, remove_nan=True):
-    '''Pattern correlation. 
-     Output: cross correlation of size (n_sample, n_sample).
-     The (i,j) element of r corresponds to the correlation between i-th row of x and j-th row of y.
-    '''
-
+    """Pattern correlation.
+    Output: cross correlation of size (n_sample, n_sample).
+    The (i,j) element of r corresponds to the correlation between i-th row of x and j-th row of y.
+    """
     sample_axis = 0
 
     orig_shape = x.shape
@@ -113,8 +110,7 @@ def pattern_cross_correlation(x, y, mean=None, std=None, remove_nan=True):
 
 
 def pairwise_identification(pred, true, metric='correlation', remove_nan=True, remove_nan_dist=True, single_trial=False, pred_labels=None, true_labels=None):
-    '''Pair-wise identification.'''
-
+    """Pair-wise identification."""
     p = pred.reshape(pred.shape[0], -1)
     t = true.reshape(true.shape[0], -1)
 
@@ -160,7 +156,7 @@ def pairwise_identification(pred, true, metric='correlation', remove_nan=True, r
 
 
 def remove_nan_value(array, nan_flag=None, return_nan_flag=False):
-    '''Remove columns (units) which contain NaN values.
+    """Remove columns (units) which contain NaN values.
 
     Parameters
     ----------
@@ -179,8 +175,7 @@ def remove_nan_value(array, nan_flag=None, return_nan_flag=False):
     nan_flag : numpy.ndarray
         Boolean mask used for removal. Only returned when
         ``return_nan_flag=True``.
-    '''
-
+    """
     if nan_flag is None:
         nan_flag = np.isnan(array).any(axis=0)
     nan_removed_array = array[:, ~nan_flag]

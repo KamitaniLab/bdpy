@@ -1,3 +1,3 @@
-'''Feature engineering module.'''
+"""Feature engineering module."""
 
 from .feature import normalize_feature

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Any, Generic, Iterable, TypeVar
 
-from typing import Iterable, Any, TypeVar, Generic
-
-from bdpy.task.callback import CallbackHandler, BaseCallback
-
+from bdpy.task.callback import BaseCallback, CallbackHandler
 
 _CallbackType = TypeVar("_CallbackType", bound=BaseCallback)
 

@@ -1,14 +1,17 @@
-'''bdpy.mri.glm'''
+"""bdpy.mri.glm"""
 
 
 import csv
 
 import numpy as np
-from nipy.modalities.fmri.experimental_paradigm import BlockParadigm, EventRelatedParadigm
+from nipy.modalities.fmri.experimental_paradigm import (
+    BlockParadigm,
+    EventRelatedParadigm,
+)
 
 
 def make_paradigm(event_files, num_vols, tr=2., cond_col=2, label_col=None, regressors=None, ignore_col=None, ignore_value=[], trial_wise=False, design='block'):
-    '''
+    """
     Make paradigm for GLM with Nipy from BIDS task event files.
 
     Parameters
@@ -41,8 +44,7 @@ def make_paradigm(event_files, num_vols, tr=2., cond_col=2, label_col=None, regr
         condition_labels : labels for task regressors
         run_regressors : nuisance regressors for runs
         run_regressors_label : labels for the run regressors
-    '''
-
+    """
     onset = []
     duration = []
     conds = []
@@ -64,9 +66,9 @@ def make_paradigm(event_files, num_vols, tr=2., cond_col=2, label_col=None, regr
             reader = csv.reader(f, delimiter='\t')
             header = reader.next()
             for row in reader:
-                if not regressors is None and not row[cond_col] in regressors:
+                if regressors is not None and row[cond_col] not in regressors:
                     continue
-                if not ignore_col is None:
+                if ignore_col is not None:
                     if row[ignore_col] in ignore_value:
                         continue
                 trial_count += 1
@@ -76,7 +78,7 @@ def make_paradigm(event_files, num_vols, tr=2., cond_col=2, label_col=None, regr
                     conds.append('trial-%06d' % trial_count)
                 else:
                     conds.append(row[cond_col])
-                if not label_col is None:
+                if label_col is not None:
                     labels.append(row[label_col])
 
         # Run regressors

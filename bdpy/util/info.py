@@ -1,17 +1,17 @@
 """Information module."""
 
 
-from typing import Dict, Optional
-
 import datetime
 import hashlib
 import os
+import pwd
 import sys
 import time
 import uuid
 import warnings
+from typing import Dict, Optional
+
 import yaml
-import pwd
 
 
 def dump_info(output_dir: str, script: Optional[str] = None, parameters: Optional[Dict] = None, info_file: str ='info.yaml') -> Dict:

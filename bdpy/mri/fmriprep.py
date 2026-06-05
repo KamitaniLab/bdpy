@@ -1,25 +1,25 @@
-'''Utilities for fmriprep.'''
+"""Utilities for fmriprep."""
 
 
 import csv
 import glob
 import itertools
+import json
 import os
 import re
-import json
 import warnings
 from collections import OrderedDict
 
-import numpy as np
-import nipy
 import nibabel
+import nipy
+import numpy as np
 import pandas as pd
 
 import bdpy
 
 
 class FmriprepData(object):
-    '''FMRIPREP data class.'''
+    """FMRIPREP data class."""
 
     def __init__(self, datapath=None, fmriprep_version='1.2', fmriprep_dir='derivatives/fmriprep'):
         self.__datapath = datapath
@@ -202,7 +202,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
                           with_confounds=False,
                           return_data_labels=False,
                           return_list=False):
-    '''Create BData from FMRIPREP outputs.
+    """Create BData from FMRIPREP outputs.
 
     Parameters
     ----------
@@ -225,8 +225,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
     -------
     BData or list of BData
         One subject, one BData.
-    '''
-
+    """
     print('BIDS data path: %s' % dpath)
 
     # Label mapper
@@ -289,7 +288,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
                 ex_runs = exclude['session/run'][i]
                 if ex_runs is not None and len(ex_runs) != 0:
                     run_survive = [run for j, run in enumerate(fmriprep.data[sub][ses])
-                                   if not j + 1 in ex_runs]
+                                   if j + 1 not in ex_runs]
                     fmriprep.data[sub][ses] = run_survive
 
     # Split data
@@ -361,7 +360,7 @@ def create_bdata_fmriprep(dpath, data_mode='volume_native',
 
 
 class BrainData(object):
-    '''fMRI data class (volume or surface).'''
+    """fMRI data class (volume or surface)."""
 
     def __init__(self, dpath, dtype='volume'):
         self.__dpath = dpath
@@ -400,13 +399,13 @@ class BrainData(object):
         return self.__n_vertex
 
     def __load_volume(self):
-        '''Load a MRI image.
+        """Load a MRI image.
 
         - Returns data as 2D array (sample x voxel)
         - Returns voxle xyz coordinates (3 x voxel)
         - Returns voxel ijk indexes (3 x voxel)
         - Data, xyz, and ijk are flattened by Fortran-like index order
-        '''
+        """
         img = nipy.load_image(self.__dpath)
 
         data = img.get_data()
@@ -465,21 +464,21 @@ class BrainData(object):
 
 
 class LabelMapper(object):
-    '''Label mapper class.'''
+    """Label mapper class."""
 
     def __init__(self, l2v_map):
         self.__l2v_map = l2v_map
         self.__v2l_map = {}
 
     def get_value(self, mkey, label):
-        if not mkey in self.__l2v_map:
+        if mkey not in self.__l2v_map:
             raise RuntimeError('%s not found in label mapper' % mkey)
 
         if label == 'n/a':
             return np.nan
 
         val = self.__l2v_map[mkey][label]
-        if not mkey in self.__v2l_map:
+        if mkey not in self.__v2l_map:
             self.__v2l_map.update({mkey: {val: label}})
         else:
             if label in self.__v2l_map[mkey].values():
@@ -591,7 +590,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
             motionparam_list.append(mp)
 
             if with_confounds:
-                confounds_keys = [k for k in list(conf_pd.columns) if not k in mp_label_col]
+                confounds_keys = [k for k in list(conf_pd.columns) if k not in mp_label_col]
                 for c in confounds_keys:
                     x = np.c_[conf_pd[c]]
                     if c in confounds:
@@ -770,7 +769,7 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
 
         cnf_p = 0
         for cnf in default_confounds_keys:
-            if (not cnf in ['a_comp_cor', 't_comp_cor', 'cosine']) and (not cnf in confounds):
+            if (cnf not in ['a_comp_cor', 't_comp_cor', 'cosine']) and (cnf not in confounds):
                 continue
 
             cnf_colidx = np.zeros(confounds_array.shape[1])
@@ -832,13 +831,13 @@ def __get_xyz(img):
 
 
 def __load_mri(fpath):
-    '''Load a MRI image.
+    """Load a MRI image.
 
     - Returns data as 2D array (sample x voxel)
     - Returns voxle xyz coordinates (3 x voxel)
     - Returns voxel ijk indexes (3 x voxel)
     - Data, xyz, and ijk are flattened by Fortran-like index order
-    '''
+    """
     img = nipy.load_image(fpath)
 
     data = img.get_data()

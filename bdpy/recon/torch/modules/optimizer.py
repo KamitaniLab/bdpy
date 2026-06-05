@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from functools import partial
 from itertools import chain
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Dict, Any, Tuple, Union, Iterable, Callable
-    from typing_extensions import TypeAlias
-    from torch import Tensor
+    from typing import Any, Callable, Dict, Iterable, Tuple, Union
+
     import torch.optim as optim
+    from torch import Tensor
+    from typing_extensions import TypeAlias
+
     from ..modules import BaseGenerator, BaseLatent
 
     # NOTE: The definition of `_ParamsT` is the same as in `torch.optim.optimizer`

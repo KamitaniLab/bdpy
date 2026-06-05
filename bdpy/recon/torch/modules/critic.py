@@ -6,8 +6,7 @@ from typing import Dict, Iterable
 import torch
 import torch.nn as nn
 
-from bdpy.task.callback import CallbackHandler, BaseCallback
-
+from bdpy.task.callback import BaseCallback, CallbackHandler
 
 _FeatureType = Dict[str, torch.Tensor]
 
@@ -60,6 +59,7 @@ class BaseCritic(ABC):
 
 class NNModuleCritic(BaseCritic, nn.Module):
     """Critic network module uses __call__ method of nn.Module."""
+
     def __init__(self, callbacks: BaseCallback | Iterable[BaseCallback] | None = None) -> None:
         BaseCritic.__init__(self, callbacks)
         nn.Module.__init__(self)

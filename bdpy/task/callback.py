@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Callable, Type, Any, Iterable, TypeVar, Generic
-from typing_extensions import Annotated, ParamSpec
-
 from collections import defaultdict
 from functools import wraps
+from typing import Any, Callable, Generic, Iterable, Type, TypeVar
 
+from typing_extensions import Annotated, ParamSpec
 
 _P = ParamSpec("_P")
 _Unused = Annotated[None, "unused"]
@@ -98,7 +97,6 @@ def _validate_callback(callback: BaseCallback, base_class: Type[BaseCallback]) -
         ...
         ValueError: on_unacceptable_event is not an acceptable event type. ...
     """
-
     if not isinstance(callback, base_class):
         raise TypeError(
             f"Callback must be an instance of {base_class}, not {type(callback)}."
@@ -152,6 +150,7 @@ class BaseCallback:
     `@unused` decorator can be used to mark a callback function as unused, so
     that the callback handler does not fire the function.
     """
+
     def __init__(self, base_class: Type[BaseCallback] | None = None) -> None:
         if base_class is None:
             base_class = BaseCallback

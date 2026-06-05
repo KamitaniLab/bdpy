@@ -1,14 +1,14 @@
-'''Cross-validation functions
+"""Cross-validation functions
 
 This module provides utility functions for cross-validation.
-'''
+"""
 
 
 import numpy as np
 
 
 def cvindex_groupwise(group, nfolds=None, return_bool=False, exclusive=None):
-    '''Return k-fold iterator for group-wise cross-validation (e.g, run-wise, block-wise, ...)
+    """Return k-fold iterator for group-wise cross-validation (e.g, run-wise, block-wise, ...)
 
     `nfolds` specification are not supported yet.
 
@@ -27,8 +27,7 @@ def cvindex_groupwise(group, nfolds=None, return_bool=False, exclusive=None):
     Returns
     -------
     K-fold iterator
-    '''
-
+    """
     # TODO: add size checking of group
 
     group_set = np.unique(group)  # Unique labels in `group`
@@ -55,7 +54,7 @@ def cvindex_groupwise(group, nfolds=None, return_bool=False, exclusive=None):
             train_labels = exclusive[index_train]
 
             index_train = np.array([
-                ind for ind, lab in zip(index_train, train_labels) if not lab in test_labels
+                ind for ind, lab in zip(index_train, train_labels) if lab not in test_labels
             ])
 
         yield index_train, index_test
@@ -99,14 +98,13 @@ def make_cvindex(group):
                 [False, False,  True],
                 [False, False,  True]], dtype=bool))
     """
-
     # Get and sort unique group index
     group_set = sorted(list(set(group.flatten())))
 
     # The number of sample
-    n_sample = len(group);
+    n_sample = len(group)
     # The number of run
-    n_group = len(group_set);
+    n_group = len(group_set)
 
     if n_group == 0:
         # Training only
@@ -134,12 +132,11 @@ def make_crossvalidationindex(group):
 
     See 'make_cvindex' for the details.
     """
-
     return make_cvindex(group)
 
 
 def make_cvindex_generator(group, folds=None, exclusive=None, return_bool=False):
-    '''Return cross-validation iterator.
+    """Return cross-validation iterator.
 
     n_folds` specification are not supported yet.
 
@@ -158,9 +155,7 @@ def make_cvindex_generator(group, folds=None, exclusive=None, return_bool=False)
     Returns
     -------
     K-fold iterator
-    '''
-
-
+    """
     if folds is None:
         group_set = np.unique(group)
         folds = [{'train': np.delete(group_set, i), 'test': gl} for i, gl in enumerate(group_set)]
@@ -190,7 +185,7 @@ def make_cvindex_generator(group, folds=None, exclusive=None, return_bool=False)
             train_labels = exclusive[index_train]
 
             index_train = np.array([
-                ind for ind, lab in zip(index_train, train_labels) if not lab in test_labels
+                ind for ind, lab in zip(index_train, train_labels) if lab not in test_labels
             ])
 
         yield index_train, index_test

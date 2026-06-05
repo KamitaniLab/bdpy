@@ -1,16 +1,17 @@
-'''Caffe module.'''
+"""Caffe module."""
 
 
 import os
 
-import PIL
 import numpy as np
-from bdpy.dataform import save_array
+import PIL
 from tqdm import tqdm
+
+from bdpy.dataform import save_array
 
 
 def extract_image_features(image_file, net, layers=[], crop_center=False, image_preproc=[], save_dir=None, verbose=False, progbar=False, return_features=True):
-    '''
+    """
     Extract DNN features of a given image.
 
     Parameters
@@ -37,8 +38,7 @@ def extract_image_features(image_file, net, layers=[], crop_center=False, image_
     -------
     dict
         Dictionary in which keys are DNN layers and values are features.
-    '''
-
+    """
     if isinstance(image_file, str):
         image_file = [image_file]
 
@@ -108,7 +108,7 @@ def extract_image_features(image_file, net, layers=[], crop_center=False, image_
                 else:
                     features_dict.update({lay: feat})
 
-            if not save_dir is None:
+            if save_dir is not None:
                 # Save the features
                 save_dir_lay = os.path.join(save_dir, lay.replace('/', ':'))
                 save_file = os.path.join(save_dir_lay,

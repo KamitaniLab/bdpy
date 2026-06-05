@@ -2,12 +2,12 @@
 
 
 import argparse
-from pathlib import Path
 import inspect
 from datetime import datetime, timezone
+from pathlib import Path
 
-from hydra.experimental import initialize_config_dir, compose
-from omegaconf import OmegaConf, DictConfig
+from hydra.experimental import compose, initialize_config_dir
+from omegaconf import DictConfig, OmegaConf
 
 
 def init_hydra_cfg() -> DictConfig:

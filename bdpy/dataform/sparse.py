@@ -1,21 +1,20 @@
-'''Sparse array class.
+"""Sparse array class.
 
 This file is a part of bdpy.
-'''
+"""
 
 __all__ = ['SparseArray', 'load_array', 'save_array', 'save_multiarrays']
 
 
 import os
 
-import numpy as np
 import h5py
 import hdf5storage
+import numpy as np
 
 
 def load_array(fname, key='data'):
-    '''Load an array (dense or sparse).'''
-
+    """Load an array (dense or sparse)."""
     with h5py.File(fname, 'r') as f:
         methods = [attr for attr in dir(f[key]) if callable(getattr(f[key], str(attr)))]
         if 'keys' in methods and '__bdpy_sparse_arrray' in f[key].keys():
@@ -30,8 +29,7 @@ def load_array(fname, key='data'):
 
 
 def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
-    '''Save an array (dense or sparse).'''
-
+    """Save an array (dense or sparse)."""
     if sparse:
         # Save as a SparseArray
         s_ary = SparseArray(array.astype(dtype))
@@ -47,8 +45,7 @@ def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
 
 
 def save_multiarrays(fname, arrays):
-    '''Save arrays (dense).'''
-
+    """Save arrays (dense)."""
     save_dict = {k: v for k, v in arrays.items()}
     hdf5storage.savemat(fname,
                         save_dict,
@@ -59,7 +56,7 @@ def save_multiarrays(fname, arrays):
 
 
 class SparseArray(object):
-    '''Sparse array class.'''
+    """Sparse array class."""
     
     def __init__(self, src=None, key='data', background=0):
         self.__background = background

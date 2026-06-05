@@ -6,7 +6,6 @@ from collections import Counter
 
 import numpy as np
 
-
 __all__ = ['get_majority']
 
 
@@ -29,7 +28,6 @@ def get_majority(data, axis=0):
     majority_list : list
         A list of majority elements
     """
-
     majority_list = []
 
     if axis == 0:
