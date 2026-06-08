@@ -1,7 +1,10 @@
 '''Tests for bdpy.bdata.bdata.'''
 
 
+import os
+import tempfile
 import unittest
+import warnings
 
 import numpy as np
 from numpy.testing import assert_array_equal
@@ -41,6 +44,18 @@ class TestBdata(unittest.TestCase):
         assert_array_equal(b.get_metadata('Data_X'), np.array([1] * 10 + [np.nan] * 8 + [np.nan] * 20))
         assert_array_equal(b.get_metadata('Data_Y'), np.array([np.nan] * 10 + [1] * 8 + [np.nan] * 20))
         assert_array_equal(b.get_metadata('Data_Z'), np.array([np.nan] * 10 + [np.nan] * 8 + [1] * 20))
+
+    def test_add_dataset_is_obsoleted(self):
+        '''Test that BData.add_dataset warns once and delegates to add.'''
+        b = BData()
+
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            warnings.simplefilter('always')
+            b.add_dataset(np.ones((2, 3)), 'Data')
+
+        self.assertEqual(len(recorded_warnings), 1)
+        self.assertIn("'add_dataset' is obsoleted", str(recorded_warnings[0].message))
+        assert_array_equal(b.get('Data'), np.ones((2, 3)))
 
     def test_metadata_add_get(self):
         '''Test for add/get_metadata.'''
@@ -87,6 +102,14 @@ class TestBdata(unittest.TestCase):
         assert_array_equal(b.get_metadata('Metadata_B'), np.hstack([np.array([np.nan] * 10), metadata_b]))
         assert_array_equal(b.get_metadata('Metadata_A', where='Data_X'), metadata_a)
         assert_array_equal(b.get_metadata('Metadata_B', where='Data_Y'), metadata_b)
+
+    def test_get_metadata_notfound(self):
+        '''Test for BData.get_metadata with a missing key.'''
+        b = BData()
+        b.add(np.ones((2, 3)), 'Data')
+
+        with self.assertRaises(AssertionError):
+            b.get_metadata('Metadata_NotFound')
 
     def test_set_metadatadescription_1(self):
         '''Test for set_metadatadescription.'''
@@ -138,6 +161,92 @@ class TestBdata(unittest.TestCase):
         assert_array_equal(b.select('ROI_0:5 + ROI_3:8'), data_x[:, 0:8])
         assert_array_equal(b.select('ROI_0:5 - ROI_3:8'), data_x[:, 0:3])
 
+    def test_select_return_index(self):
+        '''Test for BData.select with return_index=True.'''
+        data_x = np.arange(20, dtype=float).reshape(4, 5)
+        data_y = np.arange(8, dtype=float).reshape(4, 2)
+
+        b = BData()
+
+        # BData.add stacks arrays column-wise: Data_X columns come first,
+        # followed by Data_Y columns.
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
+
+        # add_metadata(..., where='Data_X') defines the ROI only inside the
+        # Data_X column group, not against the whole dataset.
+        b.add_metadata('ROI_1:4', [0, 1, 1, 1, 0], where='Data_X')
+
+        selected_data, selected_index = b.select('ROI_1:4', return_index=True)
+
+        expected_data_x_index = np.array([False, True, True, True, False])
+        expected_data_y_index = np.array([False, False])
+        expected_dataset_index = np.hstack([expected_data_x_index, expected_data_y_index])
+
+        assert_array_equal(selected_data, data_x[:, 1:4])
+        self.assertEqual(len(selected_index), b.dataset.shape[1])
+        assert_array_equal(selected_index, expected_dataset_index)
+        self.assertEqual(selected_index.dtype, np.dtype(bool))
+
+    def test_applyfunc_with_selected_columns(self):
+        '''Test for BData.applyfunc with a selected column group.'''
+        data_x = np.arange(6, dtype=float).reshape(3, 2)
+        data_y = np.arange(3, dtype=float).reshape(3, 1)
+
+        b = BData()
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
+
+        b.applyfunc(lambda x: x + 10, where='Data_X')
+
+        assert_array_equal(b.get('Data_X'), data_x + 10)
+        assert_array_equal(b.get('Data_Y'), data_y)
+
+    def test_applyfunc_tuple_result_reindexes_all_columns(self):
+        '''Test that BData.applyfunc reindexes all columns when func returns an index map.'''
+        data_x = np.arange(6, dtype=float).reshape(3, 2)
+        data_y = np.arange(3, dtype=float).reshape(3, 1)
+        row_index = np.array([2, 0])
+
+        b = BData()
+        b.add(data_x, 'Data_X')
+        b.add(data_y, 'Data_Y')
+
+        # A tuple result means that the selected column group is replaced by
+        # the first element, and every non-selected column follows the returned
+        # row index map so that rows remain aligned across the whole dataset.
+        b.applyfunc(lambda x: (x[row_index], row_index), where='Data_X')
+
+        assert_array_equal(b.get('Data_X'), data_x[row_index])
+        assert_array_equal(b.get('Data_Y'), data_y[row_index])
+
+    def test_save_load_hdf5_header_and_vmap(self):
+        '''Test for HDF5 roundtrip of header values and vmap.'''
+        data = np.arange(6, dtype=float).reshape(3, 2)
+        label = np.array([1, 2, 1], dtype=float).reshape(3, 1)
+
+        bdata = BData()
+        bdata.add(data, 'Data')
+        bdata.add(label, 'Label')
+        bdata.add_vmap('Label', {1: 'label-1', 2: 'label-2'})
+        bdata.update_header({
+            'source': 'manual',
+            'indices': [1, 2],
+            'scale': 1.5,
+        })
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            h5_path = os.path.join(temp_dir, 'test_bdata.h5')
+            bdata.save(h5_path, 'HDF5')
+            loaded_bdata = BData(h5_path, 'HDF5')
+
+        assert_array_equal(loaded_bdata.get('Data'), data)
+        assert_array_equal(loaded_bdata.get('Label'), label)
+        self.assertEqual(loaded_bdata.get_vmap('Label'), {1.0: 'label-1', 2.0: 'label-2'})
+        self.assertEqual(loaded_bdata.header['source'], 'manual')
+        self.assertEqual(loaded_bdata.header['indices'], [1, 2])
+        self.assertEqual(loaded_bdata.header['scale'], 1.5)
+
     # Tests for vmap
     def test_vmap_add_get(self):
         bdata = BData()
@@ -152,6 +261,7 @@ class TestBdata(unittest.TestCase):
 
         bdata.add_vmap('Label', label_map)
         assert bdata.get_vmap('Label') == label_map
+        self.assertEqual(set(bdata.get_vmap_keys()), {'Label'})
 
         # Get labels
         np.testing.assert_array_equal(bdata.get_label('Label'), label)
