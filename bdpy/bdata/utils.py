@@ -2,14 +2,20 @@
 
 
 import copy
-from typing import List
+from typing import Dict, List, Optional, Sequence, cast
 
 import numpy as np
+from typing_extensions import Literal
 
 from .bdata import BData
 
 
-def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_description=False):
+def vstack(
+    bdata_list: Sequence[BData],
+    successive: Optional[Sequence[str]] = None,
+    metadata_merge: Literal['strict', 'minimal'] = 'strict',
+    ignore_metadata_description: bool = False,
+) -> BData:
     """Concatenate datasets vertically.
 
     Currently, `concat_dataset` does not validate the consistency of meta-data
@@ -39,6 +45,9 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
 
         data = vstack([data0, data1, data2], successive=['Session', 'Run', 'Block'])
     """
+    if successive is None:
+        successive = []
+
     suc_cols = {s : 0 for s in successive}
 
     dat = BData()  # Concatenated BData
@@ -80,10 +89,10 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
                         raise ValueError('Inconsistent meta-data description (%s)' % mkey)
                     try:
                         np.testing.assert_equal(d0_value, d1_value)
-                    except AssertionError:
-                        raise ValueError('Inconsistent meta-data value (%s)' % mkey)
-                    shared_mdesc.append(d0_desc)
-                    shared_mvalue_lst.append(d0_value)
+                    except AssertionError as err:
+                        raise ValueError('Inconsistent meta-data value (%s)' % mkey) from err
+                    shared_mdesc.append(cast(str, d0_desc))
+                    shared_mvalue_lst.append(cast(np.ndarray, d0_value))
                 shared_mvalue = np.vstack(shared_mvalue_lst)
 
                 dat.metadata.key = shared_mkeys
@@ -108,7 +117,7 @@ def vstack(bdata_list, successive=[], metadata_merge='strict', ignore_metadata_d
     return dat
 
 
-def resolve_vmap(bdata_list):
+def resolve_vmap(bdata_list: List[BData]) -> List[BData]:
     """Replace the conflicting vmaps for multiple bdata with non-conflicting vmaps.
 
     Parameters
@@ -126,7 +135,7 @@ def resolve_vmap(bdata_list):
 
     # Check each vmap key.
     for vmap_key in vmap_keys:
-        new_vmap = {}
+        new_vmap: Dict[float, str] = {}
         # Check each bdata vmap.
         for ds in bdata_list:
             vmap = ds.get_vmap(vmap_key)
@@ -166,13 +175,13 @@ def resolve_vmap(bdata_list):
             vmap = ds.get_vmap(vmap_key)
             if not np.array_equal(sorted(list(vmap.keys())), sorted(list(new_vmap.keys()))):
                 # If the present vmap is different from new_vmap, update it.
-                ds._BData__vmap[vmap_key] = new_vmap # BDataクラスにvmapのsetterがあると良い
+                ds._BData__vmap[vmap_key] = new_vmap # type: ignore[attr-defined] # BDataクラスにvmapのsetterがあると良い
 
     return bdata_list
 
 
-def concat_dataset(data_list, successive=[]):
-    """Concatenate datasets
+def concat_dataset(data_list: Sequence[BData], successive: Optional[Sequence[str]] = None) -> BData:
+    """Concatenate datasets.
 
     Currently, `concat_dataset` does not validate the consistency of meta-data
     among data.
@@ -198,7 +207,7 @@ def concat_dataset(data_list, successive=[]):
     return vstack(data_list, successive=successive)
 
 
-def metadata_equal(d0, d1, strict=False):
+def metadata_equal(d0: BData, d1: BData, strict: bool = False) -> bool:
     """Check whether `d0` and `d1` share the same meta-data.
 
     Parameters
@@ -235,8 +244,10 @@ def metadata_equal(d0, d1, strict=False):
         return False
 
     for mkey in d0_mkeys:
-        d0_mdesc, d1_mdesc = d0.metadata.get(mkey, 'description'), d1.metadata.get(mkey, 'description')
-        d0_mval, d1_mval = d0.metadata.get(mkey, 'value'), d1.metadata.get(mkey, 'value')
+        d0_mdesc = cast(str, d0.metadata.get(mkey, 'description'))
+        d1_mdesc = cast(str, d1.metadata.get(mkey, 'description'))
+        d0_mval = cast(np.ndarray, d0.metadata.get(mkey, 'value'))
+        d1_mval = cast(np.ndarray, d1.metadata.get(mkey, 'value'))
 
         if not d0_mdesc == d1_mdesc:
             return False
