@@ -8,19 +8,59 @@ __all__ = ['BData']
 
 
 import datetime
+import functools
 import inspect
 import os
 import re
 import time
 import warnings
-from typing import Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    KeysView,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 import h5py
 import numpy as np
 import scipy.io as sio
+from numpy.typing import NDArray
+from typing_extensions import Literal
 
 from .featureselector import FeatureSelector
 from .metadata import MetaData
+
+
+# Misc -----------------------------------------------------------------
+
+_F = TypeVar("_F", bound=Callable[..., Any])
+
+def _obsoleted_method(alternative: str) -> Callable[[_F], _F]:
+    """Return a decorator that warns about an obsolete method."""
+    def decorator(func: _F) -> _F:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+            funcname = func.__name__
+            warnings.warn(
+                f"'{funcname}' is obsoleted and kept for compatibility. Use '{alternative}' instead.",
+                UserWarning,
+                stacklevel=2
+            )
+            return func(*args, **kwargs)
+        return cast(_F, wrapper)
+    return decorator
+
+ApplyFuncIndex = Union[Sequence[int], NDArray[np.integer]]
+ApplyFuncResult = Union[np.ndarray, Tuple[np.ndarray, ApplyFuncIndex]]
 
 # BData class ##########################################################
 
@@ -53,8 +93,8 @@ class BData(object):
         """Initialize BData instance."""
         self.__dataset: np.ndarray = np.ndarray((0, 0), dtype=float)
         self.__metadata = MetaData()
-        self.__header: dict = {}
-        self.__vmap: dict = {}
+        self.__header: Dict[str, Any] = {}
+        self.__vmap: Dict[str, Dict[float, str]] = {}
 
         if file_name is not None:
             self.load(file_name, file_type)
@@ -63,62 +103,80 @@ class BData(object):
 
     # dataset
     @property
-    def dataset(self):
+    def dataset(self) -> np.ndarray:
+        """Data matrix stored in the BData instance.
+
+        Rows correspond to samples, and columns correspond to data variables or
+        features. Column groups and attributes are described by `metadata`.
+        """
         return self.__dataset
 
     @dataset.setter
-    def dataset(self, value):
+    def dataset(self, value: np.ndarray) -> None:
         self.__dataset = value
 
     # metadata
     @property
-    def metadata(self):
+    def metadata(self) -> MetaData:
+        """Meta-data describing columns of `dataset`.
+
+        The metadata stores keys, descriptions, and per-column values. These
+        values are aligned with the columns of `dataset` and are used by
+        methods such as `select`, `get`, and `get_metadata`.
+        """
         return self.__metadata
 
     @metadata.setter
-    def metadata(self, value):
+    def metadata(self, value: MetaData) -> None:
         self.__metadata = value
 
     # header
     @property
-    def header(self):
+    def header(self) -> Dict[str, Any]:
+        """Header information associated with the BData instance.
+
+        The header stores auxiliary information such as creation time,
+        call stack, and values loaded from BData files.
+        Header keys are strings, while values are implementation-defined and
+        may include strings, numbers, lists, or values loaded from
+        external files.
+        """
         return self.__header
 
     # dataSet
     @property
-    def dataSet(self):
+    def dataSet(self) -> np.ndarray:  # noqa: N802
+        """Alias for `dataset` kept for backward compatibility."""
+        warnings.warn(
+            "'dataSet' is obsoleted and kept for compatibility. Use 'dataset' instead.",
+            UserWarning,
+            stacklevel=2
+        )
         return self.__dataset
 
     @dataSet.setter
-    def dataSet(self, value):
+    def dataSet(self, value: np.ndarray) -> None:  # noqa: N802
         self.__dataset = value
 
     # metaData
     @property
-    def metaData(self):
+    def metaData(self) -> MetaData:  # noqa: N802
+        """Alias for `metadata` kept for backward compatibility."""
+        warnings.warn(
+            "'metaData' is obsoleted and kept for compatibility. Use 'metadata' instead.",
+            UserWarning,
+            stacklevel=2
+        )
         return self.__metadata
 
     @metaData.setter
-    def metaData(self, value):
+    def metaData(self, value: MetaData) -> None:  # noqa: N802
         self.__metadata = value
-
-    # Misc -------------------------------------------------------------
-
-    def __obsoleted_method(alternative):
-        """Decorator for obsoleted functions."""
-        def __obsoleted_method_in(func):
-            import functools
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                funcname = func.__name__
-                warnings.warn("'%s' is obsoleted and kept for compatibility. Use '%s' instead." % (funcname, alternative), UserWarning, stacklevel=2)
-                return func(*args, **kwargs)
-            return wrapper
-        return __obsoleted_method_in
 
 
     # Data modification ------------------------------------------------
 
+    @_obsoleted_method('add')
     def add(self, x: np.ndarray, name: str) -> None:
         """Add `x` to dataset as `name`.
 
@@ -153,7 +211,7 @@ class BData(object):
         self.metadata.set(name, column_value, column_description,
                           lambda x, y: np.hstack((y[:colnum_has], x[-colnum_add:])))
 
-    @__obsoleted_method('add')
+    @_obsoleted_method('add')
     def add_dataset(self, x: np.ndarray, attribute_key: str) -> None:
         """Add `x` to dataset with attribute meta-data key `attribute_key`.
 
@@ -187,7 +245,14 @@ class BData(object):
         mdind = [a == 1 for a in self.get_metadata(key)]
         self.dataset[:, np.array(mdind)] = dat
 
-    def add_metadata(self, key: str, value: np.ndarray, description: str = '', where: Optional[str] = None, attribute: Optional[str] = None) -> None:
+    def add_metadata(
+        self,
+        key: str,
+        value: np.ndarray,
+        description: str = '',
+        where: Optional[str] = None,
+        attribute: Optional[str] = None,
+    ) -> None:
         """Add meta-data with `key`, `description`, and `value` to metadata.
 
         Parameters
@@ -228,7 +293,14 @@ class BData(object):
 
         self.metadata.set(key, add_value, description)
 
-    def merge_metadata(self, key: str, sources, description: str = '', where: Optional[str] = None, method: str = 'logical_or') -> None:
+    def merge_metadata(
+        self,
+        key: str,
+        sources: Iterable[str],
+        description: str = '',
+        where: Optional[str] = None,
+        method: str = 'logical_or',
+    ) -> None:
         """Merage metadata rows."""
         if not method == 'logical_or':
             raise NotImplementedError('Only `logical_or` is implemented')
@@ -273,7 +345,7 @@ class BData(object):
         """
         self.metadata.set(key, None, description, lambda x, y: y)
 
-    @__obsoleted_method('set_metadatadescription')
+    @_obsoleted_method('set_metadatadescription')
     def edit_metadatadescription(self, metakey: str, description: str) -> None:
         """Set description of metadata specified by `key`.
 
@@ -290,11 +362,16 @@ class BData(object):
         """
         self.set_metadatadescription(metakey, description)
 
-    def update_header(self, header) -> None:
+    def update_header(self, header: Dict[str, Any]) -> None:
         """Update header."""
         self.__header.update(header)
 
-    def applyfunc(self, func, where=None, **kargs):
+    def applyfunc(
+        self,
+        func: Callable[..., ApplyFuncResult],
+        where: Optional[Union[str, List[str]]] = None,
+        **kargs: Any,  # noqa: ANN401
+    ) -> "BData":
         """Apply `func` to the dataset."""
         if where is None:
             # FIXME
@@ -327,7 +404,7 @@ class BData(object):
                 #import pdb; pdb.set_trace()
 
                 ds[:, index] = fout[0]
-                ds[:, ~index] = self.dataset[np.ix_(ind_map, ~index)]
+                ds[:, ~index] = self.dataset[np.ix_(ind_map, ~index)]  # type: ignore[arg-type]
 
                 self.dataset = ds
             else:
@@ -338,7 +415,39 @@ class BData(object):
 
     # Data access ------------------------------------------------------
 
-    def select(self, condition: str, return_index: bool = False, verbose: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+    @overload
+    def select(
+        self,
+        condition: str,
+        return_index: Literal[False] = False,
+        verbose: bool = True,
+    ) -> np.ndarray:
+        ...
+
+    @overload
+    def select(
+        self,
+        condition: str,
+        return_index: Literal[True],
+        verbose: bool = True,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        ...
+
+    @overload
+    def select(
+        self,
+        condition: str,
+        return_index: bool,
+        verbose: bool = True,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        ...
+
+    def select(
+        self,
+        condition: str,
+        return_index: bool = False,
+        verbose: bool = True
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Select data (columns) from dataset.
 
         Parameters
@@ -366,99 +475,104 @@ class BData(object):
         - = (equal)
         - @ (conditional)
         """
-        expr_rpn = FeatureSelector(condition).rpn
+        rpn_tokens = FeatureSelector(condition).rpn
 
         stack: list = []
         buf_sel = []
 
-        for i in expr_rpn:
-            if i == '=':
-                r = stack.pop()
-                l = stack.pop()
+        for token in rpn_tokens:
+            if token == '=':
+                right = stack.pop()
+                left = stack.pop()
 
-                stack.append(np.array([n == r for n in l], dtype=bool))
+                stack.append(np.array([n == right for n in left], dtype=bool))
 
-            elif i == 'top':
+            elif token == 'top':
                 # Dirty solution
 
                 # Need fix on handling 'None'
 
-                n = int(stack.pop()) # Num of elements to be selected
-                v = stack.pop()
+                num_selected = int(stack.pop()) # Num of elements to be selected
+                values_to_rank = stack.pop()
 
-                order = self.__get_order(v)
+                order = self.__get_order(values_to_rank)
 
                 stack.append(order)
-                buf_sel.append(n)
+                buf_sel.append(num_selected)
 
-            elif i in ['|', '&', '-']:
-                r = stack.pop()
-                l = stack.pop()
+            elif token in ['|', '&', '-']:
+                right = stack.pop()
+                left = stack.pop()
 
-                if r.dtype != 'bool':
-                    # 'r' should be an order vector
+                if right.dtype != 'bool':
+                    # 'right' should be an order vector
                     num_sel = buf_sel.pop()
-                    r = self.__get_top_elm_from_order(r, num_sel)
+                    right = self.__get_top_elm_from_order(right, num_sel)
                     #r = np.array([ n < num_sel for n in r ], dtype = bool)
 
-                if l.dtype != 'bool':
-                    # 'l' should be an order vector
+                if left.dtype != 'bool':
+                    # 'left' should be an order vector
                     num_sel = buf_sel.pop()
-                    l = self.__get_top_elm_from_order(l, num_sel)
-                    #l = np.array([ n < num_sel for n in l ], dtype = bool)
+                    left = self.__get_top_elm_from_order(left, num_sel)
+                    #left = np.array([ n < num_sel for n in left ], dtype = bool)
 
-                if i == '|':
-                    result = np.logical_or(l, r)
-                elif i == '&':
-                    result = np.logical_and(l, r)
-                elif i == '-':
-                    result = np.logical_and(l, np.logical_not(r))
+                if token == '|':
+                    result = np.logical_or(left, right)
+                elif token == '&':
+                    result = np.logical_and(left, right)
+                elif token == '-':
+                    result = np.logical_and(left, np.logical_not(right))
 
                 stack.append(result)
 
-            elif i == '@':
+            elif token == '@':
                 # FIXME
                 # In the current version, the right term of '@' is assumed to
                 # be a boolean, and the left is to be an order vector.
 
-                r = stack.pop() # Boolean
-                l = stack.pop() # Float
+                right = stack.pop() # Boolean
+                left = stack.pop() # Float
 
-                l[~r] = np.inf
+                left[~right] = np.inf
 
-                selind = self.__get_top_elm_from_order(l, buf_sel.pop())
+                selected_mask = self.__get_top_elm_from_order(left, buf_sel.pop())
 
-                stack.append(np.array(selind))
+                stack.append(np.array(selected_mask))
 
             else:
-                if isinstance(i, str):
-                    if i.isdigit():
-                        # 'i' should be a criteria value
-                        i = float(i)
+                if isinstance(token, str):
+                    if token.isdigit():
+                        # 'token' should be a criteria value
+                        token = float(token)
                     else:
-                        # 'i' should be a meta-data key
-                        i = self.__metadata_key_to_bool_vector(i)
+                        # 'token' should be a meta-data key
+                        token = self.__metadata_key_to_bool_vector(token)
 
-                stack.append(i)
+                stack.append(token)
 
-        selected_index = stack.pop()
+        selected_mask = stack.pop()
 
         # If buf_sel still has an element, `select_index` should be an order vector.
         # Select N elements based on the order vector.
         if buf_sel:
             num_sel = buf_sel.pop()
-            selected_index = [n < num_sel for n in selected_index]
+            selected_mask = np.array([n < num_sel for n in selected_mask])
 
         # Very dirty solution
-        selected_index = np.array(selected_index) == True  # Should use "==" instead of "is" here.
+        selected_mask = np.array(selected_mask) == True  # Should use "==" instead of "is" here.
 
         if return_index:
-            return self.dataset[:, np.array(selected_index)], selected_index
+            return self.dataset[:, np.array(selected_mask)], selected_mask
         else:
-            return self.dataset[:, np.array(selected_index)]
+            return self.dataset[:, np.array(selected_mask)]
 
-    @__obsoleted_method('select')
-    def select_dataset(self, condition: str, return_index: bool = False, verbose: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+    @_obsoleted_method('select')
+    def select_dataset(
+        self,
+        condition: str,
+        return_index: bool = False,
+        verbose: bool = True
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Select data (columns) from dataset.
 
         Parameters
@@ -488,8 +602,13 @@ class BData(object):
         """
         return self.select(condition, return_index, verbose)
 
-    @__obsoleted_method('select')
-    def select_feature(self, condition: str, return_index: bool = False, verbose: bool = True) -> Union[np.ndarray, Tuple[np.ndarray, list]]:
+    @_obsoleted_method('select')
+    def select_feature(
+        self,
+        condition: str,
+        return_index: bool = False,
+        verbose: bool = True
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Select data (columns) from dataset.
 
         Parameters
@@ -531,7 +650,7 @@ class BData(object):
             query = '%s = 1' % key
             return self.select(query, return_index=False, verbose=False)
 
-    @__obsoleted_method('get')
+    @_obsoleted_method('get')
     def get_dataset(self, key: Optional[str] = None) -> np.ndarray:
         """Get dataset.
 
@@ -580,7 +699,7 @@ class BData(object):
 
     # Value-label map --------------------------------------------------------
 
-    def get_labels(self, key: str) -> list:
+    def get_labels(self, key: str) -> List[str]:
         """Get `key` as labels."""
         if key not in self.__vmap:
             raise ValueError('Key not found in vmap: %s' % key)
@@ -598,17 +717,18 @@ class BData(object):
         """Get `key` as labels."""
         return self.get_labels(key)
 
-    def get_vmap(self, key: str) -> dict:
-        """Returns vmap of `key`."""
+    def get_vmap(self, key: str) -> Dict[float, str]:
+        """Return the value-label map for a metadata key."""
         if key in self.__vmap:
             return self.__vmap[key]
         else:
             raise ValueError('%s not found in vmap' % key)
 
-    def get_vmap_keys(self):
+    def get_vmap_keys(self) -> KeysView[str]:
+        """Return keys of value-label maps."""
         return self.__vmap.keys()
 
-    def add_vmap(self, key: str, vmap: dict) -> None:
+    def add_vmap(self, key: str, vmap: Dict[float, str]) -> None:
         """Add vmap."""
         if key not in self.__metadata.key:
             raise ValueError('%s not found in metadata.' % key)
@@ -633,7 +753,7 @@ class BData(object):
 
         return None
 
-    def __get_act_vmap(self, key: str, vmap: dict) -> dict:
+    def __get_act_vmap(self, key: str, vmap: Dict[float, str]) -> Dict[float, str]:
         values = np.unique(self.get(key))
         try:
             vmap_add = {}
@@ -645,7 +765,7 @@ class BData(object):
             raise ValueError('Invalid vmap: label for %f not found.' % val) from err
         return vmap_add
 
-    def __check_vmap_consistency(self, vmap_new: dict, vmap_old: dict) -> bool:
+    def __check_vmap_consistency(self, vmap_new: Dict[float, str], vmap_old: Dict[float, str]) -> bool:
         for key in vmap_new.keys():
             if key not in vmap_old:
                 continue
@@ -725,6 +845,8 @@ class BData(object):
         return vec
 
     def __get_order(self, v: np.ndarray, sort_order: str = 'descend') -> np.ndarray:
+        if sort_order != "descend":
+            raise NotImplementedError('Only "descend" is implemented for `sort_order`.')
 
         # 'np.nan' comes to the last of an acending series, and thus the top of a decending series.
         # To avoid that, convert 'np.nan' to -Inf.
@@ -747,7 +869,7 @@ class BData(object):
 
         return index
 
-    def __save_h5(self, file_name: str, header: Optional[dict] = None) -> None:
+    def __save_h5(self, file_name: str, header: Optional[Dict[str, Any]] = None) -> None:
         """Save data in HDF5 format (*.h5)."""
         with h5py.File(file_name, 'w') as h5file:
             # dataset
@@ -842,27 +964,25 @@ class BData(object):
         self.__metadata.value = md_values
         self.__metadata.description = md_descs
 
-    def __to_unicode(self, s):
+    def __to_unicode(self, s: Union[bytes, str]) -> str:
         """Convert s (bytes) to unicode str."""
         if isinstance(s, bytes):
             return s.decode('utf-8')
         return s
 
-    def __to_bytes(self, s):
+    def __to_bytes(self, s: Union[bytes, str]) -> bytes:
         """Convert s (unicode str) to bytes."""
         if isinstance(s, str):
             return s.encode('utf-8')
         return s
 
-    def __get_filetype(self, file_name: str):
+    def __get_filetype(self, file_name: str) -> Literal['Matlab', 'HDF5']:
         """Return the type of `file_name` based on the file extension."""
         _, ext = os.path.splitext(file_name)
 
         if ext == ".mat":
-            file_type = "Matlab"
+            return "Matlab"
         elif ext == ".h5":
-            file_type = "HDF5"
+            return "HDF5"
         else:
             raise ValueError("Unknown file extension: %s" % (ext))
-
-        return file_type
