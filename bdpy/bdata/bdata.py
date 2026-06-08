@@ -176,7 +176,6 @@ class BData(object):
 
     # Data modification ------------------------------------------------
 
-    @_obsoleted_method('add')
     def add(self, x: np.ndarray, name: str) -> None:
         """Add `x` to dataset as `name`.
 
