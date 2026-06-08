@@ -39,7 +39,6 @@ from typing_extensions import Literal
 from .featureselector import FeatureSelector
 from .metadata import MetaData
 
-
 # Misc -----------------------------------------------------------------
 
 _F = TypeVar("_F", bound=Callable[..., Any])
