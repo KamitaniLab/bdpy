@@ -802,6 +802,7 @@ class BData(object):
         callstack = []
         callstack_code = []
         f = inspect.currentframe()
+        assert f is not None, "Failed to get current frame for call stack information."
         while True:
             f = f.f_back
             if f is None:
@@ -844,7 +845,7 @@ class BData(object):
             for k in keys])
         vals = (vals == 1)
         vec = np.sum(vals, axis=0).astype(bool)
-        return vec
+        return cast(np.ndarray, vec)
 
     def __get_order(self, v: np.ndarray, sort_order: str = 'descend') -> np.ndarray:
         if sort_order != "descend":
@@ -890,18 +891,27 @@ class BData(object):
             # header
             if header is not None:
                 h5file.create_group('/header')
-                for k, v in header.items():
-                    if isinstance(v, list):
-                        h5file.create_dataset('/header/' + k, data=[self.__to_bytes(x) for x in v])
+                for header_key, header_value in header.items():
+                    if isinstance(header_value, list):
+                        h5file.create_dataset(
+                            '/header/' + header_key,
+                            data=[self.__to_bytes(x) for x in header_value]
+                        )
                     else:
-                        h5file.create_dataset('/header/' + k, data=self.__to_bytes(v)) # FIXME: save unicode str as is
+                        h5file.create_dataset(
+                            '/header/' + header_key,
+                            data=self.__to_bytes(header_value)
+                        ) # FIXME: save unicode str as is
 
             # vmap
             h5file.create_group('/vmap')
-            for mk, vm in self.__vmap.items():
-                h5file.create_group('/vmap/' + mk)
-                for k, v in vm.items():
-                    h5file.create_dataset('/vmap/' + mk + '/' + str(k), data=self.__to_bytes(v)) # FIXME: save unicode str as is
+            for metadata_key, value_map in self.__vmap.items():
+                h5file.create_group('/vmap/' + metadata_key)
+                for value_key, label in value_map.items():
+                    h5file.create_dataset(
+                        '/vmap/' + metadata_key + '/' + str(value_key),
+                        data=self.__to_bytes(label)
+                    ) # FIXME: save unicode str as is
 
     def __load_mat(self, load_filename: str) -> None:
         """Load dataset and metadata from Matlab file."""
