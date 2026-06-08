@@ -474,7 +474,7 @@ class BData(object):
         - = (equal)
         - @ (conditional)
         """
-        rpn_tokens = FeatureSelector(condition).rpn
+        rpn_tokens: Iterable[Union[str, float, np.ndarray]] = FeatureSelector(condition).rpn
 
         stack: list = []
         buf_sel = []
@@ -674,13 +674,14 @@ class BData(object):
         numpy.ndarray
         """
         md = self.metadata.get(key, 'value')
+        assert md is not None, f"Meta-data key '{key}' not found."
 
-        if where is not None:
-            # Mask the metadata array with columns specified with `where`
-            ind = self.metadata.get(where, 'value') == 1
-            md = md[ind]
+        if where is None:
+            return md
 
-        return md
+        # Mask the metadata array with columns specified with `where`
+        ind = self.metadata.get(where, 'value') == 1
+        return cast(np.ndarray, md[ind])
 
     def show_metadata(self) -> None:
         """Show all the key and description in metadata."""
