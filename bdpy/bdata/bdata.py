@@ -60,6 +60,7 @@ def _obsoleted_method(alternative: str) -> Callable[[_F], _F]:
 
 ApplyFuncIndex = Union[Sequence[int], NDArray[np.integer]]
 ApplyFuncResult = Union[np.ndarray, Tuple[np.ndarray, ApplyFuncIndex]]
+SelectionOperand = Union[np.ndarray, float]
 
 # BData class ##########################################################
 
@@ -474,15 +475,15 @@ class BData(object):
         - = (equal)
         - @ (conditional)
         """
-        rpn_tokens: Iterable[Union[str, float, np.ndarray]] = FeatureSelector(condition).rpn
+        rpn_tokens = FeatureSelector(condition).rpn
 
-        stack: list = []
-        buf_sel = []
+        stack: List[SelectionOperand] = []
+        buf_sel: List[int] = []
 
         for token in rpn_tokens:
             if token == '=':
                 right = stack.pop()
-                left = stack.pop()
+                left = cast(np.ndarray, stack.pop())
 
                 stack.append(np.array([n == right for n in left], dtype=bool))
 
@@ -491,8 +492,8 @@ class BData(object):
 
                 # Need fix on handling 'None'
 
-                num_selected = int(stack.pop()) # Num of elements to be selected
-                values_to_rank = stack.pop()
+                num_selected = int(cast(float, stack.pop())) # Num of elements to be selected
+                values_to_rank = cast(np.ndarray, stack.pop())
 
                 order = self.__get_order(values_to_rank)
 
@@ -500,8 +501,8 @@ class BData(object):
                 buf_sel.append(num_selected)
 
             elif token in ['|', '&', '-']:
-                right = stack.pop()
-                left = stack.pop()
+                right = cast(np.ndarray, stack.pop())
+                left = cast(np.ndarray, stack.pop())
 
                 if right.dtype != 'bool':
                     # 'right' should be an order vector
@@ -529,25 +530,26 @@ class BData(object):
                 # In the current version, the right term of '@' is assumed to
                 # be a boolean, and the left is to be an order vector.
 
-                right = stack.pop() # Boolean
-                left = stack.pop() # Float
+                right = cast(np.ndarray, stack.pop()) # Boolean
+                left = cast(np.ndarray, stack.pop()) # Float
 
                 left[~right] = np.inf
 
-                selected_mask = self.__get_top_elm_from_order(left, buf_sel.pop())
+                conditional_mask = self.__get_top_elm_from_order(left, buf_sel.pop())
 
-                stack.append(np.array(selected_mask))
+                stack.append(np.array(conditional_mask))
 
             else:
-                if isinstance(token, str):
-                    if token.isdigit():
-                        # 'token' should be a criteria value
-                        token = float(token)
-                    else:
-                        # 'token' should be a meta-data key
-                        token = self.__metadata_key_to_bool_vector(token)
+                if isinstance(token, str) and token.isdigit():
+                    # 'token' should be a criteria value
+                    operand: SelectionOperand = float(token)
+                elif isinstance(token, str):
+                    # 'token' should be a meta-data key
+                    operand = self.__metadata_key_to_bool_vector(token)
+                else:
+                    operand = cast(SelectionOperand, token)
 
-                stack.append(token)
+                stack.append(operand)
 
         selected_mask = stack.pop()
 
@@ -555,7 +557,7 @@ class BData(object):
         # Select N elements based on the order vector.
         if buf_sel:
             num_sel = buf_sel.pop()
-            selected_mask = np.array([n < num_sel for n in selected_mask])
+            selected_mask = np.array([n < num_sel for n in cast(np.ndarray, selected_mask)])
 
         # Very dirty solution
         selected_mask = np.array(selected_mask) == True  # Should use "==" instead of "is" here.
