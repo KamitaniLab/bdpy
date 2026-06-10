@@ -9,8 +9,8 @@ from typing import Callable, List, Optional, Sequence, Union, overload
 import numpy as np
 from typing_extensions import Literal
 
-MetaDataSetValue = Optional[Union[np.ndarray, Sequence[float]]]
-MetaDataUpdater = Callable[[np.ndarray, np.ndarray], Union[np.ndarray, Sequence[float]]]
+MetaDataValue = Union[np.ndarray, Sequence[float]]
+MetaDataUpdater = Callable[[np.ndarray, np.ndarray], MetaDataValue]
 
 
 class MetaData(object):
@@ -67,7 +67,7 @@ class MetaData(object):
     def set(
         self,
         key: str,
-        value: MetaDataSetValue,
+        value: Optional[MetaDataValue],
         description: str,
         updater: Optional[MetaDataUpdater] = None,
     ) -> None:
@@ -77,13 +77,19 @@ class MetaData(object):
         ----------
         key : str
             Meta-data key
-        value : array_like
-            Meta-data value
+        value : array_like or None
+            Meta-data value. If None, only the description of existing
+            meta-data is updated.
         description : str
             Meta-data description
         updater : function
             Function applied to meta-data value when meta-data named `key` already exists.
             It should take two args: new and old meta-data values.
+
+        Raises
+        ------
+        ValueError
+            If `value` is None and meta-data named `key` does not exist.
         """
         # If `value` is None, `set` does not update the value.
         is_novalue = True if value is None else False
@@ -118,6 +124,9 @@ class MetaData(object):
                 self.__value[ind, :] = np.array(updater(value_array, self.__value[ind, :]), dtype=float)
         else:
             # Add new metadata
+            if is_novalue:
+                raise ValueError(f"Cannot add new meta-data '{key}' without a value.")
+
             self.__key.append(key)
             self.__description.append(description)
 

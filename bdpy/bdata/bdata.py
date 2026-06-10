@@ -15,6 +15,7 @@ import re
 import time
 import warnings
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -33,15 +34,15 @@ from typing import (
 import h5py
 import numpy as np
 import scipy.io as sio
-from numpy.typing import NDArray
 from typing_extensions import Literal
 
 from .featureselector import FeatureSelector
-from .metadata import MetaData
+from .metadata import MetaData, MetaDataValue
 
 # Misc -----------------------------------------------------------------
 
 _F = TypeVar("_F", bound=Callable[..., Any])
+_T = TypeVar("_T")
 
 def _obsoleted_method(alternative: str) -> Callable[[_F], _F]:
     """Return a decorator that warns about an obsolete method."""
@@ -58,8 +59,14 @@ def _obsoleted_method(alternative: str) -> Callable[[_F], _F]:
         return cast(_F, wrapper)
     return decorator
 
-ApplyFuncIndex = Union[Sequence[int], NDArray[np.integer]]
-ApplyFuncResult = Union[np.ndarray, Tuple[np.ndarray, ApplyFuncIndex]]
+if TYPE_CHECKING:
+    # `numpy.typing` requires numpy >= 1.20 (`NDArray` requires >= 1.21),
+    # which is not guaranteed at runtime. Keep these imports type-check only.
+    from numpy.typing import NDArray
+
+    ApplyFuncIndex = Union[Sequence[int], NDArray[np.integer]]
+    ApplyFuncResult = Union[np.ndarray, Tuple[np.ndarray, ApplyFuncIndex]]
+
 SelectionOperand = Union[np.ndarray, float]
 
 # BData class ##########################################################
@@ -241,13 +248,17 @@ class BData(object):
         -------
         None
         """
-        mdind = [a == 1 for a in self.get_metadata(key)]
+        md = self.get_metadata(key)
+        if md is None:
+            raise ValueError(f"Meta-data key '{key}' not found.")
+
+        mdind = [a == 1 for a in md]
         self.dataset[:, np.array(mdind)] = dat
 
     def add_metadata(
         self,
         key: str,
-        value: np.ndarray,
+        value: MetaDataValue,
         description: str = '',
         where: Optional[str] = None,
         attribute: Optional[str] = None,
@@ -258,7 +269,7 @@ class BData(object):
         ----------
         key : str
             Meta-data key.
-        value : numpy.ndarray
+        value : array_like
             Meta-data array.
         description : str, optional
             Meta-data description.
@@ -283,6 +294,7 @@ class BData(object):
             else:
                 where = attribute
 
+        add_value: MetaDataValue
         if where is not None:
             attr_ind = self.metadata.get(where, 'value') == 1
             add_value = np.array([np.nan for _ in range(self.metadata.get_value_len())])
@@ -367,7 +379,7 @@ class BData(object):
 
     def applyfunc(
         self,
-        func: Callable[..., ApplyFuncResult],
+        func: "Callable[..., ApplyFuncResult]",
         where: Optional[Union[str, List[str]]] = None,
         **kargs: Any,  # noqa: ANN401
     ) -> "BData":
@@ -659,7 +671,15 @@ class BData(object):
         """
         return self.get(key)
 
-    def get_metadata(self, key: str, where: Optional[str] = None) -> np.ndarray:
+    @overload
+    def get_metadata(self, key: str, where: str) -> np.ndarray:
+        ...
+
+    @overload
+    def get_metadata(self, key: str, where: None = None) -> Optional[np.ndarray]:
+        ...
+
+    def get_metadata(self, key: str, where: Optional[str] = None) -> Optional[np.ndarray]:
         """Get value of meta-data specified by `key`.
 
         Parameters
@@ -672,13 +692,22 @@ class BData(object):
 
         Returns
         -------
-        numpy.ndarray
+        numpy.ndarray or None
+            Meta-data value. If `key` is not found and `where` is not
+            given, None is returned.
+
+        Raises
+        ------
+        ValueError
+            If `key` is not found and `where` is given.
         """
         md = self.metadata.get(key, 'value')
-        assert md is not None, f"Meta-data key '{key}' not found."
 
         if where is None:
             return md
+
+        if md is None:
+            raise ValueError(f"Meta-data key '{key}' not found.")
 
         # Mask the metadata array with columns specified with `where`
         ind = self.metadata.get(where, 'value') == 1
@@ -801,7 +830,8 @@ class BData(object):
         callstack = []
         callstack_code = []
         f = inspect.currentframe()
-        assert f is not None, "Failed to get current frame for call stack information."
+        if f is None:
+            raise RuntimeError('Failed to get the current frame for call stack information.')
         while True:
             f = f.f_back
             if f is None:
@@ -839,8 +869,10 @@ class BData(object):
         keys = [k for k in self.metadata.key if re.match(key_esc, k)]
         if len(keys) == 0:
             raise RuntimeError('Meta-data %s not found' % key)
+        # `keys` only contains existing meta-data keys, so `get_metadata`
+        # never returns None here.
         vals = np.vstack([
-            self.get_metadata(k)
+            cast(np.ndarray, self.get_metadata(k))
             for k in keys])
         vals = (vals == 1)
         vec = np.sum(vals, axis=0).astype(bool)
@@ -975,14 +1007,38 @@ class BData(object):
         self.__metadata.value = md_values
         self.__metadata.description = md_descs
 
-    def __to_unicode(self, s: Union[bytes, str]) -> str:
-        """Convert s (bytes) to unicode str."""
+    @overload
+    def __to_unicode(self, s: bytes) -> str:
+        ...
+
+    @overload
+    def __to_unicode(self, s: _T) -> _T:
+        ...
+
+    def __to_unicode(self, s: Any) -> Any:
+        """Convert `s` to a unicode str only when it is bytes.
+
+        Values of any other type (e.g., numeric header values) are returned
+        unchanged.
+        """
         if isinstance(s, bytes):
             return s.decode('utf-8')
         return s
 
-    def __to_bytes(self, s: Union[bytes, str]) -> bytes:
-        """Convert s (unicode str) to bytes."""
+    @overload
+    def __to_bytes(self, s: str) -> bytes:
+        ...
+
+    @overload
+    def __to_bytes(self, s: _T) -> _T:
+        ...
+
+    def __to_bytes(self, s: Any) -> Any:
+        """Convert `s` to bytes only when it is a unicode str.
+
+        Values of any other type (e.g., numeric header values) are returned
+        unchanged.
+        """
         if isinstance(s, str):
             return s.encode('utf-8')
         return s

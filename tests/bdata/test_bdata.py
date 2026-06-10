@@ -108,8 +108,23 @@ class TestBdata(unittest.TestCase):
         b = BData()
         b.add(np.ones((2, 3)), 'Data')
 
-        with self.assertRaises(AssertionError):
-            b.get_metadata('Metadata_NotFound')
+        self.assertIsNone(b.get_metadata('Metadata_NotFound'))
+
+    def test_get_metadata_notfound_where(self):
+        '''Test for BData.get_metadata with a missing key and where option.'''
+        b = BData()
+        b.add(np.ones((2, 3)), 'Data')
+
+        with self.assertRaises(ValueError):
+            b.get_metadata('Metadata_NotFound', where='Data')
+
+    def test_update_notfound(self):
+        '''Test for BData.update with a missing key.'''
+        b = BData()
+        b.add(np.ones((2, 3)), 'Data')
+
+        with self.assertRaises(ValueError):
+            b.update('Metadata_NotFound', np.zeros((2, 3)))
 
     def test_set_metadatadescription_1(self):
         '''Test for set_metadatadescription.'''
