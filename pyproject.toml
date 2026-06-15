@@ -10,23 +10,20 @@ authors = [
     { name = "Shuntaro C. Aoki", email = "s_aoki@i.kyoto-u.ac.jp" }
 ]
 readme = "README.md"
-requires-python = ">= 3.6, < 3.12"
+requires-python = ">= 3.8, < 3.12"
 license = { file = "LICENSE" }
 keywords = ["neuroscience", "neuroimaging", "brain decoding", "fmri", "machine learning"]
 
 dependencies = [
-    "numpy>=1.19; python_version < '3.7'",
-    "numpy>=1.20; python_version >= '3.7'",
+    "numpy>=1.20",
     "scipy",
     "scikit-learn",
-    "h5py>=3.0; python_version >= '3.7'",
-    "h5py<3.0; python_version < '3.7'",
+    "h5py>=3.0",
     "hdf5storage",
     "pyyaml",
     "pandas",
     "tqdm",
-    "typing-extensions>=4.1.0; python_version < '3.8'",
-    "typing-extensions>=4.5.0; python_version >= '3.8'"
+    "typing-extensions>=4.5.0"
 ]
 
 [project.optional-dependencies]
@@ -45,8 +42,7 @@ fig = [
 mri = [
     "numpy<1.24",
     "nibabel==3.2",
-    "nipy>=0.6.0; python_version >= '3.8'",
-    "nipy<0.6.0; python_version < '3.8'"
+    "nipy>=0.6.0"
 ]
 pipeline = [
     "hydra-core",
@@ -79,9 +75,9 @@ dev = [
     "mypy"
 ]
 docs = [
-    "mkdocs>=1.6; python_version >= '3.8'",
-    "mkdocs-material>=9.5; python_version >= '3.8'",
-    "mkdocstrings[python]>=0.25; python_version >= '3.8'",
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
 ]
 
 [tool.uv]
