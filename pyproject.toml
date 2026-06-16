@@ -40,9 +40,8 @@ fig = [
     "Pillow"
 ]
 mri = [
-    "numpy<1.24",
-    "nibabel==3.2",
-    "nipy>=0.6.0"
+    "nibabel>=3.2,<6",
+    "nipy>=0.6.1"
 ]
 pipeline = [
     "hydra-core",
