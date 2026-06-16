@@ -19,14 +19,14 @@ from typing import Any, Dict, List, Optional, Union
 
 import hdf5storage
 import numpy as np
-import scipy.io as sio
+
+from . import _mat_v73
 
 
 def _load_array_with_key(key: str, path: str) -> np.ndarray:
-    try:
-        return sio.loadmat(path)[key]
-    except (NotImplementedError, ValueError):
-        return hdf5storage.loadmat(path)[key]
+    # v5 .mat via scipy, v7.3 (HDF5) via h5py; avoids hdf5storage on the load
+    # path, which breaks under NumPy 2.0 (see bdpy/dataform/_mat_v73.py).
+    return _mat_v73.loadmat_key(path, key)
 
 
 def _determine_num_parallel(num_files: int) -> int:
@@ -86,7 +86,7 @@ class Features(object):
         if feature_index is not None:
             if not os.path.exists(feature_index):
                 raise RuntimeError('%s do not exist' % feature_index)
-            self.__feat_index_table = hdf5storage.loadmat(feature_index)['index']
+            self.__feat_index_table = _mat_v73.loadmat_key(feature_index, 'index')
             # NOTE: type of self.__feature_index_table is ambiguous
         else:
             self.__feat_index_table = None
