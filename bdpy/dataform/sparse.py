@@ -14,6 +14,12 @@ import numpy as np
 
 from . import _mat_v73
 
+# hdf5storage.savemat can fail for SparseArray.save under NumPy 2.x, especially
+# when overwriting an existing sparse struct. SparseArray.save therefore uses a
+# direct h5py writer only under NumPy >= 2. Dense-array save paths are unchanged
+# and still rely on hdf5storage for MATLAB-v7.3 metadata/compatibility behavior.
+_NUMPY2 = int(np.__version__.split('.')[0]) >= 2
+
 
 def load_array(fname, key='data'):
     """Load an array (dense or sparse)."""
@@ -77,24 +83,40 @@ class SparseArray(object):
         return self.__make_dense()
 
     def save(self, fname, key='data', dtype=np.float64):
-        payload = {key: {u'__bdpy_sparse_arrray': True,
-                         u'index': self.__index,
-                         u'value': self.__value.astype(dtype),
-                         u'shape': self.__shape,
-                         u'background': self.__background}}
-        try:
+        if _NUMPY2:
+            # Avoid hdf5storage.savemat here (it can fail when overwriting an
+            # existing sparse struct under NumPy 2.x) and write the struct with
+            # h5py instead. We replace only ``key`` in the target file, leaving
+            # any other variables already stored there untouched.
+            self.__save_h5py(fname, key=key, dtype=dtype)
+        else:
+            payload = {key: {u'__bdpy_sparse_arrray': True,
+                             u'index': self.__index,
+                             u'value': self.__value.astype(dtype),
+                             u'shape': self.__shape,
+                             u'background': self.__background}}
             hdf5storage.savemat(fname, payload, format='7.3',
                                 oned_as='column', store_python_metadata=True)
-        except ValueError:
-            # Under NumPy 2.0, hdf5storage.savemat raises when overwriting an
-            # existing struct in place (it compares array-valued attributes).
-            # Fall back to rewriting the file from scratch. The normal (merging)
-            # behavior is preserved whenever the in-place write succeeds; only
-            # this fallback discards any other variables already in the file.
-            if os.path.exists(fname):
-                os.remove(fname)
-            hdf5storage.savemat(fname, payload, format='7.3',
-                                oned_as='column', store_python_metadata=True)
+        return None
+
+    def __save_h5py(self, fname, key='data', dtype=np.float64):
+        # NumPy-2-only writer for the sparse-array struct. The layout mirrors
+        # what ``__load`` expects: ``index``/``shape`` as plain matrices (which
+        # _mat_v73.read_cell restores row-by-row) and ``value``/``background``
+        # as plain datasets. Opening in append mode and deleting only ``key``
+        # avoids the unconditional full-file rewrite of the previous fallback.
+        index = np.vstack([np.asarray(i, dtype=np.int64).ravel()
+                           for i in self.__index])
+        mode = 'a' if os.path.exists(fname) else 'w'
+        with h5py.File(fname, mode) as f:
+            if key in f:
+                del f[key]
+            g = f.create_group(key)
+            g.create_dataset(u'__bdpy_sparse_arrray', data=True)
+            g.create_dataset(u'index', data=index)
+            g.create_dataset(u'value', data=self.__value.astype(dtype).ravel())
+            g.create_dataset(u'shape', data=np.asarray(self.__shape, dtype=np.int64))
+            g.create_dataset(u'background', data=np.asarray(self.__background))
         return None
 
     def __make_sparse(self, array):
