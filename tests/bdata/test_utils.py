@@ -62,6 +62,21 @@ class TestVstack(unittest.TestCase):
                                       np.vstack([x0_run,
                                                  x1_run + len(x0_run)]))
 
+    def test_vstack_successive_none(self):
+        x0_data = np.random.rand(10, 20)
+        x1_data = np.random.rand(10, 20)
+
+        bdata0 = BData()
+        bdata0.add(x0_data, 'Data')
+
+        bdata1 = BData()
+        bdata1.add(x1_data, 'Data')
+
+        bdata_merged = vstack([bdata0, bdata1], successive=None)
+
+        np.testing.assert_array_equal(bdata_merged.select('Data'),
+                                      np.vstack([x0_data, x1_data]))
+
     def test_vstack_minimal(self):
         x0_data = np.random.rand(5, 10)
         x0_label = np.random.rand(5, 1)
@@ -92,6 +107,19 @@ class TestVstack(unittest.TestCase):
                                       [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, np.nan])
         self.assertFalse('key only in 0' in bdata_merged.metadata.key)
         self.assertFalse('key only in 1' in bdata_merged.metadata.key)
+
+    def test_vstack_unknown_metadata_merge(self):
+        x0_data = np.random.rand(5, 10)
+        x1_data = np.random.rand(5, 10)
+
+        bdata0 = BData()
+        bdata0.add(x0_data, 'Data')
+
+        bdata1 = BData()
+        bdata1.add(x1_data, 'Data')
+
+        with self.assertRaises(ValueError):
+            vstack([bdata0, bdata1], metadata_merge='unknown')
 
     def test_vstack_vmap(self):
         x0_data = np.random.rand(10, 20)

@@ -1,13 +1,15 @@
 """
-Feature selector class
+Feature selector class.
 
 This file is a part of BdPy
 """
 
 
+from typing import ClassVar, Dict, List, Optional, Tuple
+
+
 class FeatureSelector(object):
-    """
-    Feature selector class
+    """Feature selector class.
 
     Parameters
     ----------
@@ -25,31 +27,33 @@ class FeatureSelector(object):
     """
 
     # Class variables ##################
-    signs = ('(', ')')
-    operators = ('=', '|', '&', '+', '-', '@')
+    signs: ClassVar[Tuple[str, ...]] = ('(', ')')
+    operators: ClassVar[Tuple[str, ...]] = ('=', '|', '&', '+', '-', '@')
 
-    __op_order = {'=': 10,
-                  '|': 5,
-                  '&': 5,
-                  '+': 5,
-                  '-': 5,
-                  '@': 3,
-                  '(': -1,
-                  ')': -1}
+    __op_order: ClassVar[Dict[str, int]] = {
+        '=': 10,
+        '|': 5,
+        '&': 5,
+        '+': 5,
+        '-': 5,
+        '@': 3,
+        '(': -1,
+        ')': -1,
+    }
 
     # Methods ##########################
 
-    def __init__(self, expression):
+    def __init__(self, expression: str) -> None:
         self.expression = expression
         self.token = self.lexical_analysis(self.expression)
         self.rpn = self.parse(self.token)
 
-        self.index = None
+        self.index: Optional[int] = None
 
-    def lexical_analysis(self, expression):
-        """Lexical analyser"""
+    def lexical_analysis(self, expression: str) -> Tuple[str, ...]:
+        """Tokenize selection command."""
         str_buf = ''
-        output_buf = []
+        output_buf: List[str] = []
 
         i = 0
         while i < len(expression):
@@ -91,10 +95,10 @@ class FeatureSelector(object):
 
         return tuple(output_buf)
 
-    def parse(self, token_list):
-        """Parser for selection command"""
-        out_que = []
-        op_stack = []
+    def parse(self, token_list: Tuple[str, ...]) -> Tuple[str, ...]:
+        """Parse selection command."""
+        out_que: List[str] = []
+        op_stack: List[str] = []
 
         for token in token_list:
 

@@ -79,6 +79,25 @@ class TestMetadata(unittest.TestCase):
         assert_array_equal(md.get('MetaData_B', 'value'), [0] * 10 + [1] * 5)
         assert_array_equal(md.get('MetaData_B', 'description'), 'Test metadata B')
 
+    def test_set_description_only(self):
+        '''Test for MetaData.set(); updating description without value.'''
+        md = metadata.MetaData()
+        md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
+
+        md.set('MetaData_A', None, 'Updated metadata A')
+
+        assert_array_equal(md.get('MetaData_A', 'value'), [1] * 10 + [0] * 5)
+        assert_array_equal(md.get('MetaData_A', 'description'), 'Updated metadata A')
+
+    def test_set_novalue_new_key(self):
+        '''Test for MetaData.set(); value=None is not allowed for a new key.'''
+        md = metadata.MetaData()
+
+        with self.assertRaises(ValueError):
+            md.set('MetaData_A', None, 'Test metadata A')
+
+        self.assertEqual(md.keylist(), [])
+
     def test_get_notfound(self):
         '''Test for MetaData.get(); key not found case.'''
         md = metadata.MetaData()
@@ -87,6 +106,13 @@ class TestMetadata(unittest.TestCase):
 
         assert_array_equal(md.get('MetaData_NotFound', 'value'), None)
         assert_array_equal(md.get('MetaData_NotFound', 'description'), None)
+
+    def test_get_unknown_field(self):
+        '''Test for MetaData.get(); unknown field case.'''
+        md = metadata.MetaData()
+        md.set('MetaData_A', [1] * 10 + [0] * 5, 'Test metadata A')
+
+        assert_array_equal(md.get('MetaData_A', 'unknown'), None)
 
     def test_get_value_len(self):
         '''Test for get_value_len().'''
