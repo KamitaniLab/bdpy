@@ -25,6 +25,28 @@ class TestMri(unittest.TestCase):
 
         self.assertTrue((test_output == exp_output).all())
 
+    def test_load_mri_3d(self) -> None:
+        """Test load_mri on a 3D volume.
+
+        Guards the NumPy 2.0 / nibabel 5.x compatibility fix: nibabel removed
+        ``get_data()``, so the loader reads the image via ``get_fdata()``.
+        """
+        import os
+        import tempfile
+
+        import nibabel
+
+        arr = np.arange(2 * 3 * 4, dtype=np.float32).reshape(2, 3, 4)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fpath = os.path.join(tmpdir, 'test.nii.gz')
+            nibabel.save(nibabel.Nifti1Image(arr, affine=np.eye(4)), fpath)
+            data, xyz, ijk = bmr.load_mri(fpath)  # type: ignore
+
+        # A 3D volume is returned flattened in Fortran order.
+        np.testing.assert_array_equal(data, arr.flatten(order='F'))
+        self.assertEqual(xyz.shape, (3, arr.size))
+        self.assertEqual(ijk.shape, (3, arr.size))
+
     def test_get_roiflag_pass0002(self) -> None:
         """Test for get_roiflag (pass case 0002)."""
         roi_xyz = [np.array([[1, 2, 3],

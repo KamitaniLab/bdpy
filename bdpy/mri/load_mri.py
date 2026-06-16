@@ -15,7 +15,7 @@ def load_mri(fpath):
     """
     img = nipy.load_image(fpath)
 
-    data = img.get_data()
+    data = img.get_fdata()
     if data.ndim == 4:
         data = data.reshape(-1, data.shape[-1], order='F').T
         i_len, j_len, k_len, t = img.shape
