@@ -27,6 +27,7 @@ test_versions
 /venv
 /venv-*
 /.venv
+/uv.lock
 
 *.code-workspace
 
