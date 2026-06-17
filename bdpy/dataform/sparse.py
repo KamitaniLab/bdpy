@@ -24,16 +24,18 @@ _NUMPY2 = int(np.__version__.split('.')[0]) >= 2
 def load_array(fname, key='data'):
     """Load an array (dense or sparse)."""
     with h5py.File(fname, 'r') as f:
-        methods = [attr for attr in dir(f[key]) if callable(getattr(f[key], str(attr)))]
-        if 'keys' in methods and '__bdpy_sparse_arrray' in f[key].keys():
-            # SparseArray
-            s_ary = SparseArray(fname, key=key)
-            return s_ary.dense
-        elif type(f[key][()]) == np.ndarray:
+        obj = f[key]
+        # Inspect the HDF5 object type rather than reading the whole dataset:
+        # a SparseArray is stored as a group, a dense array as a dataset.
+        if isinstance(obj, h5py.Group):
+            if '__bdpy_sparse_arrray' in obj:
+                s_ary = SparseArray(fname, key=key)
+                return s_ary.dense
+            raise RuntimeError('Unsupported group: %s' % key)
+        if isinstance(obj, h5py.Dataset):
             # Dense array (read with h5py; hdf5storage breaks under NumPy 2.0)
-            return _mat_v73.read_dataset(f[key])
-        else:
-            raise RuntimeError('Unsupported data type: %s' % type(f[key][()]))
+            return _mat_v73.read_dataset(obj)
+        raise RuntimeError('Unsupported data type: %s' % type(obj))
 
 
 def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
