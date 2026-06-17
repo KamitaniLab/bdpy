@@ -23,6 +23,9 @@ def read_dataset(dset: h5py.Dataset) -> np.ndarray:
     datasets are written transposed relative to NumPy's C order. hdf5storage
     additionally records the original Python shape and empty-array flags as
     ``Python.*`` attributes, which we honor to reproduce ``hdf5storage.loadmat``.
+    Only ``Python.Empty`` is special-cased; a bare ``MATLAB_empty`` (set by
+    MATLAB without ``Python.Shape``) is read through the normal path so that
+    empty non-scalar arrays such as ``(0, 3)`` keep their shape.
 
     Parameters
     ----------
@@ -35,8 +38,13 @@ def read_dataset(dset: h5py.Dataset) -> np.ndarray:
         The array with its original shape restored.
     """
     attrs = dset.attrs
-    if "Python.Empty" in attrs or "MATLAB_empty" in attrs:
-        shape = tuple(int(x) for x in attrs.get("Python.Shape", ()))
+    if "Python.Empty" in attrs:
+        # Only Python.Empty (written by hdf5storage) implies a Python.Shape we
+        # can trust; fall back to the stored dataset shape if it is missing. A
+        # bare MATLAB_empty (written by MATLAB without Python.Shape) must NOT be
+        # treated this way -- np.empty(()) would collapse e.g. (0, 3) to 0-d --
+        # so it falls through to the normal read/transpose path below.
+        shape = tuple(int(x) for x in attrs.get("Python.Shape", dset.shape))
         return np.empty(shape, dtype=dset.dtype)
     arr = dset[()]
     if "MATLAB_class" in attrs and isinstance(arr, np.ndarray) and arr.ndim >= 2:
