@@ -28,11 +28,14 @@ def _prepare_mock_data(
     for layer_name, shape in zip(mock_layer_names, mock_shapes):
         os.makedirs(os.path.join(tmpdir, layer_name))
         arrays = []
-        for image_name in mock_image_names:
+        # Stack in sorted-filename order to match Features.__get_labels, which
+        # sorts the feature files when collecting labels.
+        for image_name in sorted(mock_image_names):
             data = np.random.rand(*shape)
             hdf5storage.savemat(
                 os.path.join(tmpdir, layer_name, image_name + '.mat'),
                 {'feat': data},
+                format='7.3',
                 store_python_metadata=True)
             arrays.append(data)
         stacked[layer_name] = np.vstack(arrays)
