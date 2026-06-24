@@ -19,7 +19,7 @@ def load_mri(fpath):
     if data.ndim == 4:
         data = data.reshape(-1, data.shape[-1], order='F').T
         i_len, j_len, k_len, t = img.shape
-        affine = np.delete(np.delete(img.affine, 3, axis=0), 3, axis=1)
+        affine = img.affine
     elif data.ndim == 3:
         data = data.flatten(order='F')
         i_len, j_len, k_len = img.shape
