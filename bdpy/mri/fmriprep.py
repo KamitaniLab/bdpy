@@ -813,52 +813,6 @@ def __create_bdata_fmriprep_subject(subject_data, data_mode, data_path='./', lab
     return bdata
 
 
-def __get_xyz(img):
-    if len(img.shape) == 4:
-        # 4D-image
-        i_len, j_len, k_len, t = img.shape
-        affine = np.delete(np.delete(img.coordmap.affine, 3, axis=0), 3, axis=1)
-    else:
-        # 3D-image
-        i_len, j_len, k_len = img.shape
-        affine = img.coordmap.affine
-    ijk = np.array(list(itertools.product(range(i_len),
-                                          range(j_len),
-                                          range(k_len),
-                                          [1]))).T
-    return np.dot(affine, ijk)[:-1]
-
-
-def __load_mri(fpath):
-    """Load a MRI image.
-
-    - Returns data as 2D array (sample x voxel)
-    - Returns voxle xyz coordinates (3 x voxel)
-    - Returns voxel ijk indexes (3 x voxel)
-    - Data, xyz, and ijk are flattened by Fortran-like index order
-    """
-    img = nibabel.load(fpath)
-
-    data = img.get_fdata()
-    if data.ndim == 4:
-        data = data.reshape(-1, data.shape[-1], order='F').T
-        i_len, j_len, k_len, t = img.shape
-        affine = np.delete(np.delete(img.affine, 3, axis=0), 3, axis=1)
-    elif data.ndim == 3:
-        data = data.flatten(order='F')
-        i_len, j_len, k_len = img.shape
-        affine = img.affine
-    else:
-        raise ValueError('Invalid shape.')
-
-    ijk = np.array(np.unravel_index(np.arange(i_len * j_len * k_len),
-                                    (i_len, j_len, k_len), order='F'))
-    ijk_b = np.vstack([ijk, np.ones((1, i_len * j_len * k_len))])
-    xyz_b = np.dot(affine, ijk_b)
-    xyz = xyz_b[:-1]
-
-    return data, xyz, ijk
-
 
 if __name__ == '__main__':
     pass
