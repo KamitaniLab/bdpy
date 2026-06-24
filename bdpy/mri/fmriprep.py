@@ -11,7 +11,6 @@ import warnings
 from collections import OrderedDict
 
 import nibabel
-import nipy
 import numpy as np
 import pandas as pd
 
@@ -406,17 +405,17 @@ class BrainData(object):
         - Returns voxel ijk indexes (3 x voxel)
         - Data, xyz, and ijk are flattened by Fortran-like index order
         """
-        img = nipy.load_image(self.__dpath)
+        img = nibabel.load(self.__dpath)
 
         data = img.get_fdata()
         if data.ndim == 4:
             data = data.reshape(-1, data.shape[-1], order='F').T
             i_len, j_len, k_len, t = img.shape
-            affine = np.delete(np.delete(img.coordmap.affine, 3, axis=0), 3, axis=1)
+            affine = np.delete(np.delete(img.affine, 3, axis=0), 3, axis=1)
         elif data.ndim == 3:
             data = data.flatten(order='F')
             i_len, j_len, k_len = img.shape
-            affine = img.coordmap.affine
+            affine = img.affine
         else:
             raise ValueError('Invalid shape.')
 
@@ -838,17 +837,17 @@ def __load_mri(fpath):
     - Returns voxel ijk indexes (3 x voxel)
     - Data, xyz, and ijk are flattened by Fortran-like index order
     """
-    img = nipy.load_image(fpath)
+    img = nibabel.load(fpath)
 
     data = img.get_fdata()
     if data.ndim == 4:
         data = data.reshape(-1, data.shape[-1], order='F').T
         i_len, j_len, k_len, t = img.shape
-        affine = np.delete(np.delete(img.coordmap.affine, 3, axis=0), 3, axis=1)
+        affine = np.delete(np.delete(img.affine, 3, axis=0), 3, axis=1)
     elif data.ndim == 3:
         data = data.flatten(order='F')
         i_len, j_len, k_len = img.shape
-        affine = img.coordmap.affine
+        affine = img.affine
     else:
         raise ValueError('Invalid shape.')
 
