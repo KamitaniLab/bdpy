@@ -38,7 +38,7 @@ def load_epi(datafiles):
         img = nipy.load_image(df)
 
         xyz = _check_xyz(xyz, img)
-        data_list.append(np.array(img.get_data().flatten(), dtype=np.float64))
+        data_list.append(np.array(img.get_fdata().flatten(), dtype=np.float64))
 
     data = np.vstack(data_list)
 
@@ -47,7 +47,9 @@ def load_epi(datafiles):
 
 def _check_xyz(xyz, img):
     """Check voxel xyz consistency."""
-    xyz_current = _get_xyz(img.coordmap.affine, img.get_data().shape)
+    # Use the image shape metadata; avoid get_fdata() here, which would read the
+    # whole volume just to check consistency (load_epi reads the data later).
+    xyz_current = _get_xyz(img.coordmap.affine, img.shape[:3])
 
     if xyz.size == 0:
         xyz = xyz_current

@@ -12,20 +12,30 @@ import h5py
 import hdf5storage
 import numpy as np
 
+from . import _mat_v73
+
+# hdf5storage.savemat can fail for SparseArray.save under NumPy 2.x, especially
+# when overwriting an existing sparse struct. SparseArray.save therefore uses a
+# direct h5py writer only under NumPy >= 2. Dense-array save paths are unchanged
+# and still rely on hdf5storage for MATLAB-v7.3 metadata/compatibility behavior.
+_NUMPY2 = int(np.__version__.split('.')[0]) >= 2
+
 
 def load_array(fname, key='data'):
     """Load an array (dense or sparse)."""
     with h5py.File(fname, 'r') as f:
-        methods = [attr for attr in dir(f[key]) if callable(getattr(f[key], str(attr)))]
-        if 'keys' in methods and '__bdpy_sparse_arrray' in f[key].keys():
-            # SparseArray
-            s_ary = SparseArray(fname, key=key)
-            return s_ary.dense
-        elif type(f[key][()]) == np.ndarray:
-            # Dense array
-            return hdf5storage.loadmat(fname)[key]
-        else:
-            raise RuntimeError('Unsupported data type: %s' % type(f[key][()]))
+        obj = f[key]
+        # Inspect the HDF5 object type rather than reading the whole dataset:
+        # a SparseArray is stored as a group, a dense array as a dataset.
+        if isinstance(obj, h5py.Group):
+            if '__bdpy_sparse_arrray' in obj:
+                s_ary = SparseArray(fname, key=key)
+                return s_ary.dense
+            raise RuntimeError('Unsupported group: %s' % key)
+        if isinstance(obj, h5py.Dataset):
+            # Dense array (read with h5py; hdf5storage breaks under NumPy 2.0)
+            return _mat_v73.read_dataset(obj)
+        raise RuntimeError('Unsupported data type: %s' % type(obj))
 
 
 def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
@@ -75,12 +85,40 @@ class SparseArray(object):
         return self.__make_dense()
 
     def save(self, fname, key='data', dtype=np.float64):
-        hdf5storage.savemat(fname, {key: {u'__bdpy_sparse_arrray': True,
-                                          u'index': self.__index,
-                                          u'value': self.__value.astype(dtype),
-                                          u'shape': self.__shape,
-                                          u'background' : self.__background}},
-                            format='7.3', oned_as='column', store_python_metadata=True)
+        if _NUMPY2:
+            # Avoid hdf5storage.savemat here (it can fail when overwriting an
+            # existing sparse struct under NumPy 2.x) and write the struct with
+            # h5py instead. We replace only ``key`` in the target file, leaving
+            # any other variables already stored there untouched.
+            self.__save_h5py(fname, key=key, dtype=dtype)
+        else:
+            payload = {key: {u'__bdpy_sparse_arrray': True,
+                             u'index': self.__index,
+                             u'value': self.__value.astype(dtype),
+                             u'shape': self.__shape,
+                             u'background': self.__background}}
+            hdf5storage.savemat(fname, payload, format='7.3',
+                                oned_as='column', store_python_metadata=True)
+        return None
+
+    def __save_h5py(self, fname, key='data', dtype=np.float64):
+        # NumPy-2-only writer for the sparse-array struct. The layout mirrors
+        # what ``__load`` expects: ``index``/``shape`` as plain matrices (which
+        # _mat_v73.read_cell restores row-by-row) and ``value``/``background``
+        # as plain datasets. Opening in append mode and deleting only ``key``
+        # avoids the unconditional full-file rewrite of the previous fallback.
+        index = np.vstack([np.asarray(i, dtype=np.int64).ravel()
+                           for i in self.__index])
+        mode = 'a' if os.path.exists(fname) else 'w'
+        with h5py.File(fname, mode) as f:
+            if key in f:
+                del f[key]
+            g = f.create_group(key)
+            g.create_dataset(u'__bdpy_sparse_arrray', data=True)
+            g.create_dataset(u'index', data=index)
+            g.create_dataset(u'value', data=self.__value.astype(dtype).ravel())
+            g.create_dataset(u'shape', data=np.asarray(self.__shape, dtype=np.int64))
+            g.create_dataset(u'background', data=np.asarray(self.__background))
         return None
 
     def __make_sparse(self, array):
@@ -95,29 +133,24 @@ class SparseArray(object):
         return dense
 
     def __load(self, fname, key='data'):
-        data = hdf5storage.loadmat(fname)[key]
+        # Read with h5py instead of hdf5storage, which breaks under NumPy 2.0.
+        # The struct stores ``index``/``shape`` as cell arrays (object refs) when
+        # written by bdpy, or as plain matrices when written by other tools.
+        with h5py.File(fname, 'r') as f:
+            g = f[key]
+            self.__index = tuple(
+                np.asarray(c).ravel().astype(int)
+                for c in _mat_v73.read_cell(f, g['index'])
+            )
 
-        index = data[u'index']
-        if isinstance(index, tuple):
-            self.__index = index
-        elif isinstance(index, np.ndarray):
-            self.__index = tuple(index[0])
-        else:
-            raise TypeError('Unsupported data type ("index").')
-
-        value = data[u'value']
-        if value.ndim == 1:
+            value = np.asarray(_mat_v73.read_dataset(g['value'])).ravel()
             self.__value = value
-        else:
-            self.__value = value.flatten()
 
-        array_shape = data[u'shape']
-        if isinstance(array_shape, tuple):
-            self.__shape = array_shape
-        elif isinstance(array_shape, np.ndarray):
-            self.__shape = array_shape.flatten()
-        else:
-            raise TypeError('Unsupported data type ("shape").')
+            self.__shape = tuple(
+                int(np.asarray(s).ravel()[0])
+                for s in _mat_v73.read_cell(f, g['shape'])
+            )
 
-        self.__background = data[u'background']
+            background = np.asarray(_mat_v73.read_dataset(g['background'])).ravel()
+            self.__background = background[0] if background.size else 0
         return None

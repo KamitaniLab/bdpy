@@ -64,7 +64,7 @@ def make_paradigm(event_files, num_vols, tr=2., cond_col=2, label_col=None, regr
 
         with open(ef, 'r') as f:
             reader = csv.reader(f, delimiter='\t')
-            header = reader.next()
+            header = next(reader)
             for row in reader:
                 if regressors is not None and row[cond_col] not in regressors:
                     continue

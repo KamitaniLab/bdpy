@@ -3,12 +3,10 @@ import unittest
 from typing import List, Tuple
 
 import os
-from glob import glob
 import tempfile
 
 import numpy as np
 from numpy.testing import assert_array_equal
-import scipy.io as sio
 import hdf5storage
 
 from bdpy.dataform.features import Features
@@ -19,16 +17,29 @@ def _prepare_mock_data(
         mock_layer_names: List[str],
         mock_image_names: List[str],
         mock_shapes: List[Tuple[int, ...]]
-    ) -> None:
-    """Prepare mock data for testing."""
+    ) -> dict:
+    """Prepare mock data for testing.
+
+    Files are written as MATLAB v7.3 (HDF5) so the loader's h5py path (used for
+    NumPy 2.0 compatibility) is exercised. The stacked arrays are returned so
+    tests can compare against them without re-reading the files.
+    """
+    stacked = {}
     for layer_name, shape in zip(mock_layer_names, mock_shapes):
         os.makedirs(os.path.join(tmpdir, layer_name))
-        for image_name in mock_image_names:
+        arrays = []
+        # Stack in sorted-filename order to match Features.__get_labels, which
+        # sorts the feature files when collecting labels.
+        for image_name in sorted(mock_image_names):
             data = np.random.rand(*shape)
             hdf5storage.savemat(
                 os.path.join(tmpdir, layer_name, image_name + '.mat'),
                 {'feat': data},
-                format='5')
+                format='7.3',
+                store_python_metadata=True)
+            arrays.append(data)
+        stacked[layer_name] = np.vstack(arrays)
+    return stacked
 
 
 class TestDataformFeatures(unittest.TestCase):
@@ -45,29 +56,16 @@ class TestDataformFeatures(unittest.TestCase):
         ]
         self.mock_shapes = [(1, 1000), (1, 256, 13, 13)]
         self.feature_dir = tempfile.TemporaryDirectory()
-        _prepare_mock_data(
+        stacked = _prepare_mock_data(
             self.feature_dir.name,
             self.mock_layer_names,
             self.mock_image_names,
             self.mock_shapes
         )
 
-        # Loading test data
-        # AlexNet, fc8, all samples
-        self.alexnet_fc8_all = np.vstack(
-            [
-                sio.loadmat(f)['feat']
-                for f in sorted(glob(os.path.join(self.feature_dir.name, 'fc8', '*.mat')))
-            ]
-        )
-
-        # AlexNet, conv5, all samples
-        self.alexnet_conv5_all = np.vstack(
-            [
-                sio.loadmat(f)['feat']
-                for f in sorted(glob(os.path.join(self.feature_dir.name, 'conv5', '*.mat')))
-            ]
-        )
+        # Expected data (samples stacked in sorted-filename order)
+        self.alexnet_fc8_all = stacked['fc8']
+        self.alexnet_conv5_all = stacked['conv5']
 
     def tearDown(self):
         self.feature_dir.cleanup()

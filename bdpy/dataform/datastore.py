@@ -11,9 +11,10 @@ import os
 import re
 
 import h5py
-import hdf5storage
 import numpy as np
 import scipy.io as sio
+
+from . import _mat_v73
 
 __all__ = ['DataStore', 'DirStore']
 
@@ -250,7 +251,8 @@ class DirStore(object):
         return dat
 
     def __load_feature(self, fpath):
-        r = hdf5storage.loadmat(fpath)[self.__variable]
+        # v5 .mat via scipy, v7.3 (HDF5) via h5py (avoids hdf5storage under NumPy 2.0).
+        r = _mat_v73.loadmat_key(fpath, self.__variable)
         if self.__squeeze:
             r = np.squeeze(r)
         return r

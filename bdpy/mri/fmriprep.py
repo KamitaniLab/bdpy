@@ -408,7 +408,7 @@ class BrainData(object):
         """
         img = nipy.load_image(self.__dpath)
 
-        data = img.get_data()
+        data = img.get_fdata()
         if data.ndim == 4:
             data = data.reshape(-1, data.shape[-1], order='F').T
             i_len, j_len, k_len, t = img.shape
@@ -823,9 +823,9 @@ def __get_xyz(img):
         # 3D-image
         i_len, j_len, k_len = img.shape
         affine = img.coordmap.affine
-    ijk = np.array(list(itertools.product(xrange(i_len),
-                                          xrange(j_len),
-                                          xrange(k_len),
+    ijk = np.array(list(itertools.product(range(i_len),
+                                          range(j_len),
+                                          range(k_len),
                                           [1]))).T
     return np.dot(affine, ijk)[:-1]
 
@@ -840,7 +840,7 @@ def __load_mri(fpath):
     """
     img = nipy.load_image(fpath)
 
-    data = img.get_data()
+    data = img.get_fdata()
     if data.ndim == 4:
         data = data.reshape(-1, data.shape[-1], order='F').T
         i_len, j_len, k_len, t = img.shape
