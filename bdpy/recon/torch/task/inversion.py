@@ -14,12 +14,6 @@ if TYPE_CHECKING:
     _FeatureType = Dict[str, torch.Tensor]
 
 
-def _apply_to_features(
-    fn: Callable[[torch.Tensor], torch.Tensor], features: _FeatureType
-) -> _FeatureType:
-    return {k: fn(v) for k, v in features.items()}
-
-
 class FeatureInversionCallback(BaseCallback):
     """Callback for feature inversion task.
 
