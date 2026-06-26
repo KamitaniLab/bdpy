@@ -6,6 +6,7 @@ import tempfile
 import unittest
 import warnings
 
+import h5py
 import numpy as np
 from numpy.testing import assert_array_equal
 
@@ -300,6 +301,29 @@ class TestBdata(unittest.TestCase):
         self.assertNotIn('callstack', loaded_bdata.header)
         self.assertNotIn('callstack_code', loaded_bdata.header)
         self.assertEqual(loaded_bdata.header['source'], 'manual')
+
+    def test_save_h5_header_none_strips_legacy_inplace(self):
+        '''__save_h5(header=None) writes no header group but still cleans memory.'''
+        bdata = BData()
+        bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
+        bdata.update_header({
+            'source': 'manual',
+            'callstack': ['/abs/path/to/script.py:42'],
+            'callstack_code': ['secret source code'],
+        })
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            h5_path = os.path.join(temp_dir, 'test_bdata.h5')
+            with self.assertWarns(UserWarning):
+                bdata._BData__save_h5(h5_path, header=None)
+            with h5py.File(h5_path, 'r') as f:
+                self.assertNotIn('header', f)
+
+        # Legacy fields are stripped from the in-memory header even though no
+        # header group was written, while other fields are kept.
+        self.assertNotIn('callstack', bdata.header)
+        self.assertNotIn('callstack_code', bdata.header)
+        self.assertEqual(bdata.header['source'], 'manual')
 
     # Tests for vmap
     def test_vmap_add_get(self):

@@ -834,19 +834,6 @@ class BData(object):
         self.__header.update({'ctime': t_now_str,
                               'ctime_epoch': t_now})
 
-        # Strip legacy call-stack fields that may have been loaded from a file
-        # saved by an older version, so they are not written out again.
-        legacy_keys = [k for k in ('callstack', 'callstack_code') if k in self.__header]
-        if legacy_keys:
-            warnings.warn(
-                "Removing legacy header field(s) %s on save for privacy; "
-                "they will not be written to the file." % ', '.join(legacy_keys),
-                UserWarning,
-                stacklevel=2,
-            )
-            for k in legacy_keys:
-                del self.__header[k]
-
         if file_type is None:
             file_type = self.__get_filetype(file_name)
 
@@ -901,6 +888,22 @@ class BData(object):
 
     def __save_h5(self, file_name: str, header: Optional[Dict[str, Any]] = None) -> None:
         """Save data in HDF5 format (*.h5)."""
+        # Remove legacy call-stack fields from the in-memory header so they are
+        # neither written out nor retained after a save. This runs on every
+        # save path, including the private `header=None` path used to skip the
+        # header group, so a file opened with an older version is sanitized
+        # regardless of how it is saved.
+        legacy_keys = [k for k in ('callstack', 'callstack_code') if k in self.__header]
+        if legacy_keys:
+            warnings.warn(
+                "Removing legacy header field(s) %s on save for privacy; "
+                "they will not be written to the file." % ', '.join(legacy_keys),
+                UserWarning,
+                stacklevel=3,
+            )
+            for k in legacy_keys:
+                del self.__header[k]
+
         with h5py.File(file_name, 'w') as h5file:
             # dataset
             h5file.create_dataset('/dataset', data=self.dataset)
