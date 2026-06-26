@@ -278,8 +278,8 @@ class TestBdata(unittest.TestCase):
         self.assertNotIn('callstack', loaded_bdata.header)
         self.assertNotIn('callstack_code', loaded_bdata.header)
 
-    def test_save_strips_legacy_callstack(self):
-        '''save() drops legacy call-stack header fields and warns.'''
+    def test_save_excludes_legacy_callstack_from_file(self):
+        '''save() omits legacy call-stack fields from the file but keeps them in memory.'''
         bdata = BData()
         bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
         bdata.update_header({
@@ -294,16 +294,17 @@ class TestBdata(unittest.TestCase):
                 bdata.save(h5_path, 'HDF5')
             loaded_bdata = BData(h5_path, 'HDF5')
 
-        # Legacy fields are stripped both in memory and in the saved file,
-        # while intentionally set header fields survive.
-        self.assertNotIn('callstack', bdata.header)
-        self.assertNotIn('callstack_code', bdata.header)
+        # Legacy fields are omitted from the saved file, but the in-memory
+        # header is left untouched; intentionally set fields survive both.
         self.assertNotIn('callstack', loaded_bdata.header)
         self.assertNotIn('callstack_code', loaded_bdata.header)
         self.assertEqual(loaded_bdata.header['source'], 'manual')
+        self.assertIn('callstack', bdata.header)
+        self.assertIn('callstack_code', bdata.header)
+        self.assertEqual(bdata.header['source'], 'manual')
 
-    def test_save_h5_header_none_strips_legacy_inplace(self):
-        '''__save_h5(header=None) writes no header group but still cleans memory.'''
+    def test_save_h5_header_none_keeps_memory(self):
+        '''__save_h5(header=None) writes no header group and leaves memory intact.'''
         bdata = BData()
         bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
         bdata.update_header({
@@ -314,15 +315,17 @@ class TestBdata(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             h5_path = os.path.join(temp_dir, 'test_bdata.h5')
-            with self.assertWarns(UserWarning):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
                 bdata._BData__save_h5(h5_path, header=None)
             with h5py.File(h5_path, 'r') as f:
                 self.assertNotIn('header', f)
 
-        # Legacy fields are stripped from the in-memory header even though no
-        # header group was written, while other fields are kept.
-        self.assertNotIn('callstack', bdata.header)
-        self.assertNotIn('callstack_code', bdata.header)
+        # No header is written, so nothing is omitted and no warning fires.
+        self.assertFalse([w for w in caught if issubclass(w.category, UserWarning)])
+        # The in-memory header is left fully intact.
+        self.assertIn('callstack', bdata.header)
+        self.assertIn('callstack_code', bdata.header)
         self.assertEqual(bdata.header['source'], 'manual')
 
     # Tests for vmap

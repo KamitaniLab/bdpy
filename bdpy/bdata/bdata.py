@@ -888,21 +888,7 @@ class BData(object):
 
     def __save_h5(self, file_name: str, header: Optional[Dict[str, Any]] = None) -> None:
         """Save data in HDF5 format (*.h5)."""
-        # Remove legacy call-stack fields from the in-memory header so they are
-        # neither written out nor retained after a save. This runs on every
-        # save path, including the private `header=None` path used to skip the
-        # header group, so a file opened with an older version is sanitized
-        # regardless of how it is saved.
-        legacy_keys = [k for k in ('callstack', 'callstack_code') if k in self.__header]
-        if legacy_keys:
-            warnings.warn(
-                "Removing legacy header field(s) %s on save for privacy; "
-                "they will not be written to the file." % ', '.join(legacy_keys),
-                UserWarning,
-                stacklevel=3,
-            )
-            for k in legacy_keys:
-                del self.__header[k]
+        legacy_header_keys = ('callstack', 'callstack_code')
 
         with h5py.File(file_name, 'w') as h5file:
             # dataset
@@ -920,8 +906,26 @@ class BData(object):
 
             # header
             if header is not None:
+                # Omit legacy call-stack fields (absolute paths + full source
+                # code of the call stack) from the saved file for privacy.
+                # Neither self.__header nor the passed-in header dict is
+                # modified -- only the written copy is filtered.
+                legacy_keys = [k for k in legacy_header_keys if k in header]
+                if legacy_keys:
+                    warnings.warn(
+                        'Omitting legacy header field(s) {} from the saved file for privacy.'
+                        .format(', '.join(legacy_keys)),
+                        UserWarning,
+                        stacklevel=3,
+                    )
+
+                header_to_write = {
+                    k: v for k, v in header.items()
+                    if k not in legacy_header_keys
+                }
+
                 h5file.create_group('/header')
-                for header_key, header_value in header.items():
+                for header_key, header_value in header_to_write.items():
                     if isinstance(header_value, list):
                         h5file.create_dataset(
                             '/header/' + header_key,
