@@ -14,7 +14,6 @@ Python package for brain decoding analysis
 - scikit-learn
 - pandas
 - h5py
-- hdf5storage
 - pyyaml
 
 ### Optional requirements
