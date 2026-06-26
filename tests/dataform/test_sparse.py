@@ -7,7 +7,7 @@ import unittest
 import h5py
 import numpy as np
 
-from bdpy.dataform.sparse import load_array, save_array
+from bdpy.dataform.sparse import load_array, save_array, save_multiarrays
 
 
 class TestSparse(unittest.TestCase):
@@ -27,6 +27,32 @@ class TestSparse(unittest.TestCase):
 
                 np.testing.assert_array_equal(original_data, from_file)
 
+    def test_dense_save_is_plain_hdf5(self):
+        # New dense saves are bdpy-native plain HDF5: no MATLAB metadata.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'dense_plain.mat')
+            save_array(fname, np.random.rand(3, 4), key='testdata')
+            with h5py.File(fname, 'r') as f:
+                self.assertIsInstance(f['testdata'], h5py.Dataset)
+                self.assertNotIn('MATLAB_class', f['testdata'].attrs)
+                self.assertNotIn('Python.Shape', f['testdata'].attrs)
+
+    def test_save_multiarrays(self):
+        arrays = {
+            'a': np.random.rand(2, 3),
+            'b': np.arange(5),
+            'c': np.random.rand(4, 1, 2),
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'multi.mat')
+            save_multiarrays(fname, arrays)
+
+            # Each array is a top-level plain HDF5 dataset, reloadable individually.
+            with h5py.File(fname, 'r') as f:
+                self.assertEqual(set(f.keys()), set(arrays.keys()))
+            for key, expected in arrays.items():
+                np.testing.assert_array_equal(load_array(fname, key=key), expected)
+
     def test_load_save_sparse_array(self):
         payloads = [
             [(10,), 'test_array_sparse_ndim1.mat'],  # ndim = 1
@@ -44,10 +70,7 @@ class TestSparse(unittest.TestCase):
 
                 np.testing.assert_array_equal(original_data, from_file)
 
-    def test_sparse_save_preserves_other_variables_under_numpy2(self):
-        if int(np.__version__.split('.')[0]) < 2:
-            self.skipTest('NumPy-2-only h5py writer')
-
+    def test_sparse_save_preserves_other_variables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             fname = os.path.join(tmpdir, 'test_sparse_preserve.mat')
 
