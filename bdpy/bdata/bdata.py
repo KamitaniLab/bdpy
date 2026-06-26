@@ -9,7 +9,6 @@ __all__ = ['BData']
 
 import datetime
 import functools
-import inspect
 import os
 import re
 import time
@@ -142,8 +141,8 @@ class BData(object):
     def header(self) -> Dict[str, Any]:
         """Header information associated with the BData instance.
 
-        The header stores auxiliary information such as creation time,
-        call stack, and values loaded from BData files.
+        The header stores auxiliary information such as creation time
+        and values loaded from BData files.
         Header keys are strings, while values are implementation-defined and
         may include strings, numbers, lists, or values loaded from
         external files.
@@ -823,33 +822,30 @@ class BData(object):
 
     def save(self, file_name: str, file_type: Optional[str] = None) -> None:
         """Save 'dataset' and 'metadata' to a file."""
-        # Store data creation information
+        # Store data creation information.
+        # Note: older versions of bdpy also embedded the call stack (absolute
+        # file paths) and the full source code of every file on it into the
+        # header. That can leak sensitive information (internal paths,
+        # unpublished code) when BData files are shared, so it is no longer
+        # collected; only the creation time is recorded.
         t_now = time.time()
         t_now_str = datetime.datetime.fromtimestamp(t_now).strftime('%Y-%m-%d %H:%M:%S')
 
-        callstack = []
-        callstack_code = []
-        f = inspect.currentframe()
-        if f is None:
-            raise RuntimeError('Failed to get the current frame for call stack information.')
-        while True:
-            f = f.f_back
-            if f is None:
-                break
-            fname = os.path.abspath(f.f_code.co_filename)
-            fline = f.f_lineno
-            callstack.append('%s:%d' % (fname, fline))
-            if os.path.exists(fname):
-                with open(fname, 'r') as fl:
-                    fcode = fl.read()
-            else:
-                fcode = ''
-            callstack_code.append(fcode)
-
         self.__header.update({'ctime': t_now_str,
-                              'ctime_epoch': t_now,
-                              'callstack': callstack,
-                              'callstack_code': callstack_code})
+                              'ctime_epoch': t_now})
+
+        # Strip legacy call-stack fields that may have been loaded from a file
+        # saved by an older version, so they are not written out again.
+        legacy_keys = [k for k in ('callstack', 'callstack_code') if k in self.__header]
+        if legacy_keys:
+            warnings.warn(
+                "Removing legacy header field(s) %s on save for privacy; "
+                "they will not be written to the file." % ', '.join(legacy_keys),
+                UserWarning,
+                stacklevel=2,
+            )
+            for k in legacy_keys:
+                del self.__header[k]
 
         if file_type is None:
             file_type = self.__get_filetype(file_name)

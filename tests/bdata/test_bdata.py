@@ -262,6 +262,45 @@ class TestBdata(unittest.TestCase):
         self.assertEqual(loaded_bdata.header['indices'], [1, 2])
         self.assertEqual(loaded_bdata.header['scale'], 1.5)
 
+    def test_save_no_callstack_header(self):
+        '''save() records creation time but no call-stack information.'''
+        bdata = BData()
+        bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            h5_path = os.path.join(temp_dir, 'test_bdata.h5')
+            bdata.save(h5_path, 'HDF5')
+            loaded_bdata = BData(h5_path, 'HDF5')
+
+        self.assertIn('ctime', loaded_bdata.header)
+        self.assertIn('ctime_epoch', loaded_bdata.header)
+        self.assertNotIn('callstack', loaded_bdata.header)
+        self.assertNotIn('callstack_code', loaded_bdata.header)
+
+    def test_save_strips_legacy_callstack(self):
+        '''save() drops legacy call-stack header fields and warns.'''
+        bdata = BData()
+        bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
+        bdata.update_header({
+            'source': 'manual',
+            'callstack': ['/abs/path/to/script.py:42'],
+            'callstack_code': ['secret source code'],
+        })
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            h5_path = os.path.join(temp_dir, 'test_bdata.h5')
+            with self.assertWarns(UserWarning):
+                bdata.save(h5_path, 'HDF5')
+            loaded_bdata = BData(h5_path, 'HDF5')
+
+        # Legacy fields are stripped both in memory and in the saved file,
+        # while intentionally set header fields survive.
+        self.assertNotIn('callstack', bdata.header)
+        self.assertNotIn('callstack_code', bdata.header)
+        self.assertNotIn('callstack', loaded_bdata.header)
+        self.assertNotIn('callstack_code', loaded_bdata.header)
+        self.assertEqual(loaded_bdata.header['source'], 'manual')
+
     # Tests for vmap
     def test_vmap_add_get(self):
         bdata = BData()
