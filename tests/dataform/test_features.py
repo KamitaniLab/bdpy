@@ -9,7 +9,8 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import hdf5storage
 
-from bdpy.dataform.features import Features
+from bdpy.dataform import _mat_v73
+from bdpy.dataform.features import Features, save_feature
 
 
 def _prepare_mock_data(
@@ -119,6 +120,25 @@ class TestDataformFeatures(unittest.TestCase):
             feat.get('conv5', label=labels),
             self.alexnet_conv5_all[index, :]
         )
+
+
+class TestSaveFeature(unittest.TestCase):
+    def test_save_feature_warns_future(self):
+        # save_feature writes a MATLAB-compatible v7.3 .mat file, a path that is
+        # deprecated (it becomes bdpy-native plain HDF5 in a future release); it
+        # must emit a FutureWarning while still writing a reloadable file.
+        feature = np.random.rand(1, 1000)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with self.assertWarns(FutureWarning):
+                save_feature(feature, tmpdir, 'fc8', 'n01443537_22563')
+
+            save_file = os.path.join(tmpdir, 'fc8', 'n01443537_22563.mat')
+            self.assertTrue(os.path.exists(save_file))
+
+            from_file = _mat_v73.loadmat_key(save_file, 'feat')
+            assert_array_equal(feature, from_file)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -22,6 +22,17 @@ import numpy as np
 
 from . import _mat_v73
 
+# Deprecation notice emitted by the MATLAB-compatible write path. The actual
+# switch to bdpy-native plain HDF5 (and the drop of the hdf5storage write
+# dependency) is implemented on the refactor/drop-hdf5storage-write branch.
+_MATLAB_WRITE_FUTURE_WARNING = (
+    "Writing MATLAB-compatible v7.3 .mat files is deprecated and will change "
+    "in a future release: bdpy will write bdpy-native plain HDF5 instead. "
+    "Newly written files will no longer be guaranteed to be readable by "
+    "MATLAB's load(). Reading existing hdf5storage / MATLAB v7.3 files remains "
+    "supported."
+)
+
 
 def _load_array_with_key(key: str, path: str) -> np.ndarray:
     # v5 .mat via scipy, v7.3 (HDF5) via h5py; avoids hdf5storage on the load
@@ -535,6 +546,7 @@ def save_feature(feature: np.ndarray, base_dir: str, layer: str, label: str, ver
             print(f'{save_file} already exists. Skipped.')
         return None
 
+    warnings.warn(_MATLAB_WRITE_FUTURE_WARNING, FutureWarning, stacklevel=2)
     hdf5storage.savemat(save_file, {'feat': feature})
     if verbose:
         print(f'Saved {save_file}.')

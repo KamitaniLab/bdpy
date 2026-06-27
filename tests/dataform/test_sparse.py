@@ -7,7 +7,9 @@ import unittest
 import h5py
 import numpy as np
 
-from bdpy.dataform.sparse import load_array, save_array
+from bdpy.dataform.sparse import (
+    SparseArray, load_array, save_array, save_multiarrays
+)
 
 
 class TestSparse(unittest.TestCase):
@@ -80,6 +82,59 @@ class TestSparse(unittest.TestCase):
         testdata = load_array(
             os.path.join(data_dir, 'array_jl_sparse_v1.mat'), key='a')
         np.testing.assert_array_equal(data, testdata)
+
+    def test_save_array_dense_warns_future(self):
+        # The MATLAB-compatible dense write path is deprecated (it becomes
+        # bdpy-native plain HDF5 in a future release); it must emit a
+        # FutureWarning while still round-tripping unchanged.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'dense.mat')
+            original_data = np.random.rand(3, 2)
+
+            with self.assertWarns(FutureWarning):
+                save_array(fname, original_data, key='testdata')
+
+            from_file = load_array(fname, key='testdata')
+            np.testing.assert_array_equal(original_data, from_file)
+
+    def test_save_array_sparse_warns_future(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'sparse.mat')
+            original_data = np.random.rand(3, 2)
+            original_data[original_data < 0.8] = 0
+
+            with self.assertWarns(FutureWarning):
+                save_array(fname, original_data, key='testdata', sparse=True)
+
+            from_file = load_array(fname, key='testdata')
+            np.testing.assert_array_equal(original_data, from_file)
+
+    def test_sparse_array_save_warns_future(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'sparse_direct.mat')
+            original_data = np.random.rand(3, 2)
+            original_data[original_data < 0.8] = 0
+
+            with self.assertWarns(FutureWarning):
+                SparseArray(original_data).save(fname, key='testdata')
+
+            from_file = load_array(fname, key='testdata')
+            np.testing.assert_array_equal(original_data, from_file)
+
+    def test_save_multiarrays_warns_future(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'multi.mat')
+            arrays = {
+                'a': np.random.rand(3, 2),
+                'b': np.random.rand(4,),
+            }
+
+            with self.assertWarns(FutureWarning):
+                save_multiarrays(fname, arrays)
+
+            for key, value in arrays.items():
+                from_file = load_array(fname, key=key)
+                np.testing.assert_array_equal(value, from_file)
 
 
 if __name__ == '__main__':
