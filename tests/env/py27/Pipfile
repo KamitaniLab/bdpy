@@ -10,7 +10,6 @@ numpy = "*"
 scipy = "*"
 scikit-learn = "*"
 h5py = "*"
-hdf5storage = "*"
 pyyaml = "*"
 
 [requires]

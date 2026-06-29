@@ -5,11 +5,12 @@ from typing import List, Tuple
 import os
 import tempfile
 
+import h5py
 import numpy as np
 from numpy.testing import assert_array_equal
-import hdf5storage
 
-from bdpy.dataform.features import Features
+from bdpy.dataform import _mat_v73
+from bdpy.dataform.features import Features, save_feature
 
 
 def _prepare_mock_data(
@@ -20,9 +21,9 @@ def _prepare_mock_data(
     ) -> dict:
     """Prepare mock data for testing.
 
-    Files are written as MATLAB v7.3 (HDF5) so the loader's h5py path (used for
-    NumPy 2.0 compatibility) is exercised. The stacked arrays are returned so
-    tests can compare against them without re-reading the files.
+    Files are written as bdpy-native plain HDF5 (the same format ``save_feature``
+    now produces) so the loader's h5py path is exercised. The stacked arrays are
+    returned so tests can compare against them without re-reading the files.
     """
     stacked = {}
     for layer_name, shape in zip(mock_layer_names, mock_shapes):
@@ -32,11 +33,10 @@ def _prepare_mock_data(
         # sorts the feature files when collecting labels.
         for image_name in sorted(mock_image_names):
             data = np.random.rand(*shape)
-            hdf5storage.savemat(
-                os.path.join(tmpdir, layer_name, image_name + '.mat'),
-                {'feat': data},
-                format='7.3',
-                store_python_metadata=True)
+            with h5py.File(
+                    os.path.join(tmpdir, layer_name, image_name + '.mat'),
+                    'w') as f:
+                f.create_dataset('feat', data=data)
             arrays.append(data)
         stacked[layer_name] = np.vstack(arrays)
     return stacked
@@ -119,6 +119,32 @@ class TestDataformFeatures(unittest.TestCase):
             feat.get('conv5', label=labels),
             self.alexnet_conv5_all[index, :]
         )
+
+
+class TestSaveFeature(unittest.TestCase):
+    def test_save_feature_writes_plain_hdf5_readable_by_loader(self):
+        feature = np.random.rand(1, 100)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_feature(feature, tmpdir, 'fc8', 'image0001')
+            save_file = os.path.join(tmpdir, 'fc8', 'image0001.mat')
+            self.assertTrue(os.path.exists(save_file))
+
+            # Read back through the loader bdpy uses for feature files.
+            out = _mat_v73.loadmat_key(save_file, 'feat')
+            assert_array_equal(out, feature)
+
+            # The file is bdpy-native plain HDF5: no MATLAB metadata.
+            with h5py.File(save_file, 'r') as f:
+                self.assertNotIn('MATLAB_class', f['feat'].attrs)
+                self.assertNotIn('Python.Shape', f['feat'].attrs)
+
+    def test_save_feature_readable_via_features(self):
+        feature = np.random.rand(1, 100)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_feature(feature, tmpdir, 'fc8', 'image0001')
+            feat = Features(tmpdir)
+            assert_array_equal(feat.get_features('fc8'), feature)
+
 
 if __name__ == "__main__":
     unittest.main()

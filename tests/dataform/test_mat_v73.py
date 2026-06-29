@@ -55,5 +55,44 @@ class TestReadDataset(unittest.TestCase):
             self.assertEqual(out.size, 0)
 
 
+class TestReadCell(unittest.TestCase):
+
+    def test_plain_matrix_with_matlab_class_is_detransposed(self):
+        # A plain (non-object) matrix written MATLAB-style is stored transposed
+        # and tagged with MATLAB_class. read_cell must route it through
+        # read_dataset so it is de-transposed before being split into rows.
+        original = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float64)  # (2, 3)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'cell_matrix.mat')
+            with h5py.File(fname, 'w') as f:
+                # On-disk column-major layout: store the transpose (3, 2).
+                dset = f.create_dataset('a', data=np.ascontiguousarray(original.T))
+                dset.attrs['MATLAB_class'] = np.bytes_(b'double')
+
+            with h5py.File(fname, 'r') as f:
+                rows = _mat_v73.read_cell(f, f['a'])
+
+        # Expect the original (2, 3) orientation split into 2 rows.
+        self.assertEqual(len(rows), 2)
+        np.testing.assert_array_equal(rows[0], original[0])
+        np.testing.assert_array_equal(rows[1], original[1])
+
+    def test_plain_matrix_without_matlab_class_splits_rows_as_stored(self):
+        # No MATLAB_class -> no transpose; rows are returned as stored. This is
+        # how bdpy's own (plain) index/shape datasets are read.
+        stored = np.array([[0, 1, 2], [3, 4, 5]], dtype=np.int64)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fname = os.path.join(tmpdir, 'plain_matrix.mat')
+            with h5py.File(fname, 'w') as f:
+                f.create_dataset('a', data=stored)
+
+            with h5py.File(fname, 'r') as f:
+                rows = _mat_v73.read_cell(f, f['a'])
+
+        self.assertEqual(len(rows), 2)
+        np.testing.assert_array_equal(rows[0], stored[0])
+        np.testing.assert_array_equal(rows[1], stored[1])
+
+
 if __name__ == '__main__':
     unittest.main()

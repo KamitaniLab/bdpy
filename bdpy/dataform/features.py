@@ -17,15 +17,15 @@ from functools import partial
 from multiprocessing import Pool
 from typing import Any, Dict, List, Optional, Union
 
-import hdf5storage
+import h5py
 import numpy as np
 
 from . import _mat_v73
 
 
 def _load_array_with_key(key: str, path: str) -> np.ndarray:
-    # v5 .mat via scipy, v7.3 (HDF5) via h5py; avoids hdf5storage on the load
-    # path, which breaks under NumPy 2.0 (see bdpy/dataform/_mat_v73.py).
+    # v5 .mat via scipy, v7.3 (HDF5) via h5py; avoids the legacy MAT-v7.3
+    # library on the load path, which breaks under NumPy 2.0 (see _mat_v73.py).
     return _mat_v73.loadmat_key(path, key)
 
 
@@ -535,7 +535,10 @@ def save_feature(feature: np.ndarray, base_dir: str, layer: str, label: str, ver
             print(f'{save_file} already exists. Skipped.')
         return None
 
-    hdf5storage.savemat(save_file, {'feat': feature})
+    # Write a bdpy-native plain HDF5 file (not MATLAB-``load`` compatible);
+    # it is read back via _mat_v73.loadmat_key / read_dataset.
+    with h5py.File(save_file, 'w') as f:
+        f.create_dataset('feat', data=feature)
     if verbose:
         print(f'Saved {save_file}.')
 

@@ -1,10 +1,16 @@
-"""Read MATLAB v7.3 (HDF5) ``.mat`` files with h5py.
+"""h5py-based legacy reading support for MATLAB v7.3 / hdf5storage ``.mat`` files.
 
-bdpy historically relied on :func:`hdf5storage.loadmat` for the load path, but
-that broke under NumPy 2.0, which removed ``np.unicode_`` that older hdf5storage
-referenced (see issue #106). This module reimplements the *read* side on top of
-h5py for the data layouts bdpy actually uses (dense numeric arrays and the
-sparse-array struct). Saving still goes through hdf5storage.
+bdpy historically relied on a third-party MATLAB-v7.3 library (hdf5storage) to
+read ``.mat`` files, but it broke under NumPy 2.0 (it referenced the removed
+``np.unicode_``; see issue #106) and added an extra dependency. This module
+replaces that *read* path with h5py, understanding the MATLAB v7.3 / hdf5storage
+on-disk conventions (column-major / reversed dimension order, ``MATLAB_class``
+and ``Python.*`` attributes), so existing files still load correctly.
+
+This module is **read-only**. bdpy no longer writes MATLAB-compatible ``.mat``
+files; new files are saved as bdpy-native plain HDF5 directly at the save sites
+(see ``bdpy/dataform/sparse.py`` and ``bdpy/dataform/features.py``). The only
+compatibility promise is reading existing hdf5storage / MATLAB v7.3 / bdpy files.
 
 This file is a part of BdPy.
 """
@@ -13,16 +19,21 @@ import h5py
 import numpy as np
 import scipy.io as sio
 
-__all__ = ["load_array", "loadmat_key", "read_cell", "read_dataset"]
+__all__ = [
+    "load_array",
+    "loadmat_key",
+    "read_cell",
+    "read_dataset",
+]
 
 
 def read_dataset(dset: h5py.Dataset) -> np.ndarray:
-    """Read an h5py dataset, undoing MATLAB v7.3 / hdf5storage conventions.
+    """Read an h5py dataset, undoing MATLAB v7.3 conventions.
 
     MATLAB stores arrays in Fortran (column-major) order, so multi-dimensional
-    datasets are written transposed relative to NumPy's C order. hdf5storage
-    additionally records the original Python shape and empty-array flags as
-    ``Python.*`` attributes, which we honor to reproduce ``hdf5storage.loadmat``.
+    datasets are written transposed relative to NumPy's C order. Older bdpy
+    files additionally record the original Python shape and empty-array flags as
+    ``Python.*`` attributes, which we honor to reproduce the original array.
     Only ``Python.Empty`` is special-cased; a bare ``MATLAB_empty`` (set by
     MATLAB without ``Python.Shape``) is read through the normal path so that
     empty non-scalar arrays such as ``(0, 3)`` keep their shape.
@@ -39,8 +50,8 @@ def read_dataset(dset: h5py.Dataset) -> np.ndarray:
     """
     attrs = dset.attrs
     if "Python.Empty" in attrs:
-        # Only Python.Empty (written by hdf5storage) implies a Python.Shape we
-        # can trust; fall back to the stored dataset shape if it is missing. A
+        # Only Python.Empty (written by the legacy writer) implies a Python.Shape
+        # we can trust; fall back to the stored dataset shape if it is missing. A
         # bare MATLAB_empty (written by MATLAB without Python.Shape) must NOT be
         # treated this way -- np.empty(()) would collapse e.g. (0, 3) to 0-d --
         # so it falls through to the normal read/transpose path below.
@@ -57,7 +68,7 @@ def read_dataset(dset: h5py.Dataset) -> np.ndarray:
 def read_cell(f: h5py.File, dset: h5py.Dataset) -> list:
     """Read a MATLAB cell array (or a plain matrix) into a list of arrays.
 
-    hdf5storage stores Python tuples/lists as MATLAB cell arrays, i.e. an object
+    Python tuples/lists are stored as MATLAB cell arrays, i.e. an object
     dataset of HDF5 references to the individual elements. Files written by other
     tools (e.g. MATLAB or Julia) may instead store the same information as a plain
     2-D matrix whose rows are the elements; both layouts are handled here.
@@ -77,7 +88,9 @@ def read_cell(f: h5py.File, dset: h5py.Dataset) -> list:
     data = dset[()]
     if isinstance(data, np.ndarray) and data.dtype == object:
         return [read_dataset(f[ref]) for ref in data.ravel()]
-    arr = np.asarray(data)
+    # Plain-matrix layout: route through read_dataset so MATLAB-style transposed
+    # matrices carrying MATLAB_class are de-transposed before we split rows.
+    arr = np.asarray(read_dataset(dset))
     return [arr[i] for i in range(arr.shape[0])]
 
 
@@ -105,8 +118,8 @@ def loadmat_key(path: str, key: str) -> np.ndarray:
 
     MATLAB v5 (and earlier) files are read with :func:`scipy.io.loadmat`; v7.3
     (HDF5) files, which scipy cannot read, fall back to the h5py reader. This
-    preserves v5 support while avoiding hdf5storage on the load path (which
-    breaks under NumPy 2.0).
+    preserves v5 support while avoiding the legacy MATLAB-v7.3 library on the
+    load path (which breaks under NumPy 2.0).
 
     Parameters
     ----------
