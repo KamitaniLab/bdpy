@@ -7,6 +7,7 @@ __all__ = ['SparseArray', 'load_array', 'save_array', 'save_multiarrays']
 
 
 import os
+import warnings
 
 import h5py
 import hdf5storage
@@ -19,6 +20,17 @@ from . import _mat_v73
 # direct h5py writer only under NumPy >= 2. Dense-array save paths are unchanged
 # and still rely on hdf5storage for MATLAB-v7.3 metadata/compatibility behavior.
 _NUMPY2 = int(np.__version__.split('.')[0]) >= 2
+
+# Deprecation notice emitted by the MATLAB-compatible write paths. The actual
+# switch to bdpy-native plain HDF5 (and the drop of the hdf5storage write
+# dependency) is implemented on the refactor/drop-hdf5storage-write branch.
+_MATLAB_WRITE_FUTURE_WARNING = (
+    "Writing MATLAB-compatible v7.3 .mat files is deprecated and will change "
+    "in a future release: bdpy will write bdpy-native plain HDF5 instead. "
+    "Newly written files will no longer be guaranteed to be readable by "
+    "MATLAB's load(). Reading existing hdf5storage / MATLAB v7.3 files remains "
+    "supported."
+)
 
 
 def load_array(fname, key='data'):
@@ -46,6 +58,7 @@ def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
         s_ary.save(fname, key=key, dtype=dtype)
     else:
         # Save as a dense array
+        warnings.warn(_MATLAB_WRITE_FUTURE_WARNING, FutureWarning, stacklevel=2)
         hdf5storage.savemat(fname,
                             {key: array.astype(dtype)},
                             format='7.3', oned_as='column',
@@ -56,6 +69,7 @@ def save_array(fname, array, key='data', dtype=np.float64, sparse=False):
 
 def save_multiarrays(fname, arrays):
     """Save arrays (dense)."""
+    warnings.warn(_MATLAB_WRITE_FUTURE_WARNING, FutureWarning, stacklevel=2)
     save_dict = {k: v for k, v in arrays.items()}
     hdf5storage.savemat(fname,
                         save_dict,
@@ -85,6 +99,7 @@ class SparseArray(object):
         return self.__make_dense()
 
     def save(self, fname, key='data', dtype=np.float64):
+        warnings.warn(_MATLAB_WRITE_FUTURE_WARNING, FutureWarning, stacklevel=2)
         if _NUMPY2:
             # Avoid hdf5storage.savemat here (it can fail when overwriting an
             # existing sparse struct under NumPy 2.x) and write the struct with
