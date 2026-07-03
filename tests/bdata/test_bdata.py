@@ -6,6 +6,7 @@ import tempfile
 import unittest
 import warnings
 
+import h5py
 import numpy as np
 from numpy.testing import assert_array_equal
 
@@ -261,6 +262,71 @@ class TestBdata(unittest.TestCase):
         self.assertEqual(loaded_bdata.header['source'], 'manual')
         self.assertEqual(loaded_bdata.header['indices'], [1, 2])
         self.assertEqual(loaded_bdata.header['scale'], 1.5)
+
+    def test_save_no_callstack_header(self):
+        '''save() records creation time but no call-stack information.'''
+        bdata = BData()
+        bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            h5_path = os.path.join(temp_dir, 'test_bdata.h5')
+            bdata.save(h5_path, 'HDF5')
+            loaded_bdata = BData(h5_path, 'HDF5')
+
+        self.assertIn('ctime', loaded_bdata.header)
+        self.assertIn('ctime_epoch', loaded_bdata.header)
+        self.assertNotIn('callstack', loaded_bdata.header)
+        self.assertNotIn('callstack_code', loaded_bdata.header)
+
+    def test_save_excludes_legacy_callstack_from_file(self):
+        '''save() omits legacy call-stack fields from the file but keeps them in memory.'''
+        bdata = BData()
+        bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
+        bdata.update_header({
+            'source': 'manual',
+            'callstack': ['/abs/path/to/script.py:42'],
+            'callstack_code': ['secret source code'],
+        })
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            h5_path = os.path.join(temp_dir, 'test_bdata.h5')
+            with self.assertWarns(UserWarning):
+                bdata.save(h5_path, 'HDF5')
+            loaded_bdata = BData(h5_path, 'HDF5')
+
+        # Legacy fields are omitted from the saved file, but the in-memory
+        # header is left untouched; intentionally set fields survive both.
+        self.assertNotIn('callstack', loaded_bdata.header)
+        self.assertNotIn('callstack_code', loaded_bdata.header)
+        self.assertEqual(loaded_bdata.header['source'], 'manual')
+        self.assertIn('callstack', bdata.header)
+        self.assertIn('callstack_code', bdata.header)
+        self.assertEqual(bdata.header['source'], 'manual')
+
+    def test_save_h5_header_none_keeps_memory(self):
+        '''__save_h5(header=None) writes no header group and leaves memory intact.'''
+        bdata = BData()
+        bdata.add(np.arange(6, dtype=float).reshape(3, 2), 'Data')
+        bdata.update_header({
+            'source': 'manual',
+            'callstack': ['/abs/path/to/script.py:42'],
+            'callstack_code': ['secret source code'],
+        })
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            h5_path = os.path.join(temp_dir, 'test_bdata.h5')
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                bdata._BData__save_h5(h5_path, header=None)
+            with h5py.File(h5_path, 'r') as f:
+                self.assertNotIn('header', f)
+
+        # No header is written, so nothing is omitted and no warning fires.
+        self.assertFalse([w for w in caught if issubclass(w.category, UserWarning)])
+        # The in-memory header is left fully intact.
+        self.assertIn('callstack', bdata.header)
+        self.assertIn('callstack_code', bdata.header)
+        self.assertEqual(bdata.header['source'], 'manual')
 
     # Tests for vmap
     def test_vmap_add_get(self):

@@ -9,7 +9,6 @@ __all__ = ['BData']
 
 import datetime
 import functools
-import inspect
 import os
 import re
 import time
@@ -142,8 +141,8 @@ class BData(object):
     def header(self) -> Dict[str, Any]:
         """Header information associated with the BData instance.
 
-        The header stores auxiliary information such as creation time,
-        call stack, and values loaded from BData files.
+        The header stores auxiliary information such as creation time
+        and values loaded from BData files.
         Header keys are strings, while values are implementation-defined and
         may include strings, numbers, lists, or values loaded from
         external files.
@@ -823,33 +822,17 @@ class BData(object):
 
     def save(self, file_name: str, file_type: Optional[str] = None) -> None:
         """Save 'dataset' and 'metadata' to a file."""
-        # Store data creation information
+        # Store data creation information.
+        # Note: older versions of bdpy also embedded the call stack (absolute
+        # file paths) and the full source code of every file on it into the
+        # header. That can leak sensitive information (internal paths,
+        # unpublished code) when BData files are shared, so it is no longer
+        # collected; only the creation time is recorded.
         t_now = time.time()
         t_now_str = datetime.datetime.fromtimestamp(t_now).strftime('%Y-%m-%d %H:%M:%S')
 
-        callstack = []
-        callstack_code = []
-        f = inspect.currentframe()
-        if f is None:
-            raise RuntimeError('Failed to get the current frame for call stack information.')
-        while True:
-            f = f.f_back
-            if f is None:
-                break
-            fname = os.path.abspath(f.f_code.co_filename)
-            fline = f.f_lineno
-            callstack.append('%s:%d' % (fname, fline))
-            if os.path.exists(fname):
-                with open(fname, 'r') as fl:
-                    fcode = fl.read()
-            else:
-                fcode = ''
-            callstack_code.append(fcode)
-
         self.__header.update({'ctime': t_now_str,
-                              'ctime_epoch': t_now,
-                              'callstack': callstack,
-                              'callstack_code': callstack_code})
+                              'ctime_epoch': t_now})
 
         if file_type is None:
             file_type = self.__get_filetype(file_name)
@@ -905,6 +888,8 @@ class BData(object):
 
     def __save_h5(self, file_name: str, header: Optional[Dict[str, Any]] = None) -> None:
         """Save data in HDF5 format (*.h5)."""
+        legacy_header_keys = ('callstack', 'callstack_code')
+
         with h5py.File(file_name, 'w') as h5file:
             # dataset
             h5file.create_dataset('/dataset', data=self.dataset)
@@ -921,8 +906,26 @@ class BData(object):
 
             # header
             if header is not None:
+                # Omit legacy call-stack fields (absolute paths + full source
+                # code of the call stack) from the saved file for privacy.
+                # Neither self.__header nor the passed-in header dict is
+                # modified -- only the written copy is filtered.
+                legacy_keys = [k for k in legacy_header_keys if k in header]
+                if legacy_keys:
+                    warnings.warn(
+                        'Omitting legacy header field(s) {} from the saved file for privacy.'
+                        .format(', '.join(legacy_keys)),
+                        UserWarning,
+                        stacklevel=3,
+                    )
+
+                header_to_write = {
+                    k: v for k, v in header.items()
+                    if k not in legacy_header_keys
+                }
+
                 h5file.create_group('/header')
-                for header_key, header_value in header.items():
+                for header_key, header_value in header_to_write.items():
                     if isinstance(header_value, list):
                         h5file.create_dataset(
                             '/header/' + header_key,
