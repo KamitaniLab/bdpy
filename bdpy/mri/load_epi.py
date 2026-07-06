@@ -6,7 +6,7 @@ This file is a part of BdPy.
 
 import itertools as itr
 
-import nipy
+import nibabel
 import numpy as np
 
 
@@ -35,7 +35,7 @@ def load_epi(datafiles):
         print("Loading %s" % df)
 
         # Load an EPI image
-        img = nipy.load_image(df)
+        img = nibabel.load(df)
 
         xyz = _check_xyz(xyz, img)
         data_list.append(np.array(img.get_fdata().flatten(), dtype=np.float64))
@@ -49,7 +49,7 @@ def _check_xyz(xyz, img):
     """Check voxel xyz consistency."""
     # Use the image shape metadata; avoid get_fdata() here, which would read the
     # whole volume just to check consistency (load_epi reads the data later).
-    xyz_current = _get_xyz(img.coordmap.affine, img.shape[:3])
+    xyz_current = _get_xyz(img.affine, img.shape[:3])
 
     if xyz.size == 0:
         xyz = xyz_current

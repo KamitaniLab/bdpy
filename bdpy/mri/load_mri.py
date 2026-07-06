@@ -1,7 +1,7 @@
 """load_mri"""
 
 
-import nipy
+import nibabel
 import numpy as np
 
 
@@ -13,17 +13,17 @@ def load_mri(fpath):
     - Returns voxel ijk indexes (3 x voxel)
     - Data, xyz, and ijk are flattened by Fortran-like index order
     """
-    img = nipy.load_image(fpath)
+    img = nibabel.load(fpath)
 
     data = img.get_fdata()
     if data.ndim == 4:
         data = data.reshape(-1, data.shape[-1], order='F').T
         i_len, j_len, k_len, t = img.shape
-        affine = np.delete(np.delete(img.coordmap.affine, 3, axis=0), 3, axis=1)
+        affine = img.affine
     elif data.ndim == 3:
         data = data.flatten(order='F')
         i_len, j_len, k_len = img.shape
-        affine = img.coordmap.affine
+        affine = img.affine
     else:
         raise ValueError('Invalid shape.')
 

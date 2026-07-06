@@ -2,6 +2,7 @@
 
 
 import csv
+import warnings
 
 import numpy as np
 from nipy.modalities.fmri.experimental_paradigm import (
@@ -45,6 +46,14 @@ def make_paradigm(event_files, num_vols, tr=2., cond_col=2, label_col=None, regr
         run_regressors : nuisance regressors for runs
         run_regressors_label : labels for the run regressors
     """
+    warnings.warn(
+        "make_paradigm depends on nipy, which is unmaintained. nipy support "
+        "will be removed in a future release of bdpy. Consider migrating to "
+        "nilearn (e.g. nilearn.glm.first_level.make_first_level_design_matrix).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     onset = []
     duration = []
     conds = []
