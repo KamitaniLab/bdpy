@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Dict, Iterable
+from typing import TYPE_CHECKING, Dict, Iterable
 
 from bdpy.task import BaseTask
 from bdpy.task.callback import BaseCallback, unused
