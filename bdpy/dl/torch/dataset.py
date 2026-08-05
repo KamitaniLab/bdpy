@@ -12,31 +12,6 @@ from bdpy.dataform import DecodedFeatures, Features
 _FeatureTypeNP = Dict[str, np.ndarray]
 
 
-def _removesuffix(s: str, suffix: str) -> str:
-    """Remove suffix from string.
-
-    Note
-    ----
-    This function is available from Python 3.9 as `str.removesuffix`. We can
-    remove this function when we drop support for Python 3.8.
-
-    Parameters
-    ----------
-    s : str
-        String.
-    suffix : str
-        Suffix to remove.
-
-    Returns
-    -------
-    str
-        String without suffix.
-    """
-    if suffix and s.endswith(suffix):
-        return s[: -len(suffix)]
-    return s[:]
-
-
 class FeaturesDataset(Dataset):
     """Dataset of features.
 

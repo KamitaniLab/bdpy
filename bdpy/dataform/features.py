@@ -466,9 +466,6 @@ class DecodedFeatures(object):
 
         return db
 
-    def __init_db(self, keys):
-        raise NotImplementedError
-
 
 class FileDatabase(object):
     def __init__(self, keys: List[str]):

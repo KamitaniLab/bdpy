@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Dict, Iterable
+from typing import TYPE_CHECKING, Dict, Iterable
 
 from bdpy.task import BaseTask
 from bdpy.task.callback import BaseCallback, unused
@@ -12,12 +12,6 @@ if TYPE_CHECKING:
     from ..modules.optimizer import _OptimizerFactoryType, _SchedulerFactoryType
 
     _FeatureType = Dict[str, torch.Tensor]
-
-
-def _apply_to_features(
-    fn: Callable[[torch.Tensor], torch.Tensor], features: _FeatureType
-) -> _FeatureType:
-    return {k: fn(v) for k, v in features.items()}
 
 
 class FeatureInversionCallback(BaseCallback):
