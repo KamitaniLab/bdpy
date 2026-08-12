@@ -2,7 +2,7 @@
 
 This document summarizes what the current test suite covers, what remains untested, and known implementation issues observed during test reorganization.
 
-_Last updated: 2026-05-11_
+_Last updated: 2026-08-13_
 
 ## Test Coverage Summary
 
@@ -124,3 +124,4 @@ Loads NIfTI via `nipy.load_image` and returns `(data, xyz, ijk)` for 3D/4D input
 - `__get_xyz` and `__load_mri` appear to be outside the current main path.
 - `split_task_label=True` is now exercised by a mock test for the single-task case (`TestCreateBdataFmriprepMock.test_create_bdata_fmriprep_split_task_label_single_task`). Multi-task mock coverage (multiple elements in `bdata_list`) would require extending `MockBidsBuilder`.
 - Real-data tests (`test_fmriprep_real.py`) are marked with `pytest.mark.real_data`; run `pytest -m "not real_data"` to skip them in CI.
+- The real-data fixture is downloaded from figshare (doi:10.6084/m9.figshare.32857559.v1) by `scripts/real/step_1_figshare_download.sh` rather than regenerated locally, so running the real-data test no longer requires datalad, FreeSurfer, or Docker. The scripts that produce the fixture are kept in `scripts/fixture_generation/`.
