@@ -71,8 +71,9 @@ TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1 "${PYTHON_BIN:-python}" -m pytest ./tests/m
 
 ## Real-Data Tests
 
-The real-data tests are marked with `pytest.mark.real_data`, and `pyproject.toml`
-sets `addopts = ["-m", "not real_data"]`, so a plain `pytest tests` deselects them.
+The real-data tests are marked with `pytest.mark.real_data`, and `tests/conftest.py`
+deselects them unless the marker expression names `real_data`, so any ordinary
+invocation — `pytest tests`, `pytest tests -m "not slow"` — skips over them.
 They read a multi-GB fixture and take minutes, so opting in is explicit:
 
 ```bash
@@ -83,6 +84,26 @@ They read a multi-GB fixture and take minutes, so opting in is explicit:
 
 The `-m real_data` is required: without it the default deselection applies and
 nothing is collected.
+
+### The quick subset
+
+Not every real-data test needs the full fixture. The shared tests in
+`test_fmriprep_invariants.py` assert properties of the dataset itself rather than
+comparing against a recorded result, so they need only the 478 MB dataset — not the
+2.5 GB `test_output_fmriprep_real_exclude.h5` — and finish in about 70 seconds instead
+of minutes. They carry `real_data_quick` in addition to `real_data`:
+
+```bash
+"${PYTHON_BIN:-python}" -m pytest -m real_data_quick ./tests/mri/fmriprep/
+```
+
+Because they are also marked `real_data`, the conftest deselection still hides them from
+a plain `pytest tests`, and `-m real_data` still runs them alongside everything else.
+
+These are the tests worth reaching for while working on the scanning code: the synthetic
+dataset uses numeric session names (`ses-01`) and gives every run a BOLD image, whereas the
+real fixture uses `ses-SoundTest02`, ships an empty session directory, and ships one run
+with events but no BOLD. Assumptions about naming and completeness only break here.
 
 The test data is a small fMRIPrep-processed fixture published on figshare. Download it once, then run the test:
 

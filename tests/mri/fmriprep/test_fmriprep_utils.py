@@ -110,6 +110,11 @@ def _get_private(name: str) -> object:
 class RealDatasetMixin(unittest.TestCase):
     """Mixin for real-data tests."""
 
+    #: Whether the 2.5 GB stored-expectation h5 is required. Tests that assert
+    #: on the dataset itself rather than on a recorded result set this False so
+    #: they run with only the 478 MB fixture present.
+    requires_golden_master: bool = True
+
     @staticmethod
     def _create_runtime_label_mapper(data_root: Path) -> tuple[tempfile.TemporaryDirectory, Path]:
         tmpdir = tempfile.TemporaryDirectory(prefix="test_fmriprep_sound_label_mapper_")
@@ -146,15 +151,19 @@ class RealDatasetMixin(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        # These tests are deselected by default (addopts in pyproject.toml), so
-        # reaching this point means the caller explicitly asked for them with
-        # `-m real_data`. Skipping would let that request pass silently as a
-        # success, so a missing fixture is an error instead.
+        # tests/conftest.py deselects these unless the marker expression names
+        # real_data, so reaching this point means the caller asked for them by
+        # name. Skipping would let that request pass silently as a success, so a
+        # missing fixture is an error instead.
         if not REAL_DATA_ROOT.exists():
             raise FileNotFoundError(
                 f"Real-data fixture not found: {REAL_DATA_ROOT}\n{cls._DOWNLOAD_HINT}"
             )
-        if not CREATE_GOLDEN_MASTER and not REAL_EXPECTED_H5.exists():
+        if (
+            cls.requires_golden_master
+            and not CREATE_GOLDEN_MASTER
+            and not REAL_EXPECTED_H5.exists()
+        ):
             raise FileNotFoundError(
                 f"Real-data golden master not found: {REAL_EXPECTED_H5}\n"
                 f"{cls._DOWNLOAD_HINT}\n"
@@ -169,7 +178,12 @@ class RealDatasetMixin(unittest.TestCase):
             cls._runtime_label_mapper_tmpdir, mapper_path = cls._create_runtime_label_mapper(REAL_DATA_ROOT)
 
         cls.label_mapper = {"stimulus_name": str(mapper_path)}
-        cls.expected_bdata = bdpy.BData(str(REAL_EXPECTED_H5)) if REAL_EXPECTED_H5.exists() else None
+        # Reading the h5 costs minutes and ~2.5 GB, so only subclasses that
+        # actually compare against it pay for it.
+        if cls.requires_golden_master and REAL_EXPECTED_H5.exists():
+            cls.expected_bdata = bdpy.BData(str(REAL_EXPECTED_H5))
+        else:
+            cls.expected_bdata = None
         cls.check_keys = VOLUME_NATIVE_CHECK_KEYS
         return super().setUpClass()
 

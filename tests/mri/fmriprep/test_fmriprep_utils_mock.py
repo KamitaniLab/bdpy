@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import unittest
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
@@ -554,3 +555,29 @@ def build_expected_bdata_after_exclude(
         expected_bdata.add_vmap(k, vmap[k])
 
     return expected_bdata
+
+
+#: Shared mock dataset, built once per test session.
+#:
+#: Lives here rather than in ``test_fmriprep_mock.py`` so that both the
+#: mock-specific tests and the dataset-agnostic shared tests
+#: (``test_fmriprep_invariants.py``) can depend on it without depending on
+#: each other.
+DATA_BUILDER = MockBidsBuilder()
+DATA_BUILDER.build()
+
+
+class MockDatasetMixin(unittest.TestCase):
+    """Mixin providing access to the shared mock dataset."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Set up the mock dataset for tests."""
+        cls.data_root = DATA_BUILDER.root
+        cls.subject = DATA_BUILDER.subject
+        cls.label_mapper = (
+            {"stimulus_name": str(DATA_BUILDER.label_mapper_path)}
+            if DATA_BUILDER.label_mapper_path is not None
+            else None
+        )
+        return super().setUpClass()

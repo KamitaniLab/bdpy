@@ -14,7 +14,9 @@ from nibabel.gifti import GiftiDataArray, GiftiImage
 
 import bdpy
 from .test_fmriprep_utils_mock import (
+    DATA_BUILDER,
     MockBidsBuilder,
+    MockDatasetMixin,
     build_expected_bdata_after_exclude,
 )
 from .test_fmriprep_utils import (
@@ -28,21 +30,6 @@ from .test_fmriprep_utils import (
 #: so they extend rather than replace the shared key list.
 MOCK_ONLY_VOLUME_KEYS = ["image_index", "original_run_number"]
 
-DATA_BUILDER = MockBidsBuilder()
-DATA_BUILDER.build()
-
-
-class MockDatasetMixin(unittest.TestCase):
-    """Mixin providing access to the shared mock dataset."""
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        """Set up the mock dataset for tests."""
-        cls.data_root = DATA_BUILDER.root
-        cls.subject = DATA_BUILDER.subject
-        cls.label_mapper = {"stimulus_name": str(DATA_BUILDER.label_mapper_path)} if DATA_BUILDER.label_mapper_path is not None else None
-        return super().setUpClass()
-
 
 # -----------------------------------------------------------------------------
 # Mock tests (default)
@@ -50,28 +37,14 @@ class MockDatasetMixin(unittest.TestCase):
 
 
 class TestFmriprepDataMock(MockDatasetMixin):
-    """Tests for parsing mock fMRIPrep dataset structure."""
+    """Tests for parsing mock fMRIPrep dataset structure.
 
-    def test_fmriprep_private_variables(self) -> None:
-        """Verify internal configuration fields are initialized."""
-        instance = fmriprep.FmriprepData(self.data_root.as_posix())
-        self.assertEqual(instance._FmriprepData__datapath, self.data_root.as_posix())
-        self.assertEqual(instance._FmriprepData__fmriprep_dir, "derivatives/fmriprep")
-        self.assertEqual(instance._FmriprepData__fmriprep_version, "1.2")
-
-    def test_fmriprep_get_subjects(self) -> None:
-        """Verify subject discovery returns the mock subject."""
-        instance = fmriprep.FmriprepData(self.data_root.as_posix())
-        prepdir = (self.data_root / "derivatives" / "fmriprep" / "fmriprep").as_posix()
-        subjects = instance._FmriprepData__get_subjects(prepdir)
-        self.assertEqual(subjects, [self.subject])
-
-    def test_fmriprep_get_sessions(self) -> None:
-        """Verify session discovery returns the expected sessions."""
-        instance = fmriprep.FmriprepData(self.data_root.as_posix())
-        prepdir = (self.data_root / "derivatives" / "fmriprep" / "fmriprep").as_posix()
-        sessions = instance._FmriprepData__get_sessions(prepdir, self.subject)
-        self.assertEqual(sessions, ["ses-01", "ses-02", "ses-anat"])
+    Scanning behaviour that must hold for any dataset (subject and session
+    discovery, the run key set, event-file resolution) lives in
+    ``test_fmriprep_invariants.py`` so the real fixture exercises it too. What
+    remains here compares against ``DATA_BUILDER``'s exact expected values,
+    which only the synthetic dataset can supply.
+    """
 
     def test_fmriprep_parse_session(self) -> None:
         """Verify parsing a session yields the expected runs."""
@@ -85,17 +58,6 @@ class TestFmriprepDataMock(MockDatasetMixin):
         instance = fmriprep.FmriprepData(self.data_root.as_posix())
         instance._FmriprepData__parse_data()
         self.assertEqual(instance._FmriprepData__data, DATA_BUILDER.expected_subject_data)
-
-    def test_fmriprep_get_task_event_files(self) -> None:
-        """Verify task event and JSON sidecars are attached to runs."""
-        instance = fmriprep.FmriprepData(self.data_root.as_posix())
-        instance._FmriprepData__get_task_event_files()
-        for runs in instance.data[self.subject].values():
-            for run in runs:
-                self.assertIn("task_event_file", run)
-                self.assertIn("bold_json", run)
-                self.assertTrue((self.data_root / run["task_event_file"]).exists())
-                self.assertTrue((self.data_root / run["bold_json"]).exists())
 
 class TestFmriprepDataFailures(unittest.TestCase):
     """Failure-path tests for invalid mock dataset inputs."""
@@ -321,8 +283,11 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         (b) the returned BData is content-identical to the non-split golden
             master because there is only one task to split on.
 
-        Multi-task split (where bdata_list has more than one element) is
-        covered by test_fmriprep_real.py with actual fMRIPrep outputs.
+        Multi-task split (where bdata_list has more than one element) is NOT
+        covered anywhere. It used to be reachable through the real-data test,
+        but the figshare fixture adopted in 23d62e4 carries a single task
+        (task-vggsoundtest), so neither fixture takes that branch. Recorded in
+        UNCOVERED_BEHAVIOUR in test_fmriprep_invariants.py.
         """
         save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5"
         expected_bdata = bdpy.BData(str(save_path))
@@ -413,22 +378,6 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
                     bdata_list[0].get("VertexData").shape,
                     (self._expected_sample_count(exclude), 8),
                 )
-
-    def test_create_bdata_fmriprep_exclude_subject_removes_all(self) -> None:
-        """Return no outputs when the only subject is excluded."""
-        bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
-            dpath=self.data_root.as_posix(),
-            data_mode="volume_native",
-            fmriprep_dir="derivatives/fmriprep",
-            label_mapper=self.label_mapper,
-            exclude={"subject": [self.subject]},
-            split_task_label=False,
-            with_confounds=False,
-            return_data_labels=True,
-            return_list=True,
-        )
-        self.assertEqual(bdata_list, [])
-        self.assertEqual(data_labels_list, [])
 
 class TestBrainDataMock(unittest.TestCase):
     """Tests for BrainData helpers using mock files."""
@@ -563,20 +512,6 @@ class TestCreateBdataFmriprepSubjectMock(MockDatasetMixin):
         self.assertEqual(brain_data.get("Run").shape[1], 1)
         self.assertEqual(brain_data.get("Block").shape[1], 1)
         np.testing.assert_array_equal(brain_data.get("stimulus_name")[:, 0], brain_data.get("Label")[:, 1])
-
-    def test_create_bdata_singlesubject(self) -> None:
-        """Create a single-subject BData via the public helper."""
-        fmriprep_data = fmriprep.FmriprepData(self.data_root.as_posix())
-        subject_data = fmriprep_data.data[self.subject]
-        brain_data = fmriprep.create_bdata_singlesubject(
-            subject_data=subject_data,
-            data_path=self.data_root.as_posix(),
-            data_mode="volume_native",
-            label_mapper={"stimulus_name": {"face": 1, "scene": 2}},
-            with_confounds=True,
-        )
-        self.assertEqual(brain_data.get("VoxelData").shape[1], self._num_voxels())
-        self.assertEqual(brain_data.get("Confounds").shape[0], brain_data.get("VoxelData").shape[0])
 
 class TestCutRunMock(unittest.TestCase):
     """Tests for run truncation behavior with mock event files."""
