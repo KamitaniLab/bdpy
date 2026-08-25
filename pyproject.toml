@@ -114,9 +114,10 @@ disable = "line-too-long"
 
 [tool.pytest.ini_options]
 # Real-data tests read a multi-GB fixture and take minutes, so they are
-# deselected by default. Opt in with `pytest -m real_data`, which overrides
-# the -m below because the last -m on the command line wins.
-addopts = ["-m", "not real_data"]
+# deselected by default. That is done in tests/conftest.py rather than with
+# `addopts = ["-m", "not real_data"]`, because a marker expression on the
+# command line replaces the addopts one instead of combining with it: an
+# unrelated `-m "not slow"` would otherwise re-enable them.
 markers = [
-    "real_data: tests that require an external fMRIPrep dataset (e.g. OpenNeuro ds006319). Deselected by default via addopts; run with `pytest -m real_data` locally.",
+    "real_data: tests that require an external fMRIPrep dataset (e.g. OpenNeuro ds006319). Deselected by default in tests/conftest.py; run with `pytest -m real_data` locally.",
 ]
