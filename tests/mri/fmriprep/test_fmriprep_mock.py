@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import unittest
 from pathlib import Path
 from typing import Optional
@@ -11,7 +10,6 @@ import os
 
 import nibabel as nib
 import numpy as np
-from nipy.io.nifti_ref import NiftiError
 from nibabel.gifti import GiftiDataArray, GiftiImage
 
 import bdpy
@@ -21,9 +19,14 @@ from .test_fmriprep_utils_mock import (
 )
 from .test_fmriprep_utils import (
     CREATE_GOLDEN_MASTER,
+    VOLUME_NATIVE_CHECK_KEYS,
     _get_private,
     fmriprep,
 )
+
+#: Columns present in the mock event files but not in the real ds006319 fixture,
+#: so they extend rather than replace the shared key list.
+MOCK_ONLY_VOLUME_KEYS = ["image_index", "original_run_number"]
 
 DATA_BUILDER = MockBidsBuilder()
 DATA_BUILDER.build()
@@ -165,60 +168,8 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
 
     def setUp(self) -> None:
         """Prepare the metadata keys compared in golden-master tests."""
-        self.check_keys = [
-            "VoxelData",
-            "Session",
-            "Run",
-            "Block",
-            "Label",
-            "MotionParameter",
-            "MotionParameter_trans_x",
-            "MotionParameter_trans_y",
-            "MotionParameter_trans_z",
-            "MotionParameter_rot_x",
-            "MotionParameter_rot_y",
-            "MotionParameter_rot_z",
-            "Confounds",
-            "GlobalSignal",
-            "WhiteMatterSignal",
-            "CSFSignal",
-            "DVARS",
-            "STD_DVARS",
-            "FramewiseDisplacement",
-            "aCompCor",
-            "aCompCor_0",
-            "aCompCor_1",
-            "aCompCor_2",
-            "aCompCor_3",
-            "aCompCor_4",
-            "aCompCor_5",
-            "tCompCor",
-            "tCompCor_0",
-            "tCompCor_1",
-            "tCompCor_2",
-            "tCompCor_3",
-            "tCompCor_4",
-            "tCompCor_5",
-            "Cosine",
-            "Cosine_0",
-            "Cosine_1",
-            "Cosine_2",
-            "Cosine_3",
-            "Cosine_4",
-            "Cosine_5",
-            "trial_type",
-            "stimulus_name",
-            "category_index",
-            "image_index",
-            "response_time",
-            "original_run_number",
-            "voxel_x",
-            "voxel_y",
-            "voxel_z",
-            "voxel_i",
-            "voxel_j",
-            "voxel_k",
-        ]
+        # Single source of truth: the real-data tests use the same list.
+        self.check_keys = list(VOLUME_NATIVE_CHECK_KEYS) + MOCK_ONLY_VOLUME_KEYS
         # Surface keys: VoxelData -> VertexData, voxel_x/y/z/i/j/k -> vertex_index +
         # the VertexLeft/VertexRight indicator metadata. The remaining keys
         # (Session/Run/Block/Label/MotionParameter/Confounds/label submeta) are
@@ -380,6 +331,37 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
             data_mode="volume_native",
             fmriprep_dir="derivatives/fmriprep",
             label_mapper=self.label_mapper,
+            split_task_label=True,
+            with_confounds=True,
+            return_data_labels=True,
+            return_list=True,
+        )
+        self.assertEqual(data_labels_list, [f"{self.subject}_task-mock"])
+        self.assertEqual(len(bdata_list), 1)
+        brain_data = bdata_list[0]
+        for key in self.check_keys:
+            np.testing.assert_array_equal(brain_data.get(key), expected_bdata.get(key))
+
+    def test_create_bdata_fmriprep_split_task_label_with_exclude(self) -> None:
+        """Cover split_task_label=True combined with exclude.
+
+        This is the parameter combination used by the real-data test
+        (test_fmriprep_real.py), which takes minutes and is deselected by
+        default; without this test the combination is never exercised in CI.
+
+        The mock dataset has a single task, so excluding runs must yield exactly
+        the same content as the non-split exclude golden master, while
+        data_labels gain the ``<subject>_<task>`` suffix from the split branch.
+        """
+        exclude = {"subject": ["sub-4649"], "session/run": [[1, 2], None]}
+        save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_exclude.h5"
+        expected_bdata = bdpy.BData(str(save_path))
+        bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
+            dpath=self.data_root.as_posix(),
+            data_mode="volume_native",
+            fmriprep_dir="derivatives/fmriprep",
+            label_mapper=self.label_mapper,
+            exclude=exclude,
             split_task_label=True,
             with_confounds=True,
             return_data_labels=True,
@@ -649,87 +631,24 @@ class TestCutRunMock(unittest.TestCase):
         self.assertEqual(brain_data.get("Block").shape[0], expected_samples)
         self.assertEqual(brain_data.get("Label").shape[0], expected_samples)
 
-class TestGetXyzMock(unittest.TestCase):
-    """Tests for voxel-coordinate extraction helpers."""
+class TestBrainDataVolumeMock(unittest.TestCase):
+    """Tests for loading MRI volumes through BrainData."""
 
-    def setUp(self) -> None:
-        """Patch xrange compatibility for the private helper."""
-        self._get_xyz = _get_private("get_xyz")
-        self._had_xrange = hasattr(fmriprep, "xrange")
-        self._original_xrange = fmriprep.xrange if self._had_xrange else None
-        fmriprep.xrange = range
-
-    def tearDown(self) -> None:
-        """Restore the original xrange compatibility hook."""
-        if not self._had_xrange:
-            fmriprep.__dict__.pop("xrange", None)
-        else:
-            fmriprep.xrange = self._original_xrange
-
-    def test_get_xyz_with_4d_image(self) -> None:
-        """Compute XYZ coordinates correctly for 4D-like images."""
-        affine_5d = np.eye(5)
-
-        class FakeCoordMap:
-            affine = affine_5d
-
-        class FakeImage:
-            shape = (2, 2, 1, 2)
-            coordmap = FakeCoordMap()
-
-        xyz = self._get_xyz(FakeImage())
-        affine = np.delete(np.delete(affine_5d, 3, axis=0), 3, axis=1)
-        expected_columns = []
-        for i, j, k in itertools.product(range(2), range(2), range(1)):
-            vec = np.array([i, j, k, 1.0])
-            expected_columns.append(affine @ vec)  # type: ignore[operator]
-        expected = np.column_stack(expected_columns)[:3]
-        np.testing.assert_allclose(xyz, expected)
-
-    def test_get_xyz_with_3d_image(self) -> None:
-        """Compute XYZ coordinates correctly for 3D images."""
-        affine = np.array([[1.0, 0.0, 0.0, 5.0], [0.0, 2.0, 0.0, 6.0], [0.0, 0.0, 3.0, 7.0], [0.0, 0.0, 0.0, 1.0]])
-
-        class FakeCoordMap:
-            def __init__(self, mat: np.ndarray) -> None:
-                self.affine = mat
-
-        class FakeImage:
-            shape = (2, 1, 2)
-
-            def __init__(self, mat: np.ndarray) -> None:
-                self.coordmap = FakeCoordMap(mat)
-
-        xyz = self._get_xyz(FakeImage(affine))
-        expected_columns = []
-        for i, j, k in itertools.product(range(2), range(1), range(2)):
-            vec = np.array([i, j, k, 1.0])
-            expected_columns.append(affine @ vec)  # type: ignore[operator]
-        expected = np.column_stack(expected_columns)[:3]
-        np.testing.assert_allclose(xyz, expected)
-
-class TestLoadMriMock(unittest.TestCase):
-    """Tests for loading MRI volumes from mock files."""
-
-    def setUp(self) -> None:
-        """Expose the private MRI loading helper."""
-        self._load_mri = _get_private("load_mri")
-
-    def test_load_mri_from_4d_image(self) -> None:
+    def test_load_volume_from_4d_image(self) -> None:
         """Load 4D MRI data into flattened sample-by-voxel form."""
         run = DATA_BUILDER.expected_runs["ses-01"][0]
         path = (DATA_BUILDER.root / run["volume_native"]).as_posix()
         data = DATA_BUILDER.data_map[str(DATA_BUILDER.root / run["volume_native"])]
-        loaded_data, xyz, ijk = self._load_mri(path)
+        brain = fmriprep.BrainData(path, dtype="volume")
         expected_data = data.reshape(-1, data.shape[-1], order="F").T
-        np.testing.assert_allclose(loaded_data, expected_data)
+        np.testing.assert_allclose(brain.data, expected_data)
         ijk_expected = np.array(np.unravel_index(np.arange(np.prod(data.shape[:3])), data.shape[:3], order="F"))
         affine = np.eye(4)
         xyz_expected = (affine @ np.vstack([ijk_expected, np.ones((1, ijk_expected.shape[1]))]))[:-1]
-        np.testing.assert_allclose(xyz, xyz_expected)
-        np.testing.assert_array_equal(ijk, ijk_expected)
+        np.testing.assert_allclose(brain.xyz, xyz_expected)
+        np.testing.assert_array_equal(brain.index, ijk_expected)
 
-    def test_load_mri_from_3d_image(self) -> None:
+    def test_load_volume_from_3d_image(self) -> None:
         """Load 3D MRI data and preserve voxel coordinates."""
         affine = np.array(
             [
@@ -743,21 +662,21 @@ class TestLoadMriMock(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "image.nii.gz"
             nib.save(nib.Nifti1Image(data, affine), path)
-            loaded_data, xyz, ijk = self._load_mri(path.as_posix())
+            brain = fmriprep.BrainData(path.as_posix(), dtype="volume")
         expected_data = data.flatten(order="F")
-        np.testing.assert_allclose(loaded_data, expected_data)
+        np.testing.assert_allclose(brain.data, expected_data)
         ijk_expected = np.array(np.unravel_index(np.arange(data.size), data.shape, order="F"))
         xyz_expected = (affine @ np.vstack([ijk_expected, np.ones((1, ijk_expected.shape[1]))]))[:-1]
-        np.testing.assert_allclose(xyz, xyz_expected)
-        np.testing.assert_array_equal(ijk, ijk_expected)
+        np.testing.assert_allclose(brain.xyz, xyz_expected)
+        np.testing.assert_array_equal(brain.index, ijk_expected)
 
-    def test_load_mri_raises_for_invalid_dimension(self) -> None:
+    def test_load_volume_raises_for_invalid_dimension(self) -> None:
         """Raise when the image dimensionality is unsupported."""
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "invalid.nii.gz"
             nib.save(nib.Nifti1Image(np.zeros((2, 2)), np.eye(4)), path)
-            with self.assertRaises((ValueError, NiftiError)):
-                self._load_mri(path.as_posix())
+            with self.assertRaises(ValueError):
+                fmriprep.BrainData(path.as_posix(), dtype="volume")
 
 
 if __name__ == "__main__":  # pragma: no cover

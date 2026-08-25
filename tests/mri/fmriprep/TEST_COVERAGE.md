@@ -15,8 +15,7 @@ _Last updated: 2026-08-13_
 - `LabelMapper`
 - subject-level BData creation
 - `cut_run` behavior
-- `get_xyz`
-- `load_mri`
+- volume loading through `BrainData`
 
 `test_fmriprep_real.py` covers:
 
@@ -95,33 +94,30 @@ Core worker. For each run: loads with `BrainData`, reads confounds/motion, build
 | Existing tests | golden master, direct call path, `cut_run` (True/False), confounds with NaN |
 | Not yet tested | `NotImplementedError` path when `cut_duration < 0` |
 
-### __get_xyz (private function)
+### BrainData.__load_volume (private method)
 
-Computes voxel coordinates with `itertools.product` and `xrange`; supports 3D/4D images.
-
-| Item | Details |
-| --- | --- |
-| Test status | Covered (with patching) |
-| Real-data dependency | None (uses fake image objects) |
-| Existing tests | `TestGetXyzMock`: 4D/3D fake images |
-| Notes | Python 3 does not provide `xrange`, so tests patch `fmriprep.xrange = range`. The function is not part of the current main execution path, so maintenance priority is low. |
-
-### __load_mri (private function)
-
-Loads NIfTI via `nipy.load_image` and returns `(data, xyz, ijk)` for 3D/4D input. Its behavior is largely duplicated by `BrainData.__load_volume`.
+Loads a NIfTI volume via `nibabel` and populates `data`, `xyz`, and `index` for 3D/4D input.
 
 | Item | Details |
 | --- | --- |
 | Test status | Covered |
 | Real-data dependency | Replaced by mock data |
-| Existing tests | `TestLoadMriMock`: 4D mock, 3D temp file, invalid dimensions |
-| Notes | Code is largely duplicated with `BrainData.__load_volume`; retained for compatibility checks but a candidate for future cleanup. |
+| Existing tests | `TestBrainDataVolumeMock`: 4D mock, 3D temp file, invalid dimensions |
+| Notes | Replaces the former module-level `__get_xyz` / `__load_mri` helpers, which upstream removed as unused in `ffa951f` (#143) after the nipy-to-nibabel migration (#138). |
 
 ## Main Findings
 
 - `create_bdata_fmriprep` has a potential dictionary-mutation bug while iterating over `OrderedDict`.
-- `BrainData` contains `is`-based string comparisons that should be equality comparisons.
-- `__get_xyz` and `__load_mri` appear to be outside the current main path.
-- `split_task_label=True` is now exercised by a mock test for the single-task case (`TestCreateBdataFmriprepMock.test_create_bdata_fmriprep_split_task_label_single_task`). Multi-task mock coverage (multiple elements in `bdata_list`) would require extending `MockBidsBuilder`.
-- Real-data tests (`test_fmriprep_real.py`) are marked with `pytest.mark.real_data`; run `pytest -m "not real_data"` to skip them in CI.
+- The `is`-based string comparisons in `BrainData` were fixed upstream in `ee9c42e` (#124).
+- The module-level `__get_xyz` / `__load_mri` helpers were outside the main path and were removed upstream in `ffa951f` (#143); their coverage now targets `BrainData` directly.
+- `split_task_label=True` is exercised by two mock tests: the single-task case
+  (`test_create_bdata_fmriprep_split_task_label_single_task`) and the combination with
+  `exclude` (`test_create_bdata_fmriprep_split_task_label_with_exclude`), which mirrors the
+  parameters of the real-data test so that combination is covered without the multi-GB fixture.
+  Multi-task mock coverage (multiple elements in `bdata_list`) would require extending `MockBidsBuilder`.
+- Real-data tests (`test_fmriprep_real.py`) are marked with `pytest.mark.real_data` and are
+  deselected by default via `addopts` in `pyproject.toml`; opt in with `pytest -m real_data`.
+  Their volume-mode key list (`VOLUME_NATIVE_CHECK_KEYS` in `test_fmriprep_utils.py`) is shared
+  with the mock tests, which extend it with the mock-only columns `image_index` and
+  `original_run_number`.
 - The real-data fixture is downloaded from figshare (doi:10.6084/m9.figshare.32857559.v1) by `scripts/real/step_1_figshare_download.sh` rather than regenerated locally, so running the real-data test no longer requires datalad, FreeSurfer, or Docker. The scripts that produce the fixture are kept in `scripts/fixture_generation/`.
