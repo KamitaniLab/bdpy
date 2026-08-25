@@ -8,7 +8,7 @@ _Last updated: 2026-08-25_
 
 The suite is split three ways by what a test needs in order to be meaningful.
 
-`test_fmriprep_invariants.py` holds the test bodies that assert properties true of
+`test_both_datasets.py` holds the test bodies that assert properties true of
 **any** fMRIPrep dataset, and drives them from both fixtures. One class per production
 class or function; the two concrete classes at the bottom supply only a dataset location
 and its expected values, so adding one method there extends the synthetic and the
@@ -21,7 +21,7 @@ real-data suites at once. Covers:
 - `create_bdata_fmriprep`: excluding every subject short-circuits before any volume is read
 - an API coverage check that fails when production code grows a function no test claims
 
-`test_fmriprep_mock.py` holds what only the synthetic dataset can express — exact
+`test_mock_only.py` holds what only the synthetic dataset can express — exact
 comparisons against `MockBidsBuilder`'s expected values, and inputs that must be broken
 on purpose:
 
@@ -32,7 +32,7 @@ on purpose:
 - `LabelMapper` unit behaviour (duplicate values, missing key)
 - surface loading edge cases through `BrainData`, `cut_run` behaviour, volume loading
 
-`test_fmriprep_real.py` holds the stored-expectation comparison:
+`test_real_only.py` holds the stored-expectation comparison:
 
 - golden-master validation of `create_bdata_fmriprep` using real fMRIPrep output with exclusions
 
@@ -69,7 +69,7 @@ Top-level orchestrator. Parses with `FmriprepData`, applies exclusions (`subject
 | Test status | Partially covered; known issues remain |
 | Real-data dependency | Replaced by mock data |
 | Existing tests | `TestCreateBdataFmriprepMock`: golden masters (with/without exclusion for `volume_native`; `surface_native` with `with_confounds=True`), surface-standard shape variants, `split_task_label=True` for single-task mock data, empty list when subject excluded / `TestFmriprepDataFailures` (execution failures): missing confounds, missing motion columns, unknown labels |
-| Gaps / issues | (1) Potential mutation-while-iterating issue: deleting from `fmriprep.data` (`OrderedDict`) during iteration may raise `RuntimeError: dictionary changed size during iteration` on Python 3.8. (2) `split_task_label=True` is exercised with a single task only. The multi-task case (where `bdata_list` has multiple elements) is covered **nowhere**: the figshare fixture adopted in `23d62e4` also carries a single task, so the earlier claim that `test_fmriprep_real.py` covered it is stale. Extending `MockBidsBuilder` for multi-task is the follow-up, and forces the three mock golden masters to be regenerated. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
+| Gaps / issues | (1) Potential mutation-while-iterating issue: deleting from `fmriprep.data` (`OrderedDict`) during iteration may raise `RuntimeError: dictionary changed size during iteration` on Python 3.8. (2) `split_task_label=True` is exercised with a single task only. The multi-task case (where `bdata_list` has multiple elements) is covered **nowhere**: the figshare fixture adopted in `23d62e4` also carries a single task, so the earlier claim that `test_real_only.py` covered it is stale. Extending `MockBidsBuilder` for multi-task is the follow-up, and forces the three mock golden masters to be regenerated. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
 
 ### BrainData (class)
 
@@ -142,10 +142,10 @@ Loads a NIfTI volume via `nibabel` and populates `data`, `xyz`, and `index` for 
   (`task-vggsoundtest`), so neither fixture takes the branch that returns more than one BData.
   Closing this needs `MockBidsBuilder` to grow a second task, which forces the three mock
   golden-master files to be regenerated. Recorded in `UNCOVERED_BEHAVIOUR` in
-  `test_fmriprep_invariants.py`.
-- Real-data tests (`test_fmriprep_real.py`) are marked with `pytest.mark.real_data` and are
+  `test_both_datasets.py`.
+- Real-data tests (`test_real_only.py`) are marked with `pytest.mark.real_data` and are
   deselected by default in `tests/conftest.py`; opt in with `pytest -m real_data`.
-  Their volume-mode key list (`VOLUME_NATIVE_CHECK_KEYS` in `test_fmriprep_utils.py`) is shared
+  Their volume-mode key list (`VOLUME_NATIVE_CHECK_KEYS` in `_support.py`) is shared
   with the mock tests, which extend it with the mock-only columns `image_index` and
   `original_run_number`.
 - The real-data fixture is downloaded from figshare (doi:10.6084/m9.figshare.32857559.v1) by `scripts/real/step_1_figshare_download.sh` rather than regenerated locally, so running the real-data test no longer requires datalad, FreeSurfer, or Docker. The scripts that produce the fixture are kept in `scripts/fixture_generation/`.

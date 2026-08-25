@@ -1,6 +1,6 @@
 """Generate the pinned stimulus-name label mapper shipped with the real-data fixture.
 
-``RealDatasetMixin`` in tests/mri/fmriprep/test_fmriprep_utils.py needs a mapping
+``RealDatasetMixin`` in tests/mri/fmriprep/_support.py needs a mapping
 from ``stimulus_name`` to an integer index. If the fixture does not provide one,
 the mixin rebuilds it at run time by scanning every raw ``*_events.tsv`` in the
 dataset, which would mean shipping all 560 event files rather than the six the

@@ -3,7 +3,7 @@
 # fMRIPrep outputs produced by step_1 through step_4.
 #
 # The full dataset is about 60 GB; the archive built here is 1.7 GB and contains
-# only what tests/mri/fmriprep/test_fmriprep_real.py actually reads. See
+# only what tests/mri/fmriprep/test_real_only.py actually reads. See
 # README.md in this directory for which files are kept and why.
 #
 # Output:

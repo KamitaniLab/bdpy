@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from .test_fmriprep_utils import (
+from ._support import (
     CREATE_GOLDEN_MASTER,
     REAL_EXPECTED_H5,
     RealDatasetMixin,

@@ -21,4 +21,4 @@ if [ "${need_mock_gm}" -eq 0 ]; then
   exit 0
 fi
 
-TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1 "${PYTHON_BIN}" -m pytest ./tests/mri/fmriprep/test_fmriprep_mock.py
+TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1 "${PYTHON_BIN}" -m pytest ./tests/mri/fmriprep/test_mock_only.py

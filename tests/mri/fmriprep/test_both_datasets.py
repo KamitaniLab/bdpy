@@ -7,16 +7,22 @@ session names, every run having a BOLD file) went unchecked against real
 fMRIPrep output.
 
 This module holds the test bodies that assert properties which must hold for
-*any* fMRIPrep dataset. Each production class or function gets one class of
-such tests; the concrete classes at the bottom supply nothing but the location
-of a dataset and its expected values. Adding one method to a class here
-therefore extends both the synthetic and the real-data suites at once.
+*every* fMRIPrep dataset — the classes below call those properties invariants.
+Each production class or function gets one such class; the concrete classes at
+the bottom supply nothing but the location of a dataset and its expected
+values. Adding one method to a class here therefore extends both the mock and
+the real-data suites at once.
+
+The test for belonging here is whether the assertion would still make sense
+against a dataset nobody has seen yet. A test that never touches a dataset
+(``BrainData(dtype="unsupported")`` raising, say) does not belong; it lives in
+``test_mock_only.py`` with the other unit-level tests.
 
 Cost note: ``create_bdata_fmriprep`` over a whole subject takes minutes on the
 real fixture, so it is only reached here through the exclude-everything short
 circuit. ``BrainData``, ``LabelMapper`` and ``create_bdata_singlesubject`` are
 driven one run or one file at a time instead, which puts the whole real-data
-run at roughly a minute and, unlike ``test_fmriprep_real.py``, needs no 2.5 GB
+run at roughly a minute and, unlike ``test_real_only.py``, needs no 2.5 GB
 stored-expectation file — only the 478 MB dataset.
 """
 
@@ -32,8 +38,8 @@ from typing import Any, Optional
 import numpy as np
 import pytest
 
-from .test_fmriprep_utils import RealDatasetMixin, fmriprep
-from .test_fmriprep_utils_mock import DATA_BUILDER, MockBidsBuilder, MockDatasetMixin
+from ._support import RealDatasetMixin, fmriprep
+from ._mock_fixtures import DATA_BUILDER, MockBidsBuilder, MockDatasetMixin
 
 #: Keys that ``FmriprepData.__parse_session`` must place on every run.
 RUN_KEYS = (

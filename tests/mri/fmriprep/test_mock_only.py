@@ -13,13 +13,13 @@ import numpy as np
 from nibabel.gifti import GiftiDataArray, GiftiImage
 
 import bdpy
-from .test_fmriprep_utils_mock import (
+from ._mock_fixtures import (
     DATA_BUILDER,
     MockBidsBuilder,
     MockDatasetMixin,
     build_expected_bdata_after_exclude,
 )
-from .test_fmriprep_utils import (
+from ._support import (
     CREATE_GOLDEN_MASTER,
     VOLUME_NATIVE_CHECK_KEYS,
     _get_private,
@@ -41,7 +41,7 @@ class TestFmriprepDataMock(MockDatasetMixin):
 
     Scanning behaviour that must hold for any dataset (subject and session
     discovery, the run key set, event-file resolution) lives in
-    ``test_fmriprep_invariants.py`` so the real fixture exercises it too. What
+    ``test_both_datasets.py`` so the real fixture exercises it too. What
     remains here compares against ``DATA_BUILDER``'s exact expected values,
     which only the synthetic dataset can supply.
     """
@@ -287,7 +287,7 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         covered anywhere. It used to be reachable through the real-data test,
         but the figshare fixture adopted in 23d62e4 carries a single task
         (task-vggsoundtest), so neither fixture takes that branch. Recorded in
-        UNCOVERED_BEHAVIOUR in test_fmriprep_invariants.py.
+        UNCOVERED_BEHAVIOUR in test_both_datasets.py.
         """
         save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5"
         expected_bdata = bdpy.BData(str(save_path))
@@ -311,7 +311,7 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         """Cover split_task_label=True combined with exclude.
 
         This is the parameter combination used by the real-data test
-        (test_fmriprep_real.py), which takes minutes and is deselected by
+        (test_real_only.py), which takes minutes and is deselected by
         default; without this test the combination is never exercised in CI.
 
         The mock dataset has a single task, so excluding runs must yield exactly

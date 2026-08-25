@@ -559,9 +559,9 @@ def build_expected_bdata_after_exclude(
 
 #: Shared mock dataset, built once per test session.
 #:
-#: Lives here rather than in ``test_fmriprep_mock.py`` so that both the
+#: Lives here rather than in ``test_mock_only.py`` so that both the
 #: mock-specific tests and the dataset-agnostic shared tests
-#: (``test_fmriprep_invariants.py``) can depend on it without depending on
+#: (``test_both_datasets.py``) can depend on it without depending on
 #: each other.
 DATA_BUILDER = MockBidsBuilder()
 DATA_BUILDER.build()

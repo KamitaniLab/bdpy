@@ -1,7 +1,7 @@
 #!/bin/bash
 # Download the pre-processed ds006319 test fixture from figshare, verify its
 # checksum, and place it under tests/data/mri/ for the real-data test
-# (tests/mri/fmriprep/test_fmriprep_real.py).
+# (tests/mri/fmriprep/test_real_only.py).
 #
 # This replaces the datalad + FreeSurfer + fMRIPrep pipeline that previously had
 # to be run locally. Those scripts are kept, for reproducing the fixture itself,

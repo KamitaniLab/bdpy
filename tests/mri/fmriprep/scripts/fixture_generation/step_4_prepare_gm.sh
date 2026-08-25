@@ -9,4 +9,4 @@ if [ -f "${real_gm_h5_path}" ]; then
 fi
 
 echo "Missing golden master file: ${real_gm_h5_path}"
-TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1 "${PYTHON_BIN}" -m pytest ./tests/mri/fmriprep/test_fmriprep_real.py
+TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1 "${PYTHON_BIN}" -m pytest ./tests/mri/fmriprep/test_real_only.py
