@@ -113,6 +113,10 @@ convention = "numpy"
 disable = "line-too-long"
 
 [tool.pytest.ini_options]
+# Real-data tests read a multi-GB fixture and take minutes, so they are
+# deselected by default. Opt in with `pytest -m real_data`, which overrides
+# the -m below because the last -m on the command line wins.
+addopts = ["-m", "not real_data"]
 markers = [
-    "real_data: tests that require an external fMRIPrep dataset (e.g. OpenNeuro ds006319). Excluded from CI; run with `pytest -m real_data` locally.",
+    "real_data: tests that require an external fMRIPrep dataset (e.g. OpenNeuro ds006319). Deselected by default via addopts; run with `pytest -m real_data` locally.",
 ]

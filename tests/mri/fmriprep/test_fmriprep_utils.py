@@ -136,12 +136,30 @@ class RealDatasetMixin(unittest.TestCase):
 
         return tmpdir, mapper_path
 
+    #: Shown whenever the real-data fixture is missing.
+    _DOWNLOAD_HINT = (
+        "Fetch it first:\n"
+        "    bash ./tests/mri/fmriprep/scripts/real/step_1_figshare_download.sh\n"
+        "The download is deliberately explicit: it pulls ~1.7 GB from figshare, "
+        "so it never runs as a side effect of pytest."
+    )
+
     @classmethod
     def setUpClass(cls) -> None:
+        # These tests are deselected by default (addopts in pyproject.toml), so
+        # reaching this point means the caller explicitly asked for them with
+        # `-m real_data`. Skipping would let that request pass silently as a
+        # success, so a missing fixture is an error instead.
         if not REAL_DATA_ROOT.exists():
-            raise unittest.SkipTest(f"Real dataset not found at {REAL_DATA_ROOT}")
+            raise FileNotFoundError(
+                f"Real-data fixture not found: {REAL_DATA_ROOT}\n{cls._DOWNLOAD_HINT}"
+            )
         if not CREATE_GOLDEN_MASTER and not REAL_EXPECTED_H5.exists():
-            raise unittest.SkipTest(f"Expected reference H5 is missing: {REAL_EXPECTED_H5}")
+            raise FileNotFoundError(
+                f"Real-data golden master not found: {REAL_EXPECTED_H5}\n"
+                f"{cls._DOWNLOAD_HINT}\n"
+                "To regenerate it instead, set TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1."
+            )
 
         cls.data_root = REAL_DATA_ROOT
         cls._runtime_label_mapper_tmpdir = None

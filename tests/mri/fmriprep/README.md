@@ -22,7 +22,7 @@ For test coverage and maintenance notes, see `TEST_COVERAGE.md`.
 
 - Run these tests in the lab base environment where `bdpy`, `nipy`, `nibabel`, and related dependencies are already installed.
 - These tests assume the directory layout of `fmriprep` version `1.2`.
-- `bdpy/mri/fmriprep.py` still depends on the older `nipy` API (`get_data()`), so newer environments may fail even if the test code itself is correct.
+- `bdpy/mri/fmriprep.py` itself now uses `nibabel` only, but `bdpy.mri` still imports `nipy` through `bdpy/mri/glm.py`, so `nipy` must be installed to import the package.
 - Real-data tests additionally require `curl` (or `wget`) and `tar` to fetch the published fixture. `datalad`, FreeSurfer, and `docker` are needed only to regenerate that fixture; see `scripts/fixture_generation/README.md`.
 
 ## Working Directory
@@ -71,13 +71,18 @@ TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1 "${PYTHON_BIN:-python}" -m pytest ./tests/m
 
 ## Real-Data Tests
 
-The real-data tests are marked with `pytest.mark.real_data`, so CI runs `pytest -m "not real_data"` to skip them automatically. To execute them locally, use one of:
+The real-data tests are marked with `pytest.mark.real_data`, and `pyproject.toml`
+sets `addopts = ["-m", "not real_data"]`, so a plain `pytest tests` deselects them.
+They read a multi-GB fixture and take minutes, so opting in is explicit:
 
 ```bash
-"${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/test_fmriprep_real.py
-# or, equivalently, select by marker:
+"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/test_fmriprep_real.py
+# or, for every real-data test under this directory:
 "${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/
 ```
+
+The `-m real_data` is required: without it the default deselection applies and
+nothing is collected.
 
 The test data is a small fMRIPrep-processed fixture published on figshare. Download it once, then run the test:
 
@@ -89,9 +94,16 @@ bash ./tests/mri/fmriprep/scripts/real/step_2_run_test.sh
 Script roles:
 
 - `step_1_figshare_download.sh`: downloads the fixture, verifies its md5, and extracts it under `./tests/data/mri/`
-- `step_2_run_test.sh`: runs `test_fmriprep_real.py`
+- `step_2_run_test.sh`: runs `test_fmriprep_real.py` with `-m real_data`
 
-The download is explicit and never happens during a normal `pytest` run. If the fixture is absent, `test_fmriprep_real.py` skips itself, so `pytest` stays offline by default.
+The download is explicit and never happens during a normal `pytest` run, so
+`pytest` stays offline by default. Once the fixture has been downloaded, the
+`real_data` deselection is what keeps `pytest tests` fast.
+
+If you opt in with `-m real_data` while the fixture is missing, the tests
+**fail with a `FileNotFoundError` naming the download command** rather than
+skipping: you asked for the real-data tests explicitly, so silently reporting
+success would be misleading.
 
 ### Fixture
 
@@ -145,7 +157,7 @@ Before submitting, run this minimal checklist from the project root:
 "${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/test_fmriprep_mock.py
 
 # 2) Real-data tests (after step_1_figshare_download.sh has fetched the fixture)
-"${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/test_fmriprep_real.py
+"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/test_fmriprep_real.py
 
 # 3) Verify golden-master files exist
 test -f ./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5
