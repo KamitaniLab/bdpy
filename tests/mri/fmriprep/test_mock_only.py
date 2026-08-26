@@ -6,7 +6,6 @@ import unittest
 from pathlib import Path
 from typing import Optional
 import tempfile
-import os
 
 import nibabel as nib
 import numpy as np
@@ -21,6 +20,7 @@ from ._mock_fixtures import (
 )
 from ._support import (
     CREATE_GOLDEN_MASTER,
+    MOCK_GOLDEN_MASTER_DIR,
     VOLUME_NATIVE_CHECK_KEYS,
     _get_private,
     fmriprep,
@@ -170,18 +170,15 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
     
     def test_create_bdata_fmriprep_gm(self) -> None:
         """Match the generated mock BData against the golden master."""
-        '''
-        CAUTION: 
-        This test uses golden master files. 
-        If you need to add some new test cases, please generate new golden master files
-        '''
-        save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5"
+        # CAUTION: this test compares against a stored golden master. Adding or
+        # changing coverage means regenerating it (see README.md).
+        save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject.h5"
         # -------------------------------------------------------------
         # FOR GOLDEN MASTER UPDATE ONLY:
         if CREATE_GOLDEN_MASTER:
             expected_bdata = self._expected_after_exclude()
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            expected_bdata.save(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            expected_bdata.save(str(save_path))
         # -------------------------------------------------------------
         
         expected_bdata = bdpy.BData(str(save_path))
@@ -203,22 +200,19 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
 
     def test_create_bdata_fmriprep_exclude_gm(self) -> None:
         """Match excluded mock BData against the golden master."""
-        '''
-        CAUTION: 
-        This test uses golden master files. 
-        If you need to add some new test cases, please generate new golden master files
-        '''
+        # CAUTION: this test compares against a stored golden master. Adding or
+        # changing coverage means regenerating it (see README.md).
         
         exclude_list = [{"subject": ["sub-4649"], "session/run": [[1, 2], None]}]
         for exclude in exclude_list:
-            save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_exclude.h5"
+            save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject_exclude.h5"
             # -------------------------------------------------------------
             # FOR GOLDEN MASTER UPDATE ONLY:
             if CREATE_GOLDEN_MASTER:
                 expected_bdata = self._expected_after_exclude(exclude)
                 
-                os.makedirs(os.path.dirname(save_path), exist_ok=True)
-                expected_bdata.save(save_path)
+                save_path.parent.mkdir(parents=True, exist_ok=True)
+                expected_bdata.save(str(save_path))
             # -------------------------------------------------------------
             
             expected_bdata = bdpy.BData(str(save_path))
@@ -246,13 +240,13 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         regenerate it via ``TEST_FMRIPREP_CREATE_GOLDEN_MASTER=1``.
         """
         exclude = {"session/run": [[1, 2], None]}
-        save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_surface.h5"
+        save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject_surface.h5"
         # -------------------------------------------------------------
         # FOR GOLDEN MASTER UPDATE ONLY:
         if CREATE_GOLDEN_MASTER:
             expected_bdata = self._expected_after_exclude(exclude, data_mode="surface_native")
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            expected_bdata.save(save_path)
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            expected_bdata.save(str(save_path))
         # -------------------------------------------------------------
 
         expected_bdata = bdpy.BData(str(save_path))
@@ -289,7 +283,7 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         (task-vggsoundtest), so neither fixture takes that branch. Recorded in
         UNCOVERED_BEHAVIOUR in test_both_datasets.py.
         """
-        save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5"
+        save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject.h5"
         expected_bdata = bdpy.BData(str(save_path))
         bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
             dpath=self.data_root.as_posix(),
@@ -319,7 +313,7 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         data_labels gain the ``<subject>_<task>`` suffix from the split branch.
         """
         exclude = {"subject": ["sub-4649"], "session/run": [[1, 2], None]}
-        save_path = "./tests/data/mri/golden_master/mock/test_output_fmriprep_subject_exclude.h5"
+        save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject_exclude.h5"
         expected_bdata = bdpy.BData(str(save_path))
         bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
             dpath=self.data_root.as_posix(),

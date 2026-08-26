@@ -1,17 +1,19 @@
-"""Unit tests for fMRIPrep-related utilities in bdpy.mri.fmriprep."""
+"""Shared helpers for the bdpy.mri.fmriprep tests.
+
+This module holds no tests; the leading underscore keeps pytest from
+collecting it.
+"""
 
 from __future__ import annotations
 
 import csv
-import importlib.util
 import os
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import bdpy
-from bdpy import mri as fake_bdpy_mri  # type: ignore[import]
+from bdpy.mri import fmriprep
 
 def _create_gm_flag_from_env() -> bool:
     return os.environ.get("TEST_FMRIPREP_CREATE_GOLDEN_MASTER", "0") == "1"
@@ -19,7 +21,10 @@ def _create_gm_flag_from_env() -> bool:
 
 CREATE_GOLDEN_MASTER = _create_gm_flag_from_env()
 
-TESTS_ROOT = Path("./tests").resolve()
+#: Anchored to this file rather than to the working directory, so the tests
+#: pass no matter where pytest is invoked from.
+TESTS_ROOT = Path(__file__).resolve().parents[2]
+MOCK_GOLDEN_MASTER_DIR = TESTS_ROOT / "data" / "mri" / "golden_master" / "mock"
 REAL_EXPECTED_H5 = TESTS_ROOT / "data" / "mri" / "golden_master" / "real" / "test_output_fmriprep_real_exclude.h5"
 REAL_LABELS_MAPPER_PATH = TESTS_ROOT / "data" / "mri" / "golden_master" / "real" / "temp.tsv"
 
@@ -89,16 +94,6 @@ VOLUME_NATIVE_CHECK_KEYS = [
     "voxel_j",
     "voxel_k",
 ]
-
-MODULE_PATH = Path(__file__).resolve().parents[3] / "bdpy" / "mri" / "fmriprep.py"
-MODULE_SPEC = importlib.util.spec_from_file_location("bdpy.mri.fmriprep", MODULE_PATH)
-if MODULE_SPEC is None or MODULE_SPEC.loader is None:  # pragma: no cover - defensive
-    raise ImportError("Unable to load bdpy.mri.fmriprep specification.")
-fmriprep = importlib.util.module_from_spec(MODULE_SPEC)
-sys.modules["bdpy.mri.fmriprep"] = fmriprep
-MODULE_SPEC.loader.exec_module(fmriprep)
-fake_bdpy_mri.fmriprep = fmriprep
-
 
 def _get_private(name: str) -> object:
     mangled = f"_fmriprep__{name}"
