@@ -24,27 +24,9 @@ Files whose names begin with `_` hold no tests and are not collected by pytest:
 - `_support.py`: loads `fmriprep.py`, the shared key list, real-dataset paths, `RealDatasetMixin`
 - `_mock_fixtures.py`: `MockBidsBuilder`, the shared `DATA_BUILDER`, `MockDatasetMixin`, and
   the helper that rebuilds the expected BData without going through production code
-
-### The two golden masters are not equally strong
-
-Both suites compare against a stored `.h5`, but the stored value means different things,
-which decides how much a failure tells you.
-
-The **mock** ones are built by `build_expected_bdata_after_exclude`, which re-derives the
-expectation from the source files with nibabel, independently of `create_bdata_fmriprep`.
-A mismatch means production disagrees with an independent calculation.
-
-The **real** one is a recording of `create_bdata_fmriprep`'s own output. Its only claim is
-"this is what it did last time", so it pins current behaviour including any bug that
-behaviour currently has. A mismatch means something changed, not that something broke.
-This is why it is not called a ground truth: nothing outside the code under test attests
-that those numbers are right.
-
 - `scripts/mock/`: helper scripts for mock golden-master preparation and test execution
 - `scripts/real/`: helper scripts for downloading the real-data fixture and running the real-data test
 - `scripts/fixture_generation/`: scripts for regenerating the published fixture from the raw dataset; not needed to run the tests
-
-For test coverage and maintenance notes, see `TEST_COVERAGE.md`.
 
 ## Dependencies
 
