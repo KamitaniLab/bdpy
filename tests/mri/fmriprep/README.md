@@ -21,12 +21,29 @@ rejecting an unknown dtype, say — is a unit test and belongs in `test_mock_onl
 
 Files whose names begin with `_` hold no tests and are not collected by pytest:
 
-- `_support.py`: loads `fmriprep.py`, the shared key list, real-dataset paths, `RealDatasetMixin`
+- `_support.py`: the shared key list, real-dataset paths, and `RealDatasetMixin`
 - `_mock_fixtures.py`: `MockBidsBuilder`, the shared `DATA_BUILDER`, `MockDatasetMixin`, and
   the helper that rebuilds the expected BData without going through production code
 - `scripts/mock/`: helper scripts for mock golden-master preparation and test execution
 - `scripts/real/`: helper scripts for downloading the real-data fixture and running the real-data test
 - `scripts/fixture_generation/`: scripts for regenerating the published fixture from the raw dataset; not needed to run the tests
+
+### The two golden masters are not equally strong
+
+Both suites compare against a stored `.h5`, but the stored value means different things,
+which decides how much a failure tells you.
+
+The **mock** ones are built by `build_expected_bdata_after_exclude`, which re-derives the
+expectation from the source files with nibabel, independently of `create_bdata_fmriprep`.
+A mismatch means production disagrees with an independent calculation.
+
+The **real** one is a recording of `create_bdata_fmriprep`'s own output. Its only claim is
+"this is what it did last time", so it pins current behaviour including any bug that
+behaviour currently has. A mismatch means something changed, not that something broke.
+This is why it is not called a ground truth: nothing outside the code under test attests
+that those numbers are right.
+
+For per-function test coverage, remaining gaps, and maintenance notes, see `TEST_COVERAGE.md`.
 
 ## Dependencies
 
@@ -49,10 +66,11 @@ If `PYTHON_BIN` is unset, the helper scripts default to `python`.
 
 ## Mock Tests
 
-Run the mock-only suite directly:
+Run everything that needs no external fixture — `test_mock_only.py` plus the mock half
+of `test_both_datasets.py`. The real-data tests are deselected automatically:
 
 ```bash
-"${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/test_mock_only.py
+"${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/
 ```
 
 Or use the helper scripts:
@@ -65,7 +83,7 @@ bash ./tests/mri/fmriprep/scripts/mock/step_2_run_test.sh
 Script roles:
 
 - `step_1_prepare_gm.sh`: creates missing mock golden-master files if needed
-- `step_2_run_test.sh`: runs `test_mock_only.py`
+- `step_2_run_test.sh`: runs every test under `tests/mri/fmriprep/` that needs no external fixture
 
 Mock golden-master files:
 
@@ -87,9 +105,10 @@ invocation — `pytest tests`, `pytest tests -m "not slow"` — skips over them.
 They read a multi-GB fixture and take minutes, so opting in is explicit:
 
 ```bash
-"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/test_real_only.py
-# or, for every real-data test under this directory:
+# every real-data test: the shared tests plus the stored-expectation comparison
 "${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/
+# or just the stored-expectation comparison
+"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/test_real_only.py
 ```
 
 The `-m real_data` is required: without it the default deselection applies and
@@ -125,7 +144,7 @@ bash ./tests/mri/fmriprep/scripts/real/step_2_run_test.sh
 Script roles:
 
 - `step_1_figshare_download.sh`: downloads the fixture, verifies its md5, and extracts it under `./tests/data/mri/`
-- `step_2_run_test.sh`: runs `test_real_only.py` with `-m real_data`
+- `step_2_run_test.sh`: runs every `real_data` test under `tests/mri/fmriprep/`
 
 The download is explicit and never happens during a normal `pytest` run, so
 `pytest` stays offline by default. Once the fixture has been downloaded, the
@@ -176,7 +195,9 @@ Only needed if the fixture itself has to change. The raw-dataset download, FreeS
 ## Notes
 
 - The split `mock` / `real` structure replaced the older `USE_REAL`-based mixed test module.
-- The current recommended entry points are `test_mock_only.py` and `test_real_only.py`.
+- The entry points are `test_both_datasets.py`, `test_mock_only.py`, and `test_real_only.py`.
+  Running `pytest ./tests/mri/fmriprep/` covers all three; naming a single file runs only
+  part of the suite.
 - The real-data helper scripts and tests prefer `./tests/data/mri/ds006319`. The test helpers also accept the older `./tests/data/ds006319` layout for compatibility.
 
 ## Submission Checklist
@@ -184,11 +205,12 @@ Only needed if the fixture itself has to change. The raw-dataset download, FreeS
 Before submitting, run this minimal checklist from the project root:
 
 ```bash
-# 1) Mock tests
-"${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/test_mock_only.py
+# 1) Everything that needs no external fixture: test_mock_only.py plus the
+#    mock half of test_both_datasets.py. Real-data tests are deselected here.
+"${PYTHON_BIN:-python}" -m pytest ./tests/mri/fmriprep/
 
 # 2) Real-data tests (after step_1_figshare_download.sh has fetched the fixture)
-"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/test_real_only.py
+"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/
 
 # 3) Verify golden-master files exist
 test -f ./tests/data/mri/golden_master/mock/test_output_fmriprep_subject.h5
