@@ -11,6 +11,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any, Optional
 
 import bdpy
 from bdpy.mri import fmriprep
@@ -95,7 +96,13 @@ VOLUME_NATIVE_CHECK_KEYS = [
     "voxel_k",
 ]
 
-def _get_private(name: str) -> object:
+def _get_private(name: str) -> Any:
+    """Reach a module-private function through its name-mangled attribute.
+
+    Returns ``Any`` rather than ``object`` because every caller immediately
+    calls the result; a precise type would have to enumerate each private
+    signature for no benefit to the tests.
+    """
     mangled = f"_fmriprep__{name}"
     if hasattr(fmriprep, mangled):
         return getattr(fmriprep, mangled)
@@ -109,6 +116,13 @@ class RealDatasetMixin(unittest.TestCase):
     #: on the dataset itself rather than on a recorded result set this False so
     #: they run with only the 478 MB fixture present.
     requires_golden_master: bool = True
+
+    # --- assigned by setUpClass; declared so type checking sees them ---------
+    data_root: Path
+    label_mapper: Optional[dict[str, str]]
+    expected_bdata: Optional[bdpy.BData]
+    check_keys: list[str]
+    _runtime_label_mapper_tmpdir: Optional[tempfile.TemporaryDirectory]
 
     @staticmethod
     def _create_runtime_label_mapper(data_root: Path) -> tuple[tempfile.TemporaryDirectory, Path]:
@@ -184,6 +198,7 @@ class RealDatasetMixin(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        if getattr(cls, "_runtime_label_mapper_tmpdir", None) is not None:
-            cls._runtime_label_mapper_tmpdir.cleanup()
+        tmpdir = getattr(cls, "_runtime_label_mapper_tmpdir", None)
+        if tmpdir is not None:
+            tmpdir.cleanup()
         return super().tearDownClass()

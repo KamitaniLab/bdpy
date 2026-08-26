@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
+import shutil
 import tempfile
 
 import nibabel as nib
 import numpy as np
+import pytest
 from nibabel.gifti import GiftiDataArray, GiftiImage
 
 import bdpy
@@ -49,13 +51,13 @@ class TestFmriprepDataMock(MockDatasetMixin):
     def test_fmriprep_parse_session(self) -> None:
         """Verify parsing a session yields the expected runs."""
         prepdir = (self.data_root / "derivatives" / "fmriprep" / "fmriprep").as_posix()
-        instance = fmriprep.FmriprepData(self.data_root.as_posix())
+        instance: Any = fmriprep.FmriprepData(self.data_root.as_posix())
         runs = instance._FmriprepData__parse_session(prepdir, self.subject, "ses-01")
         self.assertEqual(runs, DATA_BUILDER.expected_runs["ses-01"])
 
     def test_fmriprep_parse_data(self) -> None:
         """Verify full dataset parsing matches the mock fixture."""
-        instance = fmriprep.FmriprepData(self.data_root.as_posix())
+        instance: Any = fmriprep.FmriprepData(self.data_root.as_posix())
         instance._FmriprepData__parse_data()
         self.assertEqual(instance._FmriprepData__data, DATA_BUILDER.expected_subject_data)
 
@@ -162,12 +164,12 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
             exclude=exclude,
             data_mode=data_mode,
         )
-    
+
     # helper to get expected sample count after applying exclude
     def _expected_sample_count(self, exclude: Optional[dict] = None) -> int:
         """Return the expected sample count after exclusions."""
         return int(self._expected_after_exclude(exclude).get("VoxelData").shape[0])
-    
+
     def test_create_bdata_fmriprep_gm(self) -> None:
         """Match the generated mock BData against the golden master."""
         # CAUTION: this test compares against a stored golden master. Adding or
@@ -180,7 +182,7 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
             save_path.parent.mkdir(parents=True, exist_ok=True)
             expected_bdata.save(str(save_path))
         # -------------------------------------------------------------
-        
+
         expected_bdata = bdpy.BData(str(save_path))
         bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
             dpath=self.data_root.as_posix(),
@@ -202,7 +204,7 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         """Match excluded mock BData against the golden master."""
         # CAUTION: this test compares against a stored golden master. Adding or
         # changing coverage means regenerating it (see README.md).
-        
+
         exclude_list = [{"subject": ["sub-4649"], "session/run": [[1, 2], None]}]
         for exclude in exclude_list:
             save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject_exclude.h5"
@@ -210,11 +212,11 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
             # FOR GOLDEN MASTER UPDATE ONLY:
             if CREATE_GOLDEN_MASTER:
                 expected_bdata = self._expected_after_exclude(exclude)
-                
+
                 save_path.parent.mkdir(parents=True, exist_ok=True)
                 expected_bdata.save(str(save_path))
             # -------------------------------------------------------------
-            
+
             expected_bdata = bdpy.BData(str(save_path))
             bdata_list, data_labels_list = fmriprep.create_bdata_fmriprep(
                 dpath=self.data_root.as_posix(),
@@ -375,6 +377,10 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
 
 class TestBrainDataMock(unittest.TestCase):
     """Tests for BrainData helpers using mock files."""
+
+    # --- assigned by setUpClass; declared so type checking sees them ---------
+    data_root: Path
+    surface_run: tuple[str, str]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -606,6 +612,96 @@ class TestBrainDataVolumeMock(unittest.TestCase):
             nib.save(nib.Nifti1Image(np.zeros((2, 2)), np.eye(4)), path)
             with self.assertRaises(ValueError):
                 fmriprep.BrainData(path.as_posix(), dtype="volume")
+
+
+class SecondSubjectBuilder(MockBidsBuilder):
+    """A second mock subject, ordered before the default one.
+
+    ``sub-0001`` sorts ahead of ``sub-0840``, so excluding it exercises the
+    case where the excluded subject is *not* the last key of the OrderedDict.
+    """
+
+    subject = "sub-0001"
+
+
+class TestExcludeMultipleSubjectsMock(unittest.TestCase):
+    """Exclusion against a dataset holding more than one subject.
+
+    Every other exclusion test uses the single-subject mock tree, where
+    deleting the subject empties the OrderedDict and the loop in
+    ``create_bdata_fmriprep`` ends before it can notice the mutation. Two
+    subjects are needed to reach the case below.
+    """
+
+    # --- assigned by setUpClass; declared so type checking sees them ---------
+    data_root: Path
+    label_mapper: dict[str, str]
+    _builders: list[MockBidsBuilder]
+    _tmp: tempfile.TemporaryDirectory
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Merge two single-subject mock trees into one dataset."""
+        cls._builders = [MockBidsBuilder(), SecondSubjectBuilder()]
+        for builder in cls._builders:
+            builder.build()
+        cls._tmp = tempfile.TemporaryDirectory(prefix="test_fmriprep_two_subjects_")
+        cls.data_root = Path(cls._tmp.name)
+        for builder in cls._builders:
+            shutil.copytree(builder.root, cls.data_root, dirs_exist_ok=True)
+        cls.label_mapper = {"stimulus_name": str(cls.data_root / "label_mapper.tsv")}
+        return super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """Remove both source trees and the merged copy."""
+        cls._tmp.cleanup()
+        for builder in cls._builders:
+            builder.cleanup()
+        return super().tearDownClass()
+
+    def _create(self, exclude: dict) -> list:
+        """Run create_bdata_fmriprep over the two-subject dataset."""
+        bdata_list: list
+        bdata_list, _ = fmriprep.create_bdata_fmriprep(
+            dpath=self.data_root.as_posix(),
+            data_mode="volume_native",
+            fmriprep_dir="derivatives/fmriprep",
+            label_mapper=self.label_mapper,
+            exclude=exclude,
+            with_confounds=False,
+            return_data_labels=True,
+            return_list=True,
+        )
+        return bdata_list
+
+    def test_both_subjects_are_discovered(self) -> None:
+        """The merged tree really does hold two subjects."""
+        data = fmriprep.FmriprepData(
+            self.data_root.as_posix(), fmriprep_dir="derivatives/fmriprep"
+        )
+        self.assertEqual(list(data.data.keys()), ["sub-0001", "sub-0840"])
+
+    def test_excluding_the_last_subject_keeps_the_other(self) -> None:
+        """Excluding the final key never triggers the mutation."""
+        bdata_list = self._create({"subject": ["sub-0840"]})
+        self.assertEqual(len(bdata_list), 1)
+
+    @pytest.mark.xfail(
+        strict=True,
+        raises=RuntimeError,
+        reason=(
+            "bdpy/mri/fmriprep.py deletes from fmriprep.data while iterating over "
+            "it, so excluding any subject other than the last raises "
+            "RuntimeError: OrderedDict mutated during iteration. Reported "
+            "upstream rather than fixed here; when it is fixed this test turns "
+            "into an XPASS and should become a plain assertion."
+        ),
+    )
+    def test_excluding_a_non_final_subject(self) -> None:
+        """Excluding a subject that is not the last key should still work."""
+        bdata_list = self._create({"subject": ["sub-0001"]})
+        self.assertEqual(len(bdata_list), 1)
 
 
 if __name__ == "__main__":  # pragma: no cover

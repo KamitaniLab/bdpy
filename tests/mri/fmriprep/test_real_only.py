@@ -42,6 +42,9 @@ class TestCreateBdataFmriprepReal(RealDatasetMixin):
             brain_data.save(str(REAL_EXPECTED_H5))
             return None
 
+        # requires_golden_master is True for this class, so setUpClass has
+        # either loaded the h5 or raised; the assert states that for mypy.
+        assert self.expected_bdata is not None
         for key in self.check_keys:
             actual = np.asarray(brain_data.get(key))
             expected = np.asarray(self.expected_bdata.get(key))

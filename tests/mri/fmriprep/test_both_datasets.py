@@ -33,13 +33,24 @@ import inspect
 import unittest
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 import pytest
 
 from ._support import RealDatasetMixin, fmriprep
 from ._mock_fixtures import DATA_BUILDER, MockBidsBuilder, MockDatasetMixin
+
+if TYPE_CHECKING:
+    #: Type-checking only. The invariant classes below call ``self.assertEqual``
+    #: and friends, but must not be ``unittest.TestCase`` subclasses at runtime:
+    #: pytest collects every TestCase subclass regardless of its name, and would
+    #: run these with the subclass-supplied attributes unset. The concrete
+    #: classes at the bottom pick up ``TestCase`` from the dataset mixins.
+    _AssertsOnly = unittest.TestCase
+else:
+    _AssertsOnly = object
+
 
 #: Keys that ``FmriprepData.__parse_session`` must place on every run.
 RUN_KEYS = (
@@ -72,7 +83,7 @@ def read_label_mapper_file(path: str) -> dict[str, int]:
     return mapping
 
 
-class DatasetInvariants:
+class DatasetInvariants(_AssertsOnly):
     """Shared helpers for the invariant classes below.
 
     Deliberately not a ``unittest.TestCase`` and deliberately not named
@@ -134,7 +145,7 @@ class DatasetInvariants:
 class FmriprepDataInvariants(DatasetInvariants):
     """Directory scanning must find the same structure in any dataset."""
 
-    covers = (
+    covers: tuple[str, ...] = (
         "FmriprepData.data",
         "FmriprepData.__parse_data",
         "FmriprepData.__parse_session",
@@ -213,7 +224,7 @@ class FmriprepDataInvariants(DatasetInvariants):
 class LabelMapperInvariants(DatasetInvariants):
     """A dataset's label mapper must cover the labels its events use."""
 
-    covers = ("LabelMapper.get_value", "LabelMapper.dump")
+    covers: tuple[str, ...] = ("LabelMapper.get_value", "LabelMapper.dump")
 
     def _event_labels(self) -> set[str]:
         """Collect every non-``n/a`` stimulus name used in the raw events."""
@@ -273,7 +284,7 @@ class LabelMapperInvariants(DatasetInvariants):
 class BrainDataInvariants(DatasetInvariants):
     """Loading one run must yield mutually consistent data and coordinates."""
 
-    covers = (
+    covers: tuple[str, ...] = (
         "BrainData.data",
         "BrainData.xyz",
         "BrainData.index",
@@ -316,7 +327,7 @@ class BrainDataInvariants(DatasetInvariants):
 class SingleSubjectInvariants(DatasetInvariants):
     """One run through the subject-level builder must produce aligned columns."""
 
-    covers = ("create_bdata_singlesubject",)
+    covers: tuple[str, ...] = ("create_bdata_singlesubject",)
 
     def test_single_run_bdata_lines_up_with_its_source_image(self) -> None:
         """One run yields a BData whose rows and columns match the source.
@@ -358,7 +369,7 @@ class SingleSubjectInvariants(DatasetInvariants):
 class CreateBdataInvariants(DatasetInvariants):
     """Top-level entry point invariants that cost nothing to check."""
 
-    covers = ("create_bdata_fmriprep",)
+    covers: tuple[str, ...] = ("create_bdata_fmriprep",)
 
     def test_excluding_every_subject_returns_empty_lists(self) -> None:
         """Excluding all subjects yields no output and reads no volumes.
@@ -440,7 +451,7 @@ def public_api_names() -> set[str]:
     return names
 
 
-class ApiCoverageCheck:
+class ApiCoverageCheck(_AssertsOnly):
     """Fail when production code grows an API that no test claims.
 
     Dataset-independent, so the concrete real-data class below does not

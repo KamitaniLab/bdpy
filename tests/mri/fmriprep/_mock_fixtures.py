@@ -1,4 +1,4 @@
-""" 
+"""
 Utilities for mock fmriprep tests (builders, loaders, expected data).
 
 All fixtures here are tailored to fmriprep version 1.2 filename patterns and
@@ -293,15 +293,19 @@ def build_expected_bdata_after_exclude(
     class _LabelMapper:
         def __init__(self, l2v_map: Dict[str, Dict[str, int]]):
             self._l2v_map = l2v_map
-            self._v2l_map: Dict[str, Dict[int, str]] = {}
+            self._v2l_map: Dict[str, Dict[float, str]] = {}
 
-        def get_value(self, mkey: str, label: str) -> int:
-            """Map a label to a value according to the label mapper, with error checking."""
+        def get_value(self, mkey: str, label: str) -> float:
+            """Map a label to a value according to the label mapper, with error checking.
+
+            Returns ``float`` rather than ``int`` because ``"n/a"`` maps to NaN,
+            exactly as ``LabelMapper.get_value`` in production does.
+            """
             if mkey not in self._l2v_map:
                 raise RuntimeError(f"{mkey} not found in label mapper")
 
             if label == "n/a":
-                return np.nan
+                return float("nan")
 
             if label not in self._l2v_map[mkey]:
                 raise RuntimeError(f"{label} not found in label mapper for {mkey}")
@@ -317,7 +321,7 @@ def build_expected_bdata_after_exclude(
                 self._v2l_map[mkey].update({val: label})
             return val
 
-        def dump(self) -> Dict[str, Dict[int, str]]:
+        def dump(self) -> Dict[str, Dict[float, str]]:
             return self._v2l_map
 
     act_label_map = _LabelMapper(label_mapper_dict)
@@ -569,6 +573,11 @@ DATA_BUILDER.build()
 
 class MockDatasetMixin(unittest.TestCase):
     """Mixin providing access to the shared mock dataset."""
+
+    # --- assigned by setUpClass; declared so type checking sees them ---------
+    data_root: Path
+    subject: str
+    label_mapper: Optional[Dict[str, str]]
 
     @classmethod
     def setUpClass(cls) -> None:
