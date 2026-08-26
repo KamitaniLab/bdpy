@@ -41,7 +41,7 @@ on purpose:
 | Command | What runs | Needs |
 | --- | --- | --- |
 | `pytest tests` | synthetic only; every real-data test is deselected | nothing |
-| `pytest -m real_data_quick` | the shared tests against the real fixture, ~70 s | the 478 MB dataset |
+| `pytest -m real_data_quick` | the shared tests against the real fixture, ~60 s | the 478 MB dataset |
 | `pytest -m real_data` | the above plus the stored-expectation comparison, minutes | the dataset **and** the 2.5 GB h5 |
 
 ## Functions and Classes in `bdpy/mri/fmriprep.py`
@@ -69,7 +69,7 @@ Top-level orchestrator. Parses with `FmriprepData`, applies exclusions (`subject
 | Test status | Partially covered; known issues remain |
 | Real-data dependency | Replaced by mock data |
 | Existing tests | `TestCreateBdataFmriprepMock`: golden masters (with/without exclusion for `volume_native`; `surface_native` with `with_confounds=True`), surface-standard shape variants, `split_task_label=True` for single-task mock data, empty list when subject excluded / `TestExcludeMultipleSubjectsMock`: exclusion against a two-subject tree, including the `xfail` that reproduces the mutation bug below / `TestFmriprepDataFailures` (execution failures): missing confounds, missing motion columns, unknown labels |
-| Gaps / issues | (1) Mutation-while-iterating bug, reported upstream as issue #125 and **reproduced** by `TestExcludeMultipleSubjectsMock.test_excluding_a_non_final_subject`: deleting from `fmriprep.data` (`OrderedDict`) while iterating it raises `RuntimeError: OrderedDict mutated during iteration` whenever the excluded subject is not the last key. The test is marked `xfail(strict=True)`, so it turns into an XPASS — and therefore a failure — the moment #125 is fixed, which is the signal to replace it with a plain assertion. (2) `split_task_label=True` is exercised with a single task only. The multi-task case (where `bdata_list` has multiple elements) is covered **nowhere**: the figshare fixture adopted in `23d62e4` also carries a single task, so the earlier claim that `test_real_only.py` covered it is stale. Extending `MockBidsBuilder` for multi-task is the follow-up, and forces the three mock golden masters to be regenerated. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
+| Gaps / issues | (1) Mutation-while-iterating bug, reported upstream as issue #125 and **reproduced** by `TestExcludeMultipleSubjectsMock.test_excluding_a_non_final_subject`: deleting from `fmriprep.data` (`OrderedDict`) while iterating it raises `RuntimeError: OrderedDict mutated during iteration` whenever the excluded subject is not the last key. The test is marked `xfail(strict=True)`, so it turns into an XPASS — and therefore a failure — the moment #125 is fixed, which is the signal to replace it with a plain assertion. (2) `split_task_label=True` is exercised with a single task only. The multi-task case (where `bdata_list` has multiple elements) is covered **nowhere**. `test_real_only.py` does pass `split_task_label=True`, but asserts `len(bdata_list) == 1`: the figshare fixture carries a single task (`task-vggsoundtest`), so the earlier claim that it covered the multi-task case is not correct. Extending `MockBidsBuilder` for multi-task is the follow-up, and forces the three mock golden masters to be regenerated. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
 
 ### BrainData (class)
 
@@ -140,9 +140,12 @@ Loads a NIfTI volume via `nibabel` and populates `data`, `xyz`, and `index` for 
   (`test_create_bdata_fmriprep_split_task_label_single_task`) and the combination with
   `exclude` (`test_create_bdata_fmriprep_split_task_label_with_exclude`), which mirrors the
   parameters of the real-data test so that combination is covered without the multi-GB fixture.
-- **Multi-task `split_task_label` is covered nowhere.** Earlier notes claimed the real-data test
-  covered it, but the figshare fixture adopted in `23d62e4` carries a single task
-  (`task-vggsoundtest`), so neither fixture takes the branch that returns more than one BData.
+- **Multi-task `split_task_label` is covered nowhere.** Earlier notes claimed the real-data
+  test covered it; that is not so. `test_real_only.py` does pass `split_task_label=True`, so
+  the branch runs, but it asserts `len(bdata_list) == 1` — the figshare fixture carries a
+  single task (`task-vggsoundtest`), as does the mock dataset, so neither reaches the
+  multi-element return. The local dataset that preceded the fixture came from the same
+  source, so the claim was most likely never true rather than made untrue by `23d62e4`.
   Closing this needs `MockBidsBuilder` to grow a second task, which forces the three mock
   golden-master files to be regenerated. Recorded in `UNCOVERED_BEHAVIOUR` in
   `test_both_datasets.py`.

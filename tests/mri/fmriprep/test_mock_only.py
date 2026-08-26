@@ -280,10 +280,11 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
             master because there is only one task to split on.
 
         Multi-task split (where bdata_list has more than one element) is NOT
-        covered anywhere. It used to be reachable through the real-data test,
-        but the figshare fixture adopted in 23d62e4 carries a single task
-        (task-vggsoundtest), so neither fixture takes that branch. Recorded in
-        UNCOVERED_BEHAVIOUR in test_both_datasets.py.
+        covered anywhere. Earlier notes said the real-data test covered it; that
+        is not so. test_real_only.py does pass split_task_label=True, but it
+        asserts len(bdata_list) == 1, because the figshare fixture carries a
+        single task (task-vggsoundtest). Recorded in UNCOVERED_BEHAVIOUR in
+        test_both_datasets.py.
         """
         save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject.h5"
         expected_bdata = bdpy.BData(str(save_path))

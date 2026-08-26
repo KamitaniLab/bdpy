@@ -120,5 +120,5 @@ disable = "line-too-long"
 # unrelated `-m "not slow"` would otherwise re-enable them.
 markers = [
     "real_data: tests that require an external fMRIPrep dataset (e.g. OpenNeuro ds006319). Deselected by default in tests/conftest.py; run with `pytest -m real_data` locally.",
-    "real_data_quick: the subset of real_data tests that need only the 478 MB dataset, not the 2.5 GB stored expectation, and finish in about 70 seconds. Also marked real_data, so the default deselection still covers them; run with `pytest -m real_data_quick`.",
+    "real_data_quick: the subset of real_data tests that need only the 478 MB dataset, not the 2.5 GB stored expectation, and finish in about a minute. Also marked real_data, so the default deselection still covers them; run with `pytest -m real_data_quick`.",
 ]

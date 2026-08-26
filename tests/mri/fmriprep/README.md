@@ -119,8 +119,8 @@ nothing is collected.
 Not every real-data test needs the full fixture. The shared tests in
 `test_both_datasets.py` assert properties of the dataset itself rather than
 comparing against a recorded result, so they need only the 478 MB dataset — not the
-2.5 GB `test_output_fmriprep_real_exclude.h5` — and finish in about 70 seconds instead
-of minutes. They carry `real_data_quick` in addition to `real_data`:
+2.5 GB `test_output_fmriprep_real_exclude.h5` — and finish in about a minute instead of
+five. They carry `real_data_quick` in addition to `real_data`:
 
 ```bash
 "${PYTHON_BIN:-python}" -m pytest -m real_data_quick ./tests/mri/fmriprep/
