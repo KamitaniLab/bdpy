@@ -410,8 +410,11 @@ UNCOVERED_API: dict[str, str] = {}
 UNCOVERED_BEHAVIOUR: dict[str, str] = {
     "create_bdata_fmriprep: split_task_label with multiple tasks": (
         "Both fixtures carry a single task, so the branch that returns more "
-        "than one BData is never taken. Needs MockBidsBuilder to grow a second "
-        "task, which forces the stored expectation files to be regenerated."
+        "than one BData is never taken. Left uncovered on purpose: splitting by "
+        "task is not how this module is normally used here, so the published "
+        "real-data fixture was not built for it. Covering it means teaching "
+        "MockBidsBuilder a second task, which is the cheaper side to do it on -- "
+        "it costs regenerating the mock golden masters and no download."
     ),
     "__create_bdata_fmriprep_subject: cut_duration < 0": (
         "The NotImplementedError path needs an events file whose duration "

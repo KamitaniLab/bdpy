@@ -69,7 +69,7 @@ Top-level orchestrator. Parses with `FmriprepData`, applies exclusions (`subject
 | Test status | Partially covered; known issues remain |
 | Real-data dependency | Replaced by mock data |
 | Existing tests | `TestCreateBdataFmriprepMock`: golden masters (with/without exclusion for `volume_native`; `surface_native` with `with_confounds=True`), surface-standard shape variants, `split_task_label=True` for single-task mock data, empty list when subject excluded / `TestExcludeMultipleSubjectsMock`: exclusion against a two-subject tree, including the `xfail` that reproduces the mutation bug below / `TestFmriprepDataFailures` (execution failures): missing confounds, missing motion columns, unknown labels |
-| Gaps / issues | (1) Mutation-while-iterating bug, reported upstream as issue #125 and **reproduced** by `TestExcludeMultipleSubjectsMock.test_excluding_a_non_final_subject`: deleting from `fmriprep.data` (`OrderedDict`) while iterating it raises `RuntimeError: OrderedDict mutated during iteration` whenever the excluded subject is not the last key. The test is marked `xfail(strict=True)`, so it turns into an XPASS — and therefore a failure — the moment #125 is fixed, which is the signal to replace it with a plain assertion. (2) `split_task_label=True` is exercised with a single task only. The multi-task case (where `bdata_list` has multiple elements) is covered **nowhere**. `test_real_only.py` does pass `split_task_label=True`, but asserts `len(bdata_list) == 1`: the figshare fixture carries a single task (`task-vggsoundtest`), so the earlier claim that it covered the multi-task case is not correct. Extending `MockBidsBuilder` for multi-task is the follow-up, and forces the three mock golden masters to be regenerated. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
+| Gaps / issues | (1) Mutation-while-iterating bug, reported upstream as issue #125 and **reproduced** by `TestExcludeMultipleSubjectsMock.test_excluding_a_non_final_subject`: deleting from `fmriprep.data` (`OrderedDict`) while iterating it raises `RuntimeError: OrderedDict mutated during iteration` whenever the excluded subject is not the last key. The test is marked `xfail(strict=True)`, so it turns into an XPASS — and therefore a failure — the moment #125 is fixed, which is the signal to replace it with a plain assertion. (2) `split_task_label=True` is exercised with a single task only. The multi-task case (where `bdata_list` has multiple elements) is covered **nowhere**. `test_real_only.py` does pass `split_task_label=True`, but asserts `len(bdata_list) == 1`: the figshare fixture carries a single task (`task-vggsoundtest`), so the earlier claim that it covered the multi-task case is not correct. Left this way on purpose — splitting by task is not how the module is normally used here, so the published fixture was not built for it. If it is wanted, `MockBidsBuilder` is the cheaper side: a second task there costs regenerating the three mock golden masters and no download. (3) No focused unit test for csv/tsv `label_mapper` loading logic. (4) No explicit test for `return_list=False` single-BData return path. |
 
 ### BrainData (class)
 
@@ -144,11 +144,11 @@ Loads a NIfTI volume via `nibabel` and populates `data`, `xyz`, and `index` for 
   test covered it; that is not so. `test_real_only.py` does pass `split_task_label=True`, so
   the branch runs, but it asserts `len(bdata_list) == 1` — the figshare fixture carries a
   single task (`task-vggsoundtest`), as does the mock dataset, so neither reaches the
-  multi-element return. The local dataset that preceded the fixture came from the same
-  source, so the claim was most likely never true rather than made untrue by `23d62e4`.
-  Closing this needs `MockBidsBuilder` to grow a second task, which forces the three mock
-  golden-master files to be regenerated. Recorded in `UNCOVERED_BEHAVIOUR` in
-  `test_both_datasets.py`.
+  multi-element return. This is deliberate: splitting by task is not how the module is
+  normally used here, so the published real-data fixture was not built for it. If the
+  coverage is wanted, `MockBidsBuilder` is the cheaper side to add it on — a second task
+  there costs regenerating the three mock golden-master files and no download. Recorded in
+  `UNCOVERED_BEHAVIOUR` in `test_both_datasets.py`.
 - Real-data tests (`test_real_only.py`) are marked with `pytest.mark.real_data` and are
   deselected by default in `tests/conftest.py`; opt in with `pytest -m real_data`.
   Their volume-mode key list (`VOLUME_NATIVE_CHECK_KEYS` in `_support.py`) is shared

@@ -283,8 +283,9 @@ class TestCreateBdataFmriprepMock(MockDatasetMixin):
         covered anywhere. Earlier notes said the real-data test covered it; that
         is not so. test_real_only.py does pass split_task_label=True, but it
         asserts len(bdata_list) == 1, because the figshare fixture carries a
-        single task (task-vggsoundtest). Recorded in UNCOVERED_BEHAVIOUR in
-        test_both_datasets.py.
+        single task (task-vggsoundtest). That is deliberate -- splitting by task
+        is not how this module is normally used here. Recorded with the reasoning
+        in UNCOVERED_BEHAVIOUR in test_both_datasets.py.
         """
         save_path = MOCK_GOLDEN_MASTER_DIR / "test_output_fmriprep_subject.h5"
         expected_bdata = bdpy.BData(str(save_path))
