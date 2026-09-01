@@ -537,8 +537,9 @@ class TestFmriprepInvariantsReal(
     requires_golden_master = False
 
     expected_subjects = ["sub-S1"]
-    #: ses-SoundTest01 holds no runs; the fixture ships it as a placeholder for
-    #: the session bookkeeping, and scanning must still report it.
+    #: ses-SoundTest01 holds no runs: the test excludes all of them, so the
+    #: minimal fixture ships the session directory empty. It has to stay, since
+    #: `exclude` addresses sessions by position, and scanning must report it.
     expected_sessions = ["ses-SoundTest01", "ses-SoundTest02"]
     #: The published fixture contains T1w volumes only.
     supported_modes = ("volume_native",)
