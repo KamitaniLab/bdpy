@@ -23,9 +23,9 @@ def pytest_collection_modifyitems(
     ``pytest tests -m "not slow"`` into a failure on any machine without the
     multi-GB download.
 
-    Asking for the tests means naming the marker: ``-m real_data`` or
-    ``-m real_data_quick``. Both contain the marker name, and pytest applies
-    its own filtering afterwards, so this hook simply steps aside.
+    Asking for the tests means naming the marker: ``-m real_data``. That
+    expression contains the marker name, and pytest applies its own filtering
+    afterwards, so this hook simply steps aside.
     """
     markexpr = config.getoption("markexpr", default="") or ""
     if REAL_DATA_MARKER in markexpr:

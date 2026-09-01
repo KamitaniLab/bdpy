@@ -518,7 +518,6 @@ class TestFmriprepInvariantsMock(
 
 
 @pytest.mark.real_data
-@pytest.mark.real_data_quick
 class TestFmriprepInvariantsReal(
     FmriprepDataInvariants,
     LabelMapperInvariants,

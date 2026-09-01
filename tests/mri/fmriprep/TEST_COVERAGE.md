@@ -41,7 +41,7 @@ on purpose:
 | Command | What runs | Needs |
 | --- | --- | --- |
 | `pytest tests` | synthetic only; every real-data test is deselected | nothing |
-| `pytest -m real_data_quick` | the shared tests against the real fixture, ~60 s | the 478 MB dataset |
+| `pytest -m real_data tests/mri/fmriprep/test_both_datasets.py` | the shared tests against the real fixture, ~60 s | the fixture, but not the 2.5 GB h5 |
 | `pytest -m real_data` | the above plus the stored-expectation comparison, minutes | the dataset **and** the 2.5 GB h5 |
 
 ## Functions and Classes in `bdpy/mri/fmriprep.py`

@@ -114,20 +114,20 @@ They read a multi-GB fixture and take minutes, so opting in is explicit:
 The `-m real_data` is required: without it the default deselection applies and
 nothing is collected.
 
-### The quick subset
+### Running only the shared tests
 
-Not every real-data test needs the full fixture. The shared tests in
-`test_both_datasets.py` assert properties of the dataset itself rather than
-comparing against a recorded result, so they need only the 478 MB dataset — not the
-2.5 GB `test_output_fmriprep_real_exclude.h5` — and finish in about a minute instead of
-five. They carry `real_data_quick` in addition to `real_data`:
+The shared tests in `test_both_datasets.py` assert properties of the dataset itself
+rather than comparing against a recorded result, so they set
+`requires_golden_master = False` and never read the 2.5 GB
+`test_output_fmriprep_real_exclude.h5`. That is the loop worth reaching for while
+working on the scanning code — about a minute instead of five:
 
 ```bash
-"${PYTHON_BIN:-python}" -m pytest -m real_data_quick ./tests/mri/fmriprep/
+"${PYTHON_BIN:-python}" -m pytest -m real_data ./tests/mri/fmriprep/test_both_datasets.py
 ```
 
-Because they are also marked `real_data`, the conftest deselection still hides them from
-a plain `pytest tests`, and `-m real_data` still runs them alongside everything else.
+The download is the same either way: the published fixture is a single archive holding
+both the dataset and the stored expectation.
 
 These are the tests worth reaching for while working on the scanning code: the synthetic
 dataset uses numeric session names (`ses-01`) and gives every run a BOLD image, whereas the
