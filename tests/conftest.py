@@ -28,7 +28,7 @@ def pytest_collection_modifyitems(
     afterwards, so this hook simply steps aside.
     """
     markexpr = config.getoption("markexpr", default="") or ""
-    if REAL_DATA_MARKER in markexpr:
+    if any(tok.strip("()") == REAL_DATA_MARKER for tok in markexpr.split()):
         return
 
     selected: list[pytest.Item] = []
