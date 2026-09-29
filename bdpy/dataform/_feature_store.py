@@ -20,7 +20,7 @@ import os
 from abc import ABC, abstractmethod
 from functools import partial
 from multiprocessing import Pool
-from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import h5py
 import numpy as np
@@ -53,7 +53,15 @@ HDF5_EXT = "h5"
 # A slice spec for the feature axes. Deliberately narrow: basic indexing only,
 # i.e. what ``numpy.s_[128:256]`` or ``numpy.s_[8:16, 1:4]`` produces. See
 # _validate_feature_slice for what is rejected and why.
-BasicIndexer = Union[slice, int, "ellipsis"]  # noqa: F821
+# `types.EllipsisType` is 3.10+, and a bare "ellipsis" forward reference does not
+# resolve at runtime (it is not a Python name), which makes
+# typing.get_type_hints() raise. typeshed does define builtins.ellipsis, so the
+# checker gets the real type and the interpreter gets an equivalent object.
+if TYPE_CHECKING:
+    from builtins import ellipsis
+else:
+    ellipsis = type(Ellipsis)
+BasicIndexer = Union[slice, int, np.integer, ellipsis]
 FeatureSlice = Union[BasicIndexer, Tuple[BasicIndexer, ...], None]
 
 
@@ -135,11 +143,22 @@ def _validate_feature_slice(indexers: Tuple) -> None:
         if ix is Ellipsis or isinstance(ix, (int, np.integer)):
             continue
         if isinstance(ix, slice):
-            step = ix.step
-            if step is not None and step < 1:
+            for part, value in (
+                ("start", ix.start), ("stop", ix.stop), ("step", ix.step),
+            ):
+                if value is None:
+                    continue
+                if isinstance(value, (bool, np.bool_)) or not isinstance(
+                    value, (int, np.integer)
+                ):
+                    raise ValueError(
+                        "feature_slice slice {} must be an integer or None, "
+                        "got {!r}.".format(part, value) + advice
+                    )
+            if ix.step is not None and ix.step < 1:
                 raise ValueError(
                     "feature_slice does not support a step below 1 "
-                    "(got {}).".format(step) + advice
+                    "(got {}).".format(ix.step) + advice
                 )
             continue
         if ix is None:
@@ -197,9 +216,12 @@ class FeatureStore(ABC):
             Stimulus labels to read. ``None`` reads every label in store order.
             Otherwise rows come back **in the order given**, and repeated labels
             yield repeated rows.
-        feature_slice : slice, int, array-like or tuple, optional
+        feature_slice : slice, int, Ellipsis or tuple of those, optional
             Index applied to the feature axes (axes 1 and up), as produced by
-            ``numpy.s_[...]``. ``None`` reads the whole feature tensor.
+            ``numpy.s_[...]``. Basic forward indexing only: slices with a
+            positive step, integers, and at most one ``Ellipsis``. Fancy
+            indexing, a negative step, booleans and ``numpy.newaxis`` raise
+            ``ValueError``. ``None`` reads the whole feature tensor.
 
         Returns
         -------
@@ -596,14 +618,18 @@ def _validate_format(f: h5py.File, path: str) -> List[str]:
             "storage.".format(path, FORMAT_VERSION_ATTR)
         )
     raw_version = f.attrs[FORMAT_VERSION_ATTR]
-    try:
-        version = int(raw_version)
-    except (TypeError, ValueError):
+    # Require an actual integer scalar rather than coercing: int(1.5) would
+    # silently round a malformed version down to a supported one. bool is
+    # checked first because it is a subclass of int.
+    if isinstance(raw_version, (bool, np.bool_)) or not isinstance(
+        raw_version, (int, np.integer)
+    ):
         raise RuntimeError(
             "{} has a malformed {} ({!r}); expected an integer.".format(
                 path, FORMAT_VERSION_ATTR, raw_version
             )
-        ) from None
+        )
+    version = int(raw_version)
     if version < 1:
         raise RuntimeError(
             "{} declares feature storage format version {}; versions start at "

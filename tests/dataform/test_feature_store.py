@@ -162,6 +162,39 @@ class TestIterChunks(_BackendPair):
         # Every block but the last is a whole chunk along the axis.
         self.assertLessEqual(max(sizes), max(1, extent))
 
+    def test_multi_directory_validates_like_a_single_one(self):
+        # The multi-store path does not go through FeatureStore.iter_chunks, so
+        # it used to skip these checks entirely: size=-1 yielded nothing and a
+        # bad axis raised IndexError instead of ValueError.
+        other = os.path.join(self.tmpdir.name, 'other')
+        os.makedirs(other)
+        other_labels = ['other%04d' % i for i in range(3)]
+        for layer, shape in zip(LAYERS, SHAPES):
+            save_features(
+                os.path.join(other, layer + '.h5'),
+                np.random.rand(len(other_labels), *shape[1:]),
+                other_labels,
+            )
+        spread = Features([self.h5dir, other])
+        both = [LABELS[0], other_labels[0]]
+        # Spanning two directories is what takes the fallback path.
+        self.assertEqual(len(spread.get('conv5', label=both)), 2)
+
+        for kwargs in ({'size': -1}, {'size': 0}, {'axis': 9}, {'axis': -9}):
+            with self.subTest(**kwargs):
+                with self.assertRaises(ValueError):
+                    list(spread.iter_chunks('conv5', label=both, **kwargs))
+                with self.assertRaises(ValueError):
+                    list(self.from_h5.iter_chunks('conv5', **kwargs))
+
+    def test_negative_axis_is_accepted(self):
+        by_negative = list(self.from_h5.iter_chunks('conv5', axis=-3, size=4))
+        by_positive = list(self.from_h5.iter_chunks('conv5', axis=1, size=4))
+        self.assertEqual(len(by_negative), len(by_positive))
+        for (sl_a, a), (sl_b, b) in zip(by_negative, by_positive):
+            self.assertEqual(sl_a, sl_b)
+            assert_array_equal(a, b)
+
     def test_rejects_bad_axis(self):
         with self.assertRaises(ValueError):
             list(self.from_h5.iter_chunks('conv5', axis=9))
@@ -211,12 +244,14 @@ class TestPartialReads(_BackendPair):
         self.assertEqual(rows, [1, 9])
         assert_array_equal(out, self.stacked['conv5'][[9, 1, 9]])
 
-    def test_dataset_is_chunked_on_both_sliceable_axes(self):
+    def test_dataset_is_chunked(self):
+        # This fixture is small enough to fit in one chunk, so only the fact
+        # that chunking is enabled can be asserted here. That both sliceable
+        # axes are actually split is a property of the chunk-shape policy and
+        # is tested against a representative large shape in
+        # tests/dataform/test_feature_chunking.py.
         with h5py.File(os.path.join(self.h5dir, 'conv5.h5'), 'r') as f:
-            chunks = f['features'].chunks
-            shape = f['features'].shape
-        self.assertIsNotNone(chunks)
-        self.assertEqual(chunks[2:], shape[2:])  # spatial axes kept whole
+            self.assertIsNotNone(f['features'].chunks)
 
 
 class TestFeatureSliceValidation(_BackendPair):
@@ -250,6 +285,10 @@ class TestFeatureSliceValidation(_BackendPair):
         ('numpy bool', np.True_),
         ('newaxis in tuple', (np.newaxis, slice(None))),
         ('two ellipses', (Ellipsis, Ellipsis)),
+        ('float start', slice(1.5, 3)),
+        ('float stop', slice(1, 3.5)),
+        ('float step', slice(None, None, 2.0)),
+        ('bool start', slice(True, 3)),
     ]
 
     def test_accepted_agree_across_backends_and_numpy(self):
@@ -287,6 +326,18 @@ class TestFeatureSliceValidation(_BackendPair):
         for features in (self.from_mat, self.from_h5):
             with self.assertRaises(TypeError):
                 list(features.iter_chunks('conv5', feature_slice=np.s_[0:4]))
+
+
+class TestFeatureSliceAnnotation(unittest.TestCase):
+    def test_type_hints_resolve(self):
+        # FeatureSlice once contained an "ellipsis" forward reference, which is
+        # not a Python name, so any tool resolving annotations blew up.
+        import typing
+
+        from bdpy.dataform._feature_store import FeatureStore
+
+        typing.get_type_hints(FeatureStore.read)
+        typing.get_type_hints(MatFeatureStore.read)
 
 
 class TestCrossLayerLabelConsistency(unittest.TestCase):

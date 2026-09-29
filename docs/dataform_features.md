@@ -110,16 +110,20 @@ feat = features.get(
 
 `feature_slice` is **basic forward indexing**: slices with a positive step
 (negative `start`/`stop` are fine), integers, a single `Ellipsis`, and tuples of
-those. Anything else -- a negative step, fancy indexing with a list or array,
-booleans, `np.newaxis` -- raises `ValueError` on *both* backends. The restriction
-is what lets the two layouts mean the same thing by the same index; read without
-`feature_slice` and index the result with NumPy when you need more.
+those. Anything else -- a negative step, a non-integer slice bound, fancy
+indexing with a list or array, booleans, or `np.newaxis` *inside a tuple* --
+raises `ValueError` on *both* backends. (A bare `np.newaxis` is simply `None`,
+which is the "no slice" default, so it reads the whole feature tensor rather
+than raising.) The restriction is what lets the two layouts mean the same thing
+by the same index; read without `feature_slice` and index the result with NumPy
+when you need more.
 
 ``` python
 features.get('conv5', feature_slice=np.s_[128:256])     # ok
 features.get('conv5', feature_slice=np.s_[8:16, 1:4])   # ok
 features.get('conv5', feature_slice=np.s_[::-1])        # ValueError
 features.get('conv5', feature_slice=np.s_[[3, 1, 7]])   # ValueError
+features.get('conv5', feature_slice=slice(1.5, 3))      # ValueError
 
 # Full shape without reading anything
 n_stimuli, *feature_shape = features.shape('conv5')

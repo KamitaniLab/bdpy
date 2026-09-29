@@ -68,13 +68,27 @@ class TestChooseChunkShape(unittest.TestCase):
         self.assertLessEqual(_nbytes(large, dtype), 4 * 1024 * 1024)
         self.assertLess(_nbytes(small, dtype), _nbytes(large, dtype))
 
-    def test_unknown_sample_count_is_not_capped(self):
-        # Resizable datasets start empty; the sample extent must come from the
-        # budget, not from the current (zero) size.
-        chunk = choose_chunk_shape(
-            (0, 256, 13, 13), np.dtype(np.float32), n_samples_known=False
+    def test_unknown_sample_count_ignores_the_current_size(self):
+        # The contract of n_samples_known=False is exactly that the current
+        # sample-axis size is not consulted, so two calls that differ only in
+        # that size must agree. Stated this way the test does not depend on
+        # which extent the policy happens to pick.
+        dtype = np.dtype(np.float32)
+        empty = choose_chunk_shape((0, 256, 13, 13), dtype, n_samples_known=False)
+        huge = choose_chunk_shape(
+            (10 ** 6, 256, 13, 13), dtype, n_samples_known=False
         )
-        self.assertGreater(chunk[0], 1)
+        self.assertEqual(empty, huge)
+
+    def test_both_sliceable_axes_are_chunked(self):
+        # The promise of issue #144: reading a slice of channels must not have
+        # to read every channel, which requires the feature axis to be split as
+        # well as the sample axis. Asserted on a representative layer, since a
+        # small one legitimately fits in a single chunk.
+        shape = (1200, 256, 13, 13)
+        chunk = choose_chunk_shape(shape, np.dtype(np.float32))
+        self.assertLess(chunk[0], shape[0])
+        self.assertLess(chunk[1], shape[1])
 
     def test_deterministic(self):
         shape = (1200, 256, 13, 13)

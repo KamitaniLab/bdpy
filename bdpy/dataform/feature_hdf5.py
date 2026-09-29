@@ -496,7 +496,7 @@ def convert_features_to_hdf5(
         Overwrite an existing output file instead of skipping it
         (default: False).
     batch_size : int, optional
-        Number of stimulus files read per batch.
+        Number of stimulus files read per batch. Must be positive.
     target_chunk_bytes : int, optional
         Per-chunk byte budget.
     compression : str, optional
@@ -506,9 +506,16 @@ def convert_features_to_hdf5(
 
     Raises
     ------
+    ValueError
+        If `batch_size` is not positive.
     KeyError
         If a requested layer is not present in `src_dir`.
     """
+    if batch_size < 1:
+        # range(0, n, -1) is empty, so a non-positive batch size would write no
+        # samples at all and then publish that empty file as a finished layer.
+        raise ValueError("batch_size must be positive, got {}".format(batch_size))
+
     store = MatFeatureStore(src_dir, ext=ext, key=key)
     selected = list(store.layers) if layers is None else list(layers)
     missing = [layer for layer in selected if layer not in store.layers]

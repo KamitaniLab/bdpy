@@ -236,9 +236,15 @@ class TestSchemaValidation(unittest.TestCase):
             HDF5FeatureStore(self.tmpdir.name)
 
     def test_malformed_version_is_rejected(self):
-        self._mutate(lambda f: f.attrs.__setitem__(FORMAT_VERSION_ATTR, 'v1'))
-        with self.assertRaises(RuntimeError):
-            HDF5FeatureStore(self.tmpdir.name)
+        # Anything that is not an integer scalar, including a float that would
+        # round down to a supported version under int().
+        for bad in ('v1', 1.5, 1.0, True, np.True_):
+            with self.subTest(version=bad):
+                self._mutate(
+                    lambda f, b=bad: f.attrs.__setitem__(FORMAT_VERSION_ATTR, b)
+                )
+                with self.assertRaises(RuntimeError):
+                    HDF5FeatureStore(self.tmpdir.name)
 
     def test_version_below_one_is_rejected(self):
         for bad in (0, -1):
@@ -536,6 +542,17 @@ class TestAtomicWriteAndOverwrite(unittest.TestCase):
             return original(store, layer, labels, feature_slice)
 
         return original, flaky
+
+    def test_non_positive_batch_size_is_refused(self):
+        # range(0, n, -1) is empty, so this used to write nothing and then
+        # publish the empty file as a finished layer.
+        for bad in (-1, 0):
+            with self.subTest(batch_size=bad):
+                with self.assertRaises(ValueError):
+                    convert_features_to_hdf5(
+                        self.matdir, self.h5dir, batch_size=bad
+                    )
+                self.assertFalse(os.path.exists(self.h5dir))
 
     def test_failed_conversion_leaves_no_file(self):
         original, flaky = self._fail_on_second_batch()

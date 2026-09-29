@@ -162,9 +162,12 @@ class Features(object):
             DNN layer
         label: str or list
             Sample label(s). Rows come back in the order given.
-        feature_slice: slice, int, array-like or tuple, optional
+        feature_slice: slice, int, Ellipsis or tuple of those, optional
             Index applied to the feature axes (axes 1 and up), as produced by
-            ``numpy.s_[...]``. With chunked HDF5 storage this is a genuine
+            ``numpy.s_[...]``. Basic forward indexing only: slices with a
+            positive step, integers, and at most one ``Ellipsis``. Fancy
+            indexing, a negative step, booleans and ``numpy.newaxis`` raise
+            ``ValueError``. With chunked HDF5 storage this is a genuine
             partial read; with the legacy layout the files are loaded in full
             and then sliced.
 
@@ -255,7 +258,8 @@ class Features(object):
         ------
         ValueError
             If a unit index (`feature_index`) is in use, which flattens the
-            feature axes and so has no meaningful per-axis iteration.
+            feature axes and so has no meaningful per-axis iteration; if `axis`
+            is out of range; or if `size` is given and is not positive.
 
         Examples
         --------
@@ -274,6 +278,23 @@ class Features(object):
             labels = [label]
         else:
             labels = list(label)
+
+        # Validate here rather than in the store, so that both dispatch paths
+        # below reject the same inputs the same way. The multi-store fallback
+        # does not go through FeatureStore.iter_chunks and would otherwise
+        # silently yield nothing for size < 1, and raise IndexError rather than
+        # ValueError for an out-of-range axis.
+        ndim = len(self.shape(layer))
+        if axis < 0:
+            axis += ndim
+        if not 0 <= axis < ndim:
+            raise ValueError(
+                'axis {} is out of range for a {}-dimensional selection'.format(
+                    axis, ndim
+                )
+            )
+        if size is not None and size < 1:
+            raise ValueError('size must be positive, got {}'.format(size))
 
         store = self.__store_for(labels)
         if store is not None:
