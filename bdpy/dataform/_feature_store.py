@@ -278,6 +278,15 @@ class FeatureStore(ABC):
         ------
         tuple of (slice, numpy.ndarray)
             The slice applied to `axis`, and the corresponding slab.
+
+        Notes
+        -----
+        How much is resident at once depends on the backend. Along the sample
+        axis every backend reads one slab at a time. Along a feature axis only
+        a backend with real partial reads can do so: the legacy ``.mat``
+        layout has no file boundary there, so it reads the selection once and
+        yields views into it, and the blocks keep that array alive for as long
+        as they are held.
         """
         selected_shape = self._selected_shape(layer, labels)
         if axis < 0:
@@ -295,18 +304,47 @@ class FeatureStore(ABC):
         if size < 1:
             raise ValueError("size must be positive, got {}".format(size))
 
-        for start in range(0, length, size):
-            sl = slice(start, min(start + size, length))
-            if axis == 0:
-                block_labels = (
-                    list(self.labels) if labels is None else list(labels)
-                )[sl]
-                yield sl, self.read(layer, block_labels)
-            else:
-                # axis >= 1 indexes the feature axes, where axis 1 of the array
-                # is entry 0 of the feature-slice tuple.
-                indexers = (slice(None),) * (axis - 1) + (sl,)
-                yield sl, self.read(layer, labels, indexers)
+        if length == 0:
+            # Nothing to iterate. Returning here rather than falling into the
+            # loop keeps a backend that reads the selection up front from
+            # reading anything the per-slab path would not have read either.
+            return
+
+        # A generator, not a list: a materialized one would cost an object per
+        # slab, which for a large axis at size 1 is millions of them.
+        slices = (
+            slice(start, min(start + size, length))
+            for start in range(0, length, size)
+        )
+        if axis == 0:
+            all_labels = list(self.labels) if labels is None else list(labels)
+            for sl in slices:
+                yield sl, self.read(layer, all_labels[sl])
+        else:
+            yield from self._iter_feature_slabs(layer, labels, axis, slices)
+
+    def _iter_feature_slabs(
+        self,
+        layer: str,
+        labels: Optional[Sequence[str]],
+        axis: int,
+        slices: Iterator[slice],
+    ) -> Iterator[Tuple[slice, np.ndarray]]:
+        """Yield the feature-axis slabs of `layer` named by `slices`.
+
+        This is the seam for a backend that cannot read a feature axis
+        partially. `axis` is already normalized and validated to a feature axis
+        (``>= 1``), and `slices` partitions that axis, so an implementation
+        decides only *how* a slab is obtained -- never which slabs there are.
+
+        The default reads each slab on its own, which is what a backend with
+        real partial reads wants.
+        """
+        for sl in slices:
+            # axis >= 1 indexes the feature axes, where axis 1 of the array is
+            # entry 0 of the feature-slice tuple.
+            indexers = (slice(None),) * (axis - 1) + (sl,)
+            yield sl, self.read(layer, labels, indexers)
 
     def _selected_shape(
         self,
@@ -341,7 +379,10 @@ class MatFeatureStore(FeatureStore):
     under `key` with a leading sample axis. There is no file boundary on the
     feature axes, so `feature_slice` is applied after the full stimulus files
     have been loaded and concatenated -- the read cost is the same as before,
-    and the slice only saves the caller from doing it themselves.
+    and the slice only saves the caller from doing it themselves. For the same
+    reason :meth:`iter_chunks` along a feature axis reads the selection once
+    and cuts the slabs out of it in memory; only sample-axis iteration is
+    bounded by the slab.
 
     Parameters
     ----------
@@ -414,6 +455,35 @@ class MatFeatureStore(FeatureStore):
         if indexers:
             features = features[(slice(None), *indexers)]
         return features
+
+    def _iter_feature_slabs(
+        self,
+        layer: str,
+        labels: Optional[Sequence[str]],
+        axis: int,
+        slices: Iterator[slice],
+    ) -> Iterator[Tuple[slice, np.ndarray]]:
+        """Read the selection once, then cut every slab out of it in memory.
+
+        This layout has no file boundary on the feature axes, so one slab
+        already costs a read of every selected stimulus file. Reading per slab
+        therefore re-read the whole selection once per slab, making a k-slab
+        iteration k times the cost of a single read.
+
+        Nothing is kept on the store, so this is a per-call strategy rather
+        than a cache. The selection is a plain array held for the duration of
+        the iteration, and the yielded slabs are views into it -- exactly as
+        they were when each slab was read separately -- so holding a slab keeps
+        the whole selection alive. Sample-axis iteration is deliberately left
+        to the base class, where each slab reads only its own files and a layer
+        larger than memory can still be processed end to end.
+        """
+        features = self.read(layer, labels)
+        for sl in slices:
+            # `features` still carries its sample axis, so axis N of the array
+            # is entry N here -- unlike the feature-slice tuple the base class
+            # builds, whose entry 0 is axis 1.
+            yield sl, features[(slice(None),) * axis + (sl,)]
 
     def _collect_layers(self) -> List[str]:
         return sorted(

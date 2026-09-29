@@ -246,10 +246,17 @@ class Features(object):
 
         Notes
         -----
-        The one-slab-at-a-time guarantee holds when the requested labels all
-        live in a single feature directory, which is the usual case. When they
-        are spread across several `dpath` entries, no single store can stream
-        them, so the selection is read in full and then split.
+        The one-slab-at-a-time guarantee is a property of chunked HDF5 storage
+        and of `axis=0` on any layout. The legacy `.mat` layout has no file
+        boundary on the feature axes, so iterating one reads the selection once
+        -- the same peak as a single :meth:`get` -- and yields views into it,
+        which keep that array alive for as long as a block is held. It is still
+        read once rather than once per slab.
+
+        The guarantee also assumes the requested labels all live in a single
+        feature directory, which is the usual case. When they are spread across
+        several `dpath` entries, no single store can stream them, so the
+        selection is read in full and then split.
 
         Yields
         ------

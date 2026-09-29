@@ -117,9 +117,122 @@ class TestBackendEquivalence(_BackendPair):
                     )
 
 
+class TestMatIterChunksReadsOnce(_BackendPair):
+    """The legacy backend must read a feature axis once, not once per slab.
+
+    ``MatFeatureStore.read`` loads every selected stimulus file, so reading a
+    slab at a time made a k-slab iteration cost k full reads of the layer
+    (measured: 1088 s against 5 s for one read plus in-memory slicing).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.store = MatFeatureStore(self.matdir)
+        self.reads = []
+        original = self.store.read
+
+        def spy(*args, **kwargs):
+            self.reads.append((args, kwargs))
+            return original(*args, **kwargs)
+
+        self.store.read = spy
+
+    def test_feature_axis_reads_the_selection_once(self):
+        slab_counts = {}
+        for size in (1, 3, 4, 24, 100, None):
+            with self.subTest(size=size):
+                self.reads.clear()
+                blocks = list(self.store.iter_chunks('conv5', axis=1, size=size))
+                self.assertEqual(len(self.reads), 1)
+                slab_counts[size] = len(blocks)
+        # Not vacuous: the slab count really does vary, and the worst case is
+        # the 24 reads this test exists to prevent.
+        self.assertEqual(slab_counts[1], 24)
+        self.assertEqual(slab_counts[100], 1)
+        self.assertGreater(len(set(slab_counts.values())), 1)
+
+    def test_sample_axis_still_reads_one_slab_at_a_time(self):
+        # Preloading here would destroy the one guarantee the legacy backend
+        # can make: a layer larger than memory streams along the sample axis.
+        blocks = list(self.store.iter_chunks('conv5', axis=0, size=4))
+        self.assertEqual(len(blocks), 3)
+        self.assertEqual(len(self.reads), 3)
+        for (args, _), (sl, _) in zip(self.reads, blocks):
+            self.assertEqual(list(args[1]), LABELS[sl])
+
+    def test_nothing_is_cached_between_calls(self):
+        for call in (1, 2):
+            with self.subTest(call=call):
+                self.reads.clear()
+                list(self.store.iter_chunks('conv5', axis=1, size=4))
+                self.assertEqual(len(self.reads), 1)
+
+    def test_blocks_match_ground_truth_and_the_other_backend(self):
+        cases = [
+            ('conv5', None, 1),
+            ('conv5', None, 2),
+            ('conv5', None, 3),
+            ('conv5', None, -1),
+            ('conv5', None, -3),
+            ('fc8', None, 1),
+            ('conv5', ['img0009', 'img0001'], 1),
+            ('conv5', ['img0009', 'img0001', 'img0009'], 2),
+            ('conv5', ['img0003'], 3),
+        ]
+        for layer, label, axis in cases:
+            for size in (1, 3, 1000, None):
+                with self.subTest(layer=layer, label=label, axis=axis, size=size):
+                    rows = (
+                        slice(None) if label is None
+                        else [LABELS.index(s) for s in label]
+                    )
+                    expected = self.stacked[layer][rows]
+                    norm = axis if axis >= 0 else axis + expected.ndim
+                    from_mat = list(self.from_mat.iter_chunks(
+                        layer, label=label, axis=axis, size=size))
+                    for sl, block in from_mat:
+                        assert_array_equal(
+                            block, expected[(slice(None),) * norm + (sl,)]
+                        )
+                    # The two backends need not agree on slab boundaries -- the
+                    # HDF5 default follows the on-disk chunk extent -- so the
+                    # reassembled layer is what has to match.
+                    from_h5 = list(self.from_h5.iter_chunks(
+                        layer, label=label, axis=axis, size=size))
+                    assert_array_equal(
+                        np.concatenate([b for _, b in from_mat], axis=norm),
+                        np.concatenate([b for _, b in from_h5], axis=norm),
+                    )
+
+    def test_writing_to_one_block_does_not_disturb_another(self):
+        # Slabs are views into one array now, but they partition the axis, so
+        # they cannot alias each other.
+        blocks = list(self.from_mat.iter_chunks('conv5', axis=1, size=4))
+        blocks[0][1][:] = 0
+        assert_array_equal(blocks[1][1], self.stacked['conv5'][:, 4:8])
+
+    def test_validation_precedes_any_read(self):
+        cases = (
+            ({'axis': 9}, 'axis 9 is out of range for selected shape (11, 24, 5, 5)'),
+            ({'axis': -9}, 'axis -5 is out of range for selected shape (11, 24, 5, 5)'),
+            ({'size': 0}, 'size must be positive, got 0'),
+        )
+        for kwargs, message in cases:
+            with self.subTest(**kwargs):
+                self.reads.clear()
+                with self.assertRaises(ValueError) as ctx:
+                    list(self.store.iter_chunks('conv5', **kwargs))
+                self.assertEqual(str(ctx.exception), message)
+                # Reading the selection up front must not outrun validation.
+                self.assertEqual(len(self.reads), 0)
+                with self.assertRaises(ValueError) as from_h5:
+                    list(HDF5FeatureStore(self.h5dir).iter_chunks('conv5', **kwargs))
+                self.assertEqual(str(from_h5.exception), message)
+
+
 class TestIterChunks(_BackendPair):
     def test_reassembles_to_a_full_read(self):
-        for axis in (0, 1):
+        for axis in (0, 1, 2, 3):
             for features in (self.from_mat, self.from_h5):
                 with self.subTest(axis=axis, backend=type(features).__name__):
                     blocks = list(features.iter_chunks('conv5', axis=axis, size=4))

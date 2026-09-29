@@ -140,10 +140,16 @@ for sl, block in features.iter_chunks('conv5', axis=1):
 ```
 
 `axis=0` iterates over stimuli instead of features. `iter_chunks` takes no
-`feature_slice` -- slice each `block` as it comes out instead. The
-one-slab-at-a-time guarantee holds when the requested labels all live in one
-feature directory; when they are spread across several `dpath` entries no single
-store can stream them, so the selection is read in full and then split.
+`feature_slice` -- slice each `block` as it comes out instead.
+
+Only one slab is resident at a time for chunked HDF5, and for `axis=0` on either
+layout. On the legacy `.mat` layout there is no file boundary on the feature
+axes, so iterating one reads the selection once -- the same peak as a single
+`get()` -- and yields views into it, which keep that array alive for as long as a
+block is held. It is still read once rather than once per slab, which is what
+makes `iter_chunks` usable on that layout at all. The same full-read fallback
+applies when the requested labels are spread across several `dpath` entries,
+since no single store can stream them.
 
 ### Writing
 
