@@ -12,13 +12,12 @@ from numpy.testing import assert_array_equal
 
 from bdpy.dataform import Features
 from bdpy.dataform._feature_store import (
-    MatFeatureStore,
-    SUPPORTED_FORMAT_VERSION,
     FORMAT_ATTR,
     FORMAT_NAME,
     FORMAT_VERSION_ATTR,
     SUPPORTED_FORMAT_VERSION,
     HDF5FeatureStore,
+    MatFeatureStore,
 )
 from bdpy.dataform.feature_hdf5 import (
     FeatureWriter,

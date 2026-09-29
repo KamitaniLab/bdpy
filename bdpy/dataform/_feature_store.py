@@ -219,9 +219,11 @@ class FeatureStore(ABC):
         feature_slice : slice, int, Ellipsis or tuple of those, optional
             Index applied to the feature axes (axes 1 and up), as produced by
             ``numpy.s_[...]``. Basic forward indexing only: slices with a
-            positive step, integers, and at most one ``Ellipsis``. Fancy
-            indexing, a negative step, booleans and ``numpy.newaxis`` raise
-            ``ValueError``. ``None`` reads the whole feature tensor.
+            positive step and integer bounds, integers, and at most one
+            ``Ellipsis``. Fancy indexing, a negative step, a non-integer slice
+            bound, booleans, and ``numpy.newaxis`` *inside a tuple* raise
+            ``ValueError``. A bare ``numpy.newaxis`` is ``None``, the "no
+            slice" default, so it reads the whole feature tensor.
 
         Returns
         -------

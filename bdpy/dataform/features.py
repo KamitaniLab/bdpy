@@ -165,11 +165,13 @@ class Features(object):
         feature_slice: slice, int, Ellipsis or tuple of those, optional
             Index applied to the feature axes (axes 1 and up), as produced by
             ``numpy.s_[...]``. Basic forward indexing only: slices with a
-            positive step, integers, and at most one ``Ellipsis``. Fancy
-            indexing, a negative step, booleans and ``numpy.newaxis`` raise
-            ``ValueError``. With chunked HDF5 storage this is a genuine
-            partial read; with the legacy layout the files are loaded in full
-            and then sliced.
+            positive step and integer bounds, integers, and at most one
+            ``Ellipsis``. Fancy indexing, a negative step, a non-integer slice
+            bound, booleans, and ``numpy.newaxis`` *inside a tuple* raise
+            ``ValueError``. A bare ``numpy.newaxis`` is ``None``, the "no
+            slice" default, so it reads the whole feature tensor. With chunked
+            HDF5 storage this is a genuine partial read; with the legacy layout
+            the files are loaded in full and then sliced.
 
         Returns
         -------
