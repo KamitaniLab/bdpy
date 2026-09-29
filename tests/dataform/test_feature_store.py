@@ -39,7 +39,6 @@ QUERIES = [
     ('slice with step', 'conv5', None, np.s_[::2]),
     ('multi-axis slice', 'conv5', None, np.s_[8:16, 1:4, :]),
     ('integer index', 'conv5', None, np.s_[5]),
-    ('fancy index', 'conv5', None, np.s_[[3, 1, 7]]),
     ('ellipsis', 'conv5', None, np.s_[..., 1:3]),
     ('labels and slice', 'conv5', ['img0009', 'img0001', 'img0009'], np.s_[8:16]),
     ('2d layer', 'fc8', None, np.s_[10:40]),
@@ -139,12 +138,13 @@ class TestIterChunks(_BackendPair):
             covered.extend(range(*sl.indices(length)))
         self.assertEqual(covered, list(range(length)))
 
-    def test_composes_with_a_feature_slice(self):
-        expected = self.stacked['conv5'][:, 4:20]
-        blocks = list(
-            self.from_h5.iter_chunks('conv5', feature_slice=np.s_[4:20], axis=1, size=6)
-        )
-        assert_array_equal(np.concatenate([b for _, b in blocks], axis=1), expected)
+    def test_blocks_can_be_sliced_by_the_caller(self):
+        # iter_chunks deliberately takes no feature_slice; slicing the blocks as
+        # they come out is the supported way to combine the two.
+        wanted = np.zeros_like(self.stacked['conv5'][:, :, 1:2])
+        for sl, block in self.from_h5.iter_chunks('conv5', axis=1, size=6):
+            wanted[:, sl] = block[:, :, 1:2]
+        assert_array_equal(wanted, self.stacked['conv5'][:, :, 1:2])
 
     def test_restricts_to_labels(self):
         labels = ['img0009', 'img0001']
@@ -219,6 +219,76 @@ class TestPartialReads(_BackendPair):
         self.assertEqual(chunks[2:], shape[2:])  # spatial axes kept whole
 
 
+class TestFeatureSliceValidation(_BackendPair):
+    """feature_slice is basic forward indexing, identically on both backends.
+
+    The point of narrowing it: whatever is accepted must mean the same thing on
+    both layouts, and whatever is rejected must be rejected by both. Previously
+    a negative step worked on .mat and raised inside h5py, which is exactly the
+    divergence this table guards against.
+    """
+
+    accepted = [
+        ('plain slice', np.s_[4:16]),
+        ('negative stop', np.s_[:-1]),
+        ('negative start', np.s_[-8:]),
+        ('positive step', np.s_[::2]),
+        ('integer', np.s_[5]),
+        ('ellipsis', np.s_[..., 1:3]),
+        ('multi-axis', np.s_[4:16, 1:3]),
+        ('open slice', np.s_[:]),
+    ]
+
+    rejected = [
+        ('negative step', np.s_[::-1]),
+        ('reversed with bounds', np.s_[16:4:-1]),
+        ('zero step', slice(None, None, 0)),
+        ('list', np.s_[[3, 1, 7]]),
+        ('ndarray', np.array([1, 2])),
+        ('range', range(3)),
+        ('bool', True),
+        ('numpy bool', np.True_),
+        ('newaxis in tuple', (np.newaxis, slice(None))),
+        ('two ellipses', (Ellipsis, Ellipsis)),
+    ]
+
+    def test_accepted_agree_across_backends_and_numpy(self):
+        for name, spec in self.accepted:
+            with self.subTest(index=name):
+                from_mat = self.from_mat.get('conv5', feature_slice=spec)
+                from_h5 = self.from_h5.get('conv5', feature_slice=spec)
+                indexers = spec if isinstance(spec, tuple) else (spec,)
+                expected = self.stacked['conv5'][(slice(None), *indexers)]
+                assert_array_equal(from_mat, expected)
+                assert_array_equal(from_h5, expected)
+
+    def test_rejected_by_both_backends(self):
+        for name, spec in self.rejected:
+            with self.subTest(index=name):
+                for backend, features in (
+                    ('mat', self.from_mat), ('hdf5', self.from_h5),
+                ):
+                    with self.subTest(backend=backend):
+                        with self.assertRaises(ValueError):
+                            features.get('conv5', feature_slice=spec)
+
+    def test_bool_is_not_read_as_an_integer(self):
+        # isinstance(True, int) is True in Python, so a naive integer check
+        # would silently read True as index 1.
+        with self.assertRaises(ValueError):
+            self.from_h5.get('conv5', feature_slice=True)
+
+    def test_rejection_message_points_at_the_alternative(self):
+        with self.assertRaises(ValueError) as ctx:
+            self.from_h5.get('conv5', feature_slice=np.s_[[1, 2]])
+        self.assertIn('NumPy', str(ctx.exception))
+
+    def test_iter_chunks_takes_no_feature_slice(self):
+        for features in (self.from_mat, self.from_h5):
+            with self.assertRaises(TypeError):
+                list(features.iter_chunks('conv5', feature_slice=np.s_[0:4]))
+
+
 class TestCrossLayerLabelConsistency(unittest.TestCase):
     """Every layer must hold the same labels in the same order.
 
@@ -237,10 +307,7 @@ class TestCrossLayerLabelConsistency(unittest.TestCase):
 
     def _write(self, layer, labels, n_features=8):
         data = np.random.rand(len(labels), n_features)
-        save_features(
-            os.path.join(self.tmpdir.name, layer + '.h5'), data, labels,
-            layer=layer,
-        )
+        save_features(os.path.join(self.tmpdir.name, layer + '.h5'), data, labels)
         return data
 
     def test_consistent_layers_are_accepted(self):
@@ -305,6 +372,32 @@ class TestFormatDetection(unittest.TestCase):
         self.assertEqual(detect_format(self.matdir), 'mat')
         self.assertEqual(detect_format(self.h5dir), 'hdf5')
 
+    def test_unrelated_subdirectory_does_not_change_detection(self):
+        # Detection keys off real feature files, not the bare existence of a
+        # subdirectory, so a stray directory cannot flip a chunked tree to .mat.
+        os.makedirs(os.path.join(self.h5dir, 'notes'))
+        self.assertEqual(detect_format(self.h5dir), 'hdf5')
+        self.assertEqual(Features(self.h5dir).layers, LAYERS)
+
+    def test_both_layouts_present_is_ambiguous(self):
+        # Guessing here means silently reading different data than intended.
+        for layer in LAYERS:
+            os.makedirs(os.path.join(self.h5dir, layer))
+            open(os.path.join(self.h5dir, layer, 'x.mat'), 'w').close()
+        with self.assertRaises(RuntimeError) as ctx:
+            detect_format(self.h5dir)
+        self.assertIn('ambiguous', str(ctx.exception))
+        with self.assertRaises(RuntimeError):
+            Features(self.h5dir)
+        # An explicit format resolves it.
+        self.assertEqual(Features(self.h5dir, format='hdf5').layers, LAYERS)
+
+    def test_empty_directory_is_rejected(self):
+        empty = os.path.join(self.tmpdir.name, 'empty')
+        os.makedirs(empty)
+        with self.assertRaises(RuntimeError):
+            detect_format(empty)
+
     def test_explicit_format_overrides_detection(self):
         self.assertIsInstance(
             Features(self.h5dir, format='hdf5')._Features__stores[0],
@@ -327,7 +420,7 @@ class TestFormatDetection(unittest.TestCase):
         for layer, shape in zip(LAYERS, SHAPES):
             data = np.random.rand(len(other_labels), *shape[1:])
             save_features(
-                os.path.join(h5_only, layer + '.h5'), data, other_labels, layer=layer
+                os.path.join(h5_only, layer + '.h5'), data, other_labels
             )
 
         features = Features([self.matdir, h5_only])

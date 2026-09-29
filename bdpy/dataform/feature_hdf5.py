@@ -14,7 +14,6 @@ Schema version 1::
         attrs:
             bdpy_format         = "features"
             bdpy_format_version = 1
-            layer               = "<layer name>"
 
 One file per layer rather than one file for everything: layers differ in shape
 and in optimal chunk shape, and separate files keep regeneration, copying and
@@ -48,7 +47,7 @@ import os
 import uuid
 import weakref
 from types import TracebackType
-from typing import Iterable, Optional, Sequence, Tuple, Type
+from typing import Iterable, Optional, Sequence, Set, Tuple, Type
 
 import h5py
 import numpy as np
@@ -63,6 +62,7 @@ from ._feature_store import (
     LABELS_DATASET,
     SUPPORTED_FORMAT_VERSION,
     MatFeatureStore,
+    _duplicates,
 )
 
 __all__ = [
@@ -71,8 +71,8 @@ __all__ = [
     "save_features",
 ]
 
-#: Number of samples the resizable dataset grows by at a time.
-_GROW_BLOCK = 64
+#: Chunk length of the resizable labels dataset.
+_LABELS_CHUNK = 64
 
 
 def _string_dtype() -> np.dtype:
@@ -80,11 +80,10 @@ def _string_dtype() -> np.dtype:
     return dtype
 
 
-def _write_header(f: h5py.File, layer: Optional[str]) -> None:
+def _write_header(f: h5py.File) -> None:
+    """Stamp the format marker and version. The layer name is the file name."""
     f.attrs[FORMAT_ATTR] = FORMAT_NAME
     f.attrs[FORMAT_VERSION_ATTR] = SUPPORTED_FORMAT_VERSION
-    if layer is not None:
-        f.attrs["layer"] = layer
 
 
 #: Suffix of the scratch file a write is staged in.
@@ -147,7 +146,6 @@ def save_features(
     path: str,
     features: np.ndarray,
     labels: Sequence[str],
-    layer: Optional[str] = None,
     chunks: Optional[Tuple[int, ...]] = None,
     target_chunk_bytes: int = DEFAULT_TARGET_CHUNK_BYTES,
     compression: Optional[str] = None,
@@ -165,8 +163,6 @@ def save_features(
         Feature array of shape ``(n_samples, *feature_shape)``.
     labels : sequence of str
         One stimulus label per sample, in the same order as `features`.
-    layer : str, optional
-        Layer name recorded in the file. Defaults to the file's basename.
     chunks : tuple of int, optional
         Explicit chunk shape. Defaults to :func:`choose_chunk_shape`.
     target_chunk_bytes : int, optional
@@ -200,29 +196,20 @@ def save_features(
             "got {} labels for {} samples".format(len(labels), features.shape[0])
         )
 
-    dtype = np.dtype(features.dtype if dtype is None else dtype)
-    if chunks is None:
-        chunks = choose_chunk_shape(
-            features.shape, dtype, target_bytes=target_chunk_bytes
-        )
-    if layer is None:
-        layer = os.path.splitext(os.path.basename(path))[0]
-
-    tmp_path = _prepare_target(path, overwrite)
-    try:
-        with h5py.File(tmp_path, "x") as f:
-            _write_header(f, layer)
-            f.create_dataset(
-                FEATURES_DATASET,
-                data=features.astype(dtype, copy=False),
-                chunks=chunks,
-                compression=compression,
-            )
-            f.create_dataset(LABELS_DATASET, data=labels, dtype=_string_dtype())
-    except BaseException:
-        _discard(tmp_path)
-        raise
-    _promote(tmp_path, path)
+    # One write path, not two: writing a whole layer is the degenerate case of
+    # writing it incrementally, and keeping them separate is what let a bug
+    # (a zero-sample layer) land in only one of them.
+    with FeatureWriter(
+        path,
+        feature_shape=features.shape[1:],
+        dtype=features.dtype if dtype is None else dtype,
+        n_samples=features.shape[0],
+        chunks=chunks,
+        target_chunk_bytes=target_chunk_bytes,
+        compression=compression,
+        overwrite=overwrite,
+    ) as writer:
+        writer.extend(features, labels)
 
 
 class FeatureWriter:
@@ -246,8 +233,6 @@ class FeatureWriter:
         Shape of a single sample's features, without the sample axis.
     dtype : numpy.dtype
         Dtype to store.
-    layer : str, optional
-        Layer name recorded in the file. Defaults to the file's basename.
     n_samples : int, optional
         Expected number of samples, if known. Used only to pick a chunk shape.
     chunks : tuple of int, optional
@@ -275,7 +260,6 @@ class FeatureWriter:
         path: str,
         feature_shape: Sequence[int],
         dtype: np.dtype,
-        layer: Optional[str] = None,
         n_samples: Optional[int] = None,
         chunks: Optional[Tuple[int, ...]] = None,
         target_chunk_bytes: int = DEFAULT_TARGET_CHUNK_BYTES,
@@ -287,6 +271,10 @@ class FeatureWriter:
             raise ValueError("feature_shape must have at least one axis")
         self._dtype = np.dtype(dtype)
         self._n = 0
+        # Labels identify rows, so they must be unique across the whole file --
+        # not just within one call. A repeated label would make every lookup
+        # resolve to the last row and silently drop the earlier one.
+        self._seen: Set[str] = set()
 
         if chunks is None:
             chunks = choose_chunk_shape(
@@ -295,9 +283,6 @@ class FeatureWriter:
                 target_bytes=target_chunk_bytes,
                 n_samples_known=n_samples is not None,
             )
-        if layer is None:
-            layer = os.path.splitext(os.path.basename(path))[0]
-
         # Fail before doing any work if the target is occupied, then write to
         # a scratch file so `path` stays untouched until close() succeeds.
         self._path = path
@@ -310,7 +295,7 @@ class FeatureWriter:
         # closes over the path instead of the writer, so it can never resurrect
         # the object or outlive a name it no longer owns.
         self._finalizer = weakref.finalize(self, _discard, self._tmp_path)
-        _write_header(self._file, layer)
+        _write_header(self._file)
         self._features = self._file.create_dataset(
             FEATURES_DATASET,
             shape=(0, *self._feature_shape),
@@ -324,7 +309,7 @@ class FeatureWriter:
             shape=(0,),
             maxshape=(None,),
             dtype=_string_dtype(),
-            chunks=(max(1, _GROW_BLOCK),),
+            chunks=(_LABELS_CHUNK,),
         )
 
     @property
@@ -379,6 +364,9 @@ class FeatureWriter:
             raise ValueError(
                 "got {} labels for {} samples".format(len(labels), features.shape[0])
             )
+        # Check before writing anything, so a rejected batch leaves the file
+        # exactly as it was.
+        self._reject_duplicates(labels)
         if not labels:
             return
 
@@ -387,7 +375,27 @@ class FeatureWriter:
         self._labels.resize(new_n, axis=0)
         self._features[self._n:new_n] = features.astype(self._dtype, copy=False)
         self._labels[self._n:new_n] = labels
+        self._seen.update(labels)
         self._n = new_n
+
+    def _reject_duplicates(self, labels: Sequence[str]) -> None:
+        """Refuse labels repeated within this batch or already written."""
+        within = _duplicates(labels)
+        if within:
+            raise ValueError(
+                "duplicate labels in this batch: {}. Labels identify rows, so "
+                "they must be unique.".format(
+                    ", ".join(repr(d) for d in within[:3])
+                )
+            )
+        already = [label for label in labels if label in self._seen]
+        if already:
+            raise ValueError(
+                "labels already written to {}: {}. Labels identify rows, so "
+                "they must be unique.".format(
+                    self._path, ", ".join(repr(d) for d in already[:3])
+                )
+            )
 
     def close(self) -> None:
         """Finish the file and move it into place. Idempotent.
@@ -528,7 +536,6 @@ def convert_features_to_hdf5(
             out_path,
             feature_shape=full_shape[1:],
             dtype=store.dtype(layer),
-            layer=layer,
             n_samples=full_shape[0],
             target_chunk_bytes=target_chunk_bytes,
             compression=compression,

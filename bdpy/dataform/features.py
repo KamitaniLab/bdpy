@@ -26,6 +26,8 @@ from ._feature_store import (
     FeatureStore,
     HDF5FeatureStore,
     MatFeatureStore,
+    _determine_num_parallel,
+    _load_array_with_key,
     detect_format,
 )
 
@@ -39,27 +41,6 @@ _MATLAB_WRITE_FUTURE_WARNING = (
     "MATLAB's load(). Reading existing hdf5storage / MATLAB v7.3 files remains "
     "supported."
 )
-
-
-def _load_array_with_key(key: str, path: str) -> np.ndarray:
-    # v5 .mat via scipy, v7.3 (HDF5) via h5py; avoids hdf5storage on the load
-    # path, which breaks under NumPy 2.0 (see bdpy/dataform/_mat_v73.py).
-    return _mat_v73.loadmat_key(path, key)
-
-
-def _determine_num_parallel(num_files: int) -> int:
-    # NOTE: optimal number of parallel processes is not clear. It could depend
-    # on several factors such as the number of files, the size of files, the
-    # number of cores, etc. For now, we use a simple heuristic based on the
-    # number of files.
-    num_parallel: int
-    if num_files < 16:
-        num_parallel = 1
-    elif num_files < 64:
-        num_parallel = 16
-    else:
-        num_parallel = 64
-    return num_parallel
 
 
 class Features(object):
@@ -232,14 +213,18 @@ class Features(object):
 
     def iter_chunks(
             self, layer: str, label: Union[str, List[str], None] = None,
-            feature_slice: FeatureSlice = None, axis: int = 1,
-            size: Optional[int] = None
+            axis: int = 1, size: Optional[int] = None
         ) -> Iterator[Tuple[slice, np.ndarray]]:
         """Iterate over `layer` in slabs along `axis`.
 
-        This is the streaming counterpart of :meth:`get`: it never holds more
-        than one slab in memory, so a layer far larger than RAM can be processed
-        end to end.
+        This is the streaming counterpart of :meth:`get`: with chunked HDF5
+        storage it holds only one slab at a time, so a layer far larger than RAM
+        can be processed end to end.
+
+        There is no `feature_slice` here on purpose -- slice the blocks as they
+        come out instead. Composing an arbitrary slice with the per-slab slice
+        means reimplementing NumPy's index arithmetic, which is more generality
+        than reading a layer in slabs needs.
 
         Parameters
         ----------
@@ -247,14 +232,19 @@ class Features(object):
             DNN layer
         label: str or list, optional
             Sample label(s). ``None`` iterates over every label.
-        feature_slice: slice, int, array-like or tuple, optional
-            Index applied to the feature axes before iterating.
         axis: int
             Axis of the selected array to iterate over. Axis 0 is the sample
             axis; the default, axis 1, is the outermost feature axis.
         size: int, optional
             Elements per slab. Defaults to the on-disk chunk extent along
             `axis`, so that each element is read exactly once.
+
+        Notes
+        -----
+        The one-slab-at-a-time guarantee holds when the requested labels all
+        live in a single feature directory, which is the usual case. When they
+        are spread across several `dpath` entries, no single store can stream
+        them, so the selection is read in full and then split.
 
         Yields
         ------
@@ -287,14 +277,12 @@ class Features(object):
 
         store = self.__store_for(labels)
         if store is not None:
-            yield from store.iter_chunks(
-                layer, labels, feature_slice, axis=axis, size=size
-            )
+            yield from store.iter_chunks(layer, labels, axis=axis, size=size)
             return
 
         # Labels span several directories, so no single store can stream them.
         # Fall back to slicing a full read, which still yields the same blocks.
-        features = self.__read(layer, labels, feature_slice)
+        features = self.__read(layer, labels)
         length = features.shape[axis]
         if size is None:
             size = length

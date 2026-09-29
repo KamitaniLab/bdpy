@@ -55,8 +55,11 @@ def choose_chunk_shape(
     dtype : numpy.dtype
         Array dtype; only its itemsize matters.
     target_bytes : int, optional
-        Upper bound on the size of one chunk in bytes
-        (default: ``DEFAULT_TARGET_CHUNK_BYTES``).
+        Size budget for one chunk, in bytes
+        (default: ``DEFAULT_TARGET_CHUNK_BYTES``). It is an upper bound only
+        when the budget can be met at all: the trailing axes are kept whole, so
+        a shape whose trailing axes alone exceed `target_bytes` necessarily
+        produces a larger chunk.
     n_samples_known : bool, optional
         Whether ``shape[0]`` is the final number of samples. Pass ``False`` when
         writing to a resizable dataset whose sample count is not yet known, so
@@ -65,9 +68,16 @@ def choose_chunk_shape(
     Returns
     -------
     tuple of int
-        Chunk shape, same length as ``shape``. Every element is at least 1 and,
-        when ``n_samples_known`` is True, at most the corresponding entry of
-        ``shape``.
+        Chunk shape, same length as ``shape``. Every element is at least 1, and
+        no larger than the corresponding entry of ``shape`` for axes of
+        non-zero size (a layer with zero samples still needs a chunk extent of
+        at least 1 on the sample axis, since HDF5 forbids a zero chunk dim).
+
+    Raises
+    ------
+    ValueError
+        If `shape` has fewer than two axes, any feature axis has size 0, the
+        sample axis is negative, or `target_bytes` is not positive.
 
     Examples
     --------
@@ -86,12 +96,22 @@ def choose_chunk_shape(
         )
     if target_bytes < 1:
         raise ValueError("target_bytes must be positive, got {}".format(target_bytes))
+    if shape[0] < 0:
+        raise ValueError("sample axis cannot be negative, got {}".format(shape))
+    if any(s < 1 for s in shape[1:]):
+        # A zero-width feature axis carries nothing and cannot be chunked.
+        # A zero-sample layer, by contrast, is meaningful and is allowed below.
+        raise ValueError(
+            "feature axes must all be non-empty, got shape {}".format(shape)
+        )
 
     itemsize = np.dtype(dtype).itemsize
 
     # The whole array fits in one chunk: nothing to gain from splitting it.
+    # Clamp to at least 1 per axis -- a zero-sample layer is legal but HDF5
+    # rejects a chunk with a zero dimension.
     if n_samples_known and _prod(shape) * itemsize <= target_bytes:
-        return shape
+        return tuple(max(1, s) for s in shape)
 
     # Bytes taken by one (sample, feature-0) cell, i.e. one element of the two
     # chunked axes with the trailing axes kept whole.
@@ -103,7 +123,7 @@ def choose_chunk_shape(
     # force a narrow feature chunk, and vice versa.
     c1 = min(shape[1], max(1, math.isqrt(budget_cells)))
     c0 = max(1, budget_cells // c1)
-    if n_samples_known:
+    if n_samples_known and shape[0] > 0:
         c0 = min(shape[0], c0)
     c1 = min(shape[1], max(c1, budget_cells // c0))
 
@@ -112,7 +132,7 @@ def choose_chunk_shape(
     # to the smallest one that needs the same number of chunks removes most of
     # that padding, and can only lower the chunk size, so the budget still holds.
     c1 = _snap(shape[1], c1)
-    if n_samples_known:
+    if n_samples_known and shape[0] > 0:
         c0 = _snap(shape[0], c0)
 
     return (c0, c1, *shape[2:])

@@ -13,6 +13,7 @@ from numpy.testing import assert_array_equal
 from bdpy.dataform import Features
 from bdpy.dataform._feature_store import (
     MatFeatureStore,
+    SUPPORTED_FORMAT_VERSION,
     FORMAT_ATTR,
     FORMAT_NAME,
     FORMAT_VERSION_ATTR,
@@ -52,7 +53,6 @@ class TestSaveFeatures(unittest.TestCase):
             self.assertEqual(
                 int(f.attrs[FORMAT_VERSION_ATTR]), SUPPORTED_FORMAT_VERSION
             )
-            self.assertEqual(f.attrs['layer'], 'conv5')
             assert_array_equal(f['features'][()], self.data)
             self.assertEqual(
                 [s.decode('utf-8') for s in f['labels'][()]], self.labels
@@ -134,11 +134,10 @@ class TestFeatureWriter(unittest.TestCase):
         )
 
     def test_writes_valid_header(self):
-        with FeatureWriter(self.path, (16, 3, 3), np.float32, layer='conv5') as writer:
+        with FeatureWriter(self.path, (16, 3, 3), np.float32) as writer:
             writer.append(self.data[0], self.labels[0])
         with h5py.File(self.path, 'r') as f:
             self.assertEqual(f.attrs[FORMAT_ATTR], FORMAT_NAME)
-            self.assertEqual(f.attrs['layer'], 'conv5')
             self.assertIsNotNone(f['features'].chunks)
 
     def test_rejects_wrong_shape(self):
@@ -213,6 +212,154 @@ class TestConvertFeaturesToHDF5(unittest.TestCase):
         # Batching is an implementation detail; it must not affect the result.
         convert_features_to_hdf5(self.matdir, self.h5dir, batch_size=3)
         assert_array_equal(Features(self.h5dir).get('conv5'), self.stacked['conv5'])
+
+
+class TestSchemaValidation(unittest.TestCase):
+    """Everything a reader depends on is checked when the file is opened."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.tmpdir.name, 'conv5.h5')
+        save_features(self.path, np.zeros((3, 4)), ['a', 'b', 'c'])
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def _mutate(self, fn):
+        with h5py.File(self.path, 'a') as f:
+            fn(f)
+
+    def test_missing_version_is_rejected(self):
+        # Previously read as version 0 and accepted, contradicting the docs.
+        self._mutate(lambda f: f.attrs.__delitem__(FORMAT_VERSION_ATTR))
+        with self.assertRaises(RuntimeError):
+            HDF5FeatureStore(self.tmpdir.name)
+
+    def test_malformed_version_is_rejected(self):
+        self._mutate(lambda f: f.attrs.__setitem__(FORMAT_VERSION_ATTR, 'v1'))
+        with self.assertRaises(RuntimeError):
+            HDF5FeatureStore(self.tmpdir.name)
+
+    def test_version_below_one_is_rejected(self):
+        for bad in (0, -1):
+            with self.subTest(version=bad):
+                self._mutate(lambda f, b=bad: f.attrs.__setitem__(FORMAT_VERSION_ATTR, b))
+                with self.assertRaises(RuntimeError):
+                    HDF5FeatureStore(self.tmpdir.name)
+
+    def test_future_version_is_rejected(self):
+        self._mutate(
+            lambda f: f.attrs.__setitem__(
+                FORMAT_VERSION_ATTR, SUPPORTED_FORMAT_VERSION + 1
+            )
+        )
+        with self.assertRaises(RuntimeError) as ctx:
+            HDF5FeatureStore(self.tmpdir.name)
+        self.assertIn('upgrade bdpy', str(ctx.exception))
+
+    def test_row_count_mismatch_is_rejected(self):
+        def shrink(f):
+            del f['labels']
+            f.create_dataset('labels', data=['a', 'b'],
+                             dtype=h5py.string_dtype(encoding='utf-8'))
+        self._mutate(shrink)
+        with self.assertRaises(RuntimeError) as ctx:
+            HDF5FeatureStore(self.tmpdir.name)
+        self.assertIn('rows', str(ctx.exception))
+
+    def test_wrong_ndim_is_rejected(self):
+        def flatten_features(f):
+            del f['features']
+            f.create_dataset('features', data=np.zeros(3))
+        self._mutate(flatten_features)
+        with self.assertRaises(RuntimeError):
+            HDF5FeatureStore(self.tmpdir.name)
+
+        save_features(self.path, np.zeros((2, 4)), ['a', 'b'], overwrite=True)
+
+        def widen_labels(f):
+            del f['labels']
+            f.create_dataset('labels', data=[['a'], ['b']],
+                             dtype=h5py.string_dtype(encoding='utf-8'))
+        self._mutate(widen_labels)
+        with self.assertRaises(RuntimeError):
+            HDF5FeatureStore(self.tmpdir.name)
+
+    def test_duplicate_labels_are_rejected_on_read(self):
+        # Labels map to row indices, so a repeat would resolve both rows to the
+        # last one and silently drop the first. The .mat layout cannot express
+        # duplicates at all, so neither should this one.
+        def duplicate(f):
+            del f['labels']
+            f.create_dataset('labels', data=['a', 'a', 'c'],
+                             dtype=h5py.string_dtype(encoding='utf-8'))
+        self._mutate(duplicate)
+        with self.assertRaises(RuntimeError) as ctx:
+            HDF5FeatureStore(self.tmpdir.name)
+        self.assertIn('duplicate', str(ctx.exception))
+
+
+class TestDuplicateLabelsOnWrite(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.path = os.path.join(self.tmpdir.name, 'conv5.h5')
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def test_save_features_rejects_duplicates(self):
+        with self.assertRaises(ValueError):
+            save_features(self.path, np.zeros((2, 4)), ['a', 'a'])
+        self.assertFalse(os.path.exists(self.path))
+
+    def test_writer_rejects_duplicates_within_one_call(self):
+        with FeatureWriter(self.path, (4,), np.float32) as writer:
+            with self.assertRaises(ValueError) as ctx:
+                writer.extend(np.zeros((2, 4)), ['a', 'a'])
+            self.assertIn('this batch', str(ctx.exception))
+            writer.abort()
+
+    def test_writer_rejects_duplicates_across_calls(self):
+        with FeatureWriter(self.path, (4,), np.float32) as writer:
+            writer.append(np.zeros(4), 'a')
+            with self.assertRaises(ValueError) as ctx:
+                writer.append(np.ones(4), 'a')
+            self.assertIn('already written', str(ctx.exception))
+            writer.abort()
+
+    def test_rejected_batch_leaves_earlier_rows_intact(self):
+        # The check runs before writing, so a refused batch is a no-op.
+        with FeatureWriter(self.path, (4,), np.float32) as writer:
+            writer.extend(np.ones((2, 4)), ['a', 'b'])
+            with self.assertRaises(ValueError):
+                writer.extend(np.zeros((2, 4)), ['c', 'a'])
+            self.assertEqual(writer.n_samples, 2)
+            writer.extend(np.full((1, 4), 7.0), ['c'])
+        store = HDF5FeatureStore(self.tmpdir.name)
+        self.assertEqual(store.labels, ['a', 'b', 'c'])
+
+
+class TestZeroSampleLayer(unittest.TestCase):
+    """Both write paths agree on an empty layer."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def test_save_features_accepts_zero_samples(self):
+        path = os.path.join(self.tmpdir.name, 'conv5.h5')
+        save_features(path, np.empty((0, 8), dtype=np.float32), [])
+        store = HDF5FeatureStore(self.tmpdir.name)
+        self.assertEqual(store.labels, [])
+        self.assertEqual(store.read('conv5').shape, (0, 8))
+
+    def test_writer_accepts_zero_samples(self):
+        path = os.path.join(self.tmpdir.name, 'fc8.h5')
+        with FeatureWriter(path, (8,), np.float32):
+            pass
+        self.assertEqual(HDF5FeatureStore(self.tmpdir.name).read('fc8').shape, (0, 8))
 
 
 class TestAtomicWriteAndOverwrite(unittest.TestCase):

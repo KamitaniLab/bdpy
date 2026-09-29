@@ -50,14 +50,20 @@ LABELS_DATASET = "labels"
 #: Extension of a chunked feature file.
 HDF5_EXT = "h5"
 
-# A slice spec for the feature axes: what ``numpy.s_[...]`` produces.
-FeatureSlice = Union[slice, int, Sequence[int], np.ndarray, Tuple, None]
+# A slice spec for the feature axes. Deliberately narrow: basic indexing only,
+# i.e. what ``numpy.s_[128:256]`` or ``numpy.s_[8:16, 1:4]`` produces. See
+# _validate_feature_slice for what is rejected and why.
+BasicIndexer = Union[slice, int, "ellipsis"]  # noqa: F821
+FeatureSlice = Union[BasicIndexer, Tuple[BasicIndexer, ...], None]
 
 
 def _load_array_with_key(key: str, path: str) -> np.ndarray:
-    # v5 .mat via scipy, v7.3 (HDF5) via h5py; avoids hdf5storage on the load
-    # path, which breaks under NumPy 2.0 (see bdpy/dataform/_mat_v73.py).
-    # NOTE: key comes first so that partial(..., 'feat') is a Pool.map callable.
+    """Load one array from a ``.mat`` file. Shared with :mod:`bdpy.dataform.features`.
+
+    v5 ``.mat`` via scipy, v7.3 (HDF5) via h5py; avoids hdf5storage on the load
+    path, which breaks under NumPy 2.0 (see :mod:`bdpy.dataform._mat_v73`).
+    `key` comes first so ``partial(..., 'feat')`` is a ``Pool.map`` callable.
+    """
     return _mat_v73.loadmat_key(path, key)
 
 
@@ -77,19 +83,75 @@ def _determine_num_parallel(num_files: int) -> int:
 
 
 def _normalize_feature_slice(feature_slice: FeatureSlice) -> Tuple:
-    """Normalize a feature-axis slice spec to a tuple of per-axis indexers."""
+    """Normalize and validate a feature-axis slice spec.
+
+    Returns a tuple of per-axis indexers; ``None`` means "no slice" and gives
+    the empty tuple. Note this makes ``numpy.newaxis`` (which *is* ``None``)
+    inexpressible, so a bare newaxis reads as "no slice"; inside a tuple it is
+    rejected explicitly.
+    """
     if feature_slice is None:
         return ()
-    if isinstance(feature_slice, tuple):
-        return feature_slice
-    return (feature_slice,)
+    indexers = feature_slice if isinstance(feature_slice, tuple) else (feature_slice,)
+    _validate_feature_slice(indexers)
+    return indexers
 
 
-def _is_fancy(indexer: object) -> bool:
-    """Whether an indexer is a fancy (list/array) index rather than a slice."""
-    if isinstance(indexer, (slice, int, np.integer)):
-        return False
-    return isinstance(indexer, (list, tuple, np.ndarray, range))
+def _validate_feature_slice(indexers: Tuple) -> None:
+    """Reject anything outside basic, forward indexing.
+
+    `feature_slice` exists to read part of a layer, not to reimplement NumPy
+    indexing. Keeping it to basic forward indexing is what lets every backend
+    mean the same thing by it: h5py handles slices with a positive step
+    (negative start/stop included), integers and one ``Ellipsis`` exactly as
+    NumPy does, but rejects a negative step outright. Allowing more would make
+    the legacy and HDF5 backends diverge, or require reimplementing NumPy's
+    semantics to keep them together.
+
+    Parameters
+    ----------
+    indexers : tuple
+        Per-axis indexers, as returned by :func:`_normalize_feature_slice`.
+
+    Raises
+    ------
+    ValueError
+        If any indexer is outside the supported set.
+    """
+    advice = (
+        " feature_slice supports basic forward indexing only (slices with a "
+        "positive step, integers and a single Ellipsis). Read without "
+        "feature_slice and index the resulting array with NumPy instead."
+    )
+    if sum(ix is Ellipsis for ix in indexers) > 1:
+        raise ValueError("feature_slice may contain at most one Ellipsis." + advice)
+    for ix in indexers:
+        # bool is a subclass of int in Python, so it must be rejected *before*
+        # the integer check or True would silently be read as index 1.
+        if isinstance(ix, (bool, np.bool_)):
+            raise ValueError(
+                "feature_slice does not support boolean indexing." + advice
+            )
+        if ix is Ellipsis or isinstance(ix, (int, np.integer)):
+            continue
+        if isinstance(ix, slice):
+            step = ix.step
+            if step is not None and step < 1:
+                raise ValueError(
+                    "feature_slice does not support a step below 1 "
+                    "(got {}).".format(step) + advice
+                )
+            continue
+        if ix is None:
+            raise ValueError(
+                "feature_slice does not support numpy.newaxis." + advice
+            )
+        raise ValueError(
+            "feature_slice does not support {} indexing.".format(
+                type(ix).__name__
+            )
+            + advice
+        )
 
 
 class FeatureStore(ABC):
@@ -157,7 +219,6 @@ class FeatureStore(ABC):
         self,
         layer: str,
         labels: Optional[Sequence[str]] = None,
-        feature_slice: FeatureSlice = None,
         axis: int = 1,
         size: Optional[int] = None,
     ) -> Iterator[Tuple[slice, np.ndarray]]:
@@ -167,18 +228,22 @@ class FeatureStore(ABC):
         of the selected array and `block` is that slab. The slice is yielded so
         that callers can place results back without tracking offsets themselves.
 
+        There is deliberately no `feature_slice` here. Composing an arbitrary
+        slice with the per-slab slice means reimplementing NumPy's index
+        arithmetic, which is both the source of subtle wrong results and more
+        generality than reading a layer in slabs needs. Slice the blocks as they
+        come out instead.
+
         Parameters
         ----------
         layer : str
             DNN layer.
         labels : sequence of str, optional
             Stimulus labels, as in :meth:`read`.
-        feature_slice : slice, int, array-like or tuple, optional
-            Index applied to the feature axes before iterating.
         axis : int, optional
-            Axis of the *selected* array to iterate over. Axis 0 is the sample
-            axis; the default, axis 1, is the outermost feature axis, which is
-            the one partial feature reads are about.
+            Axis to iterate over. Axis 0 is the sample axis; the default, axis
+            1, is the outermost feature axis, which is the one partial feature
+            reads are about.
         size : int, optional
             Number of elements per slab. Defaults to the on-disk chunk extent
             along `axis` when the backend has one, so that iteration is
@@ -190,7 +255,7 @@ class FeatureStore(ABC):
         tuple of (slice, numpy.ndarray)
             The slice applied to `axis`, and the corresponding slab.
         """
-        selected_shape = self._selected_shape(layer, labels, feature_slice)
+        selected_shape = self._selected_shape(layer, labels)
         if axis < 0:
             axis += len(selected_shape)
         if not 0 <= axis < len(selected_shape):
@@ -206,30 +271,28 @@ class FeatureStore(ABC):
         if size < 1:
             raise ValueError("size must be positive, got {}".format(size))
 
-        base = _normalize_feature_slice(feature_slice)
         for start in range(0, length, size):
             sl = slice(start, min(start + size, length))
             if axis == 0:
                 block_labels = (
                     list(self.labels) if labels is None else list(labels)
                 )[sl]
-                yield sl, self.read(layer, block_labels, feature_slice)
+                yield sl, self.read(layer, block_labels)
             else:
-                yield sl, self.read(
-                    layer, labels, _compose_slice(base, axis - 1, sl)
-                )
+                # axis >= 1 indexes the feature axes, where axis 1 of the array
+                # is entry 0 of the feature-slice tuple.
+                indexers = (slice(None),) * (axis - 1) + (sl,)
+                yield sl, self.read(layer, labels, indexers)
 
     def _selected_shape(
         self,
         layer: str,
-        labels: Optional[Sequence[str]],
-        feature_slice: FeatureSlice,
+        labels: Optional[Sequence[str]] = None,
     ) -> Tuple[int, ...]:
         """Shape the selection would have, without reading the data."""
         full = self.shape(layer)
         n_samples = full[0] if labels is None else len(labels)
-        feature_shape = _sliced_shape(full[1:], feature_slice)
-        return (n_samples, *feature_shape)
+        return (n_samples, *full[1:])
 
     def _default_iter_size(
         self, layer: str, axis: int, selected_shape: Tuple[int, ...]
@@ -245,53 +308,6 @@ class FeatureStore(ABC):
                 other *= int(n)
         per_element = max(1, other * itemsize)
         return max(1, min(selected_shape[axis], DEFAULT_TARGET_CHUNK_BYTES // per_element))
-
-
-def _compose_slice(base: Tuple, axis: int, sl: slice) -> Tuple:
-    """Return `base` with `sl` intersected into its entry for `axis`.
-
-    `axis` indexes the *feature* axes (axis 0 here is array axis 1), and `sl`
-    is relative to the result of applying `base`.
-    """
-    out = list(base) + [slice(None)] * max(0, axis + 1 - len(base))
-    current = out[axis]
-    if isinstance(current, slice) and current == slice(None):
-        out[axis] = sl
-    elif isinstance(current, slice):
-        # Compose the two slices by indexing a range with both.
-        out[axis] = _compose_two_slices(current, sl)
-    else:
-        out[axis] = np.asarray(current)[sl]
-    return tuple(out)
-
-
-def _compose_two_slices(outer: slice, inner: slice) -> slice:
-    """Compose ``x[outer][inner]`` into a single slice where possible."""
-    # Only the simple (positive-step) case arises from iter_chunks, which
-    # always produces contiguous forward slices.
-    ostep = 1 if outer.step is None else outer.step
-    if ostep < 0:
-        # Fall back to an explicit index array for reversed slices.
-        raise ValueError("cannot compose a reversed slice; pass an explicit size")
-    ostart = 0 if outer.start is None else outer.start
-    start = ostart + (0 if inner.start is None else inner.start) * ostep
-    stop = ostart + (inner.stop if inner.stop is not None else 0) * ostep
-    if outer.stop is not None:
-        stop = min(stop, outer.stop)
-    return slice(start, stop, ostep)
-
-
-def _sliced_shape(
-    feature_shape: Tuple[int, ...], feature_slice: FeatureSlice
-) -> Tuple[int, ...]:
-    """Shape of ``numpy.empty(feature_shape)[feature_slice]``, cheaply."""
-    indexers = _normalize_feature_slice(feature_slice)
-    if not indexers:
-        return feature_shape
-    # A broadcast dummy allocates nothing but lets NumPy do the index
-    # arithmetic, including negative steps, ellipses and newaxis.
-    dummy = np.broadcast_to(np.int8(0), feature_shape)
-    return tuple(int(n) for n in dummy[indexers].shape)
 
 
 class MatFeatureStore(FeatureStore):
@@ -486,17 +502,13 @@ class HDF5FeatureStore(FeatureStore):
     def _read_rows(
         dset: h5py.Dataset, rows: Union[slice, List[int]], indexers: Tuple
     ) -> np.ndarray:
-        """Read `rows` from `dset`, pushing as much of `indexers` into h5py as it allows."""
+        """Read `rows` from `dset`, pushing `indexers` down into the h5py selection."""
         if not indexers:
             return np.asarray(dset[rows])
-        if any(_is_fancy(ix) for ix in indexers):
-            # A fancy row list plus a fancy feature index would be two fancy
-            # indices in one selection, which h5py rejects. Read the feature
-            # axes whole and apply the fancy part in NumPy.
-            data = np.asarray(dset[rows])
-            return data[(slice(None), *indexers)]
-        # Plain slices are not fancy, so they ride along in the same selection
-        # and h5py reads only the chunks they cover.
+        # Basic forward indexers are not fancy, so they ride along in the same
+        # selection as the row list and h5py reads only the chunks they cover.
+        # _validate_feature_slice has already rejected anything else, which is
+        # what keeps this to a single line.
         return np.asarray(dset[(rows, *indexers)])
 
     def _row_indices(self, labels: Sequence[str]) -> np.ndarray:
@@ -523,8 +535,7 @@ class HDF5FeatureStore(FeatureStore):
         reference_layer = ""
         for layer in self._layers:
             with self._open(layer) as f:
-                _validate_format(f, self.path(layer))
-                labels = _decode_labels(f[LABELS_DATASET][()])
+                labels = _validate_format(f, self.path(layer))
             if reference is None:
                 reference, reference_layer = labels, layer
             elif labels != reference:
@@ -539,8 +550,36 @@ class HDF5FeatureStore(FeatureStore):
         self._label_index = {label: i for i, label in enumerate(reference)}
 
 
-def _validate_format(f: h5py.File, path: str) -> None:
-    """Check that `f` is bdpy feature storage of a version we can read."""
+def _validate_format(f: h5py.File, path: str) -> List[str]:
+    """Check that `f` is well-formed bdpy feature storage, and return its labels.
+
+    Everything a reader relies on is checked in one place: the format marker,
+    a version in the range this build understands, both datasets present with
+    the expected rank, one label per feature row, and no duplicate labels.
+
+    Duplicate labels matter more than they look. Labels are mapped to row
+    indices once, so a repeated label would silently resolve every occurrence
+    to the last row and drop the earlier one. The legacy ``.mat`` layout cannot
+    express duplicates at all -- the file name *is* the label -- so rejecting
+    them keeps the two layouts equivalent.
+
+    Parameters
+    ----------
+    f : h5py.File
+        Open feature file.
+    path : str
+        Its path, for error messages.
+
+    Returns
+    -------
+    list of str
+        The file's labels, already decoded.
+
+    Raises
+    ------
+    RuntimeError
+        If any of the above does not hold.
+    """
     fmt = f.attrs.get(FORMAT_ATTR)
     if isinstance(fmt, bytes):
         fmt = fmt.decode("utf-8")
@@ -550,7 +589,26 @@ def _validate_format(f: h5py.File, path: str) -> None:
                 path, FORMAT_ATTR, fmt, FORMAT_NAME
             )
         )
-    version = int(f.attrs.get(FORMAT_VERSION_ATTR, 0))
+
+    if FORMAT_VERSION_ATTR not in f.attrs:
+        raise RuntimeError(
+            "{} has no {} attribute, so it is not valid bdpy feature "
+            "storage.".format(path, FORMAT_VERSION_ATTR)
+        )
+    raw_version = f.attrs[FORMAT_VERSION_ATTR]
+    try:
+        version = int(raw_version)
+    except (TypeError, ValueError):
+        raise RuntimeError(
+            "{} has a malformed {} ({!r}); expected an integer.".format(
+                path, FORMAT_VERSION_ATTR, raw_version
+            )
+        ) from None
+    if version < 1:
+        raise RuntimeError(
+            "{} declares feature storage format version {}; versions start at "
+            "1.".format(path, version)
+        )
     if version > SUPPORTED_FORMAT_VERSION:
         raise RuntimeError(
             "{} uses feature storage format version {}, but this version of "
@@ -558,9 +616,49 @@ def _validate_format(f: h5py.File, path: str) -> None:
                 path, version, SUPPORTED_FORMAT_VERSION
             )
         )
+
     for name in (FEATURES_DATASET, LABELS_DATASET):
         if name not in f:
             raise RuntimeError("{} has no /{} dataset".format(path, name))
+
+    features, labels_dset = f[FEATURES_DATASET], f[LABELS_DATASET]
+    if features.ndim < 2:
+        raise RuntimeError(
+            "{}: /{} must have a sample axis and at least one feature axis, "
+            "got shape {}".format(path, FEATURES_DATASET, features.shape)
+        )
+    if labels_dset.ndim != 1:
+        raise RuntimeError(
+            "{}: /{} must be one-dimensional, got shape {}".format(
+                path, LABELS_DATASET, labels_dset.shape
+            )
+        )
+
+    labels = _decode_labels(labels_dset[()])
+    if len(labels) != features.shape[0]:
+        raise RuntimeError(
+            "{}: /{} has {} rows but /{} has {} entries".format(
+                path, FEATURES_DATASET, features.shape[0],
+                LABELS_DATASET, len(labels),
+            )
+        )
+    duplicates = _duplicates(labels)
+    if duplicates:
+        raise RuntimeError(
+            "{}: /{} contains duplicate labels ({}). Labels identify rows, so "
+            "they must be unique.".format(
+                path, LABELS_DATASET, ", ".join(repr(d) for d in duplicates[:3])
+            )
+        )
+    return labels
+
+
+def _duplicates(labels: Sequence[str]) -> List[str]:
+    """Labels appearing more than once, in first-seen order."""
+    seen: Dict[str, int] = {}
+    for label in labels:
+        seen[label] = seen.get(label, 0) + 1
+    return [label for label, n in seen.items() if n > 1]
 
 
 def _label_mismatch_message(
@@ -606,12 +704,17 @@ def _decode_labels(raw: np.ndarray) -> List[str]:
 
 
 def detect_format(dpath: str, ext: str = "mat") -> str:
-    """Guess which storage format `dpath` holds.
+    """Work out which storage layout `dpath` holds.
 
-    Returns ``'hdf5'`` when the directory holds ``<layer>.h5`` files and no
-    layer subdirectories, and ``'mat'`` otherwise. A directory holding both is
-    read as ``'mat'``, the historical layout; pass an explicit format to
-    override.
+    The two layouts are told apart by the files that are actually there, not by
+    the mere presence of a subdirectory: a legacy tree is one whose
+    subdirectories really contain ``*.<ext>`` feature files, so an unrelated
+    subdirectory next to ``<layer>.h5`` files does not turn a chunked directory
+    into a legacy one.
+
+    A directory holding both is ambiguous and raises rather than picking one
+    silently -- guessing wrong means reading different data than the caller
+    meant. Pass an explicit `format` to resolve it.
 
     Parameters
     ----------
@@ -624,12 +727,31 @@ def detect_format(dpath: str, ext: str = "mat") -> str:
     -------
     str
         ``'hdf5'`` or ``'mat'``.
+
+    Raises
+    ------
+    RuntimeError
+        If the directory holds both layouts, or neither.
     """
     escaped = glob.escape(dpath)
-    has_subdirs = any(
-        os.path.isdir(os.path.join(dpath, d)) for d in os.listdir(dpath)
-    )
     has_h5 = bool(glob.glob(os.path.join(escaped, "*." + HDF5_EXT)))
-    if has_h5 and not has_subdirs:
+    has_legacy = any(
+        glob.glob(os.path.join(glob.escape(os.path.join(dpath, d)), "*." + ext))
+        for d in os.listdir(dpath)
+        if os.path.isdir(os.path.join(dpath, d))
+    )
+
+    if has_h5 and has_legacy:
+        raise RuntimeError(
+            "{} holds both chunked .{} files and a legacy .{} tree, so the "
+            "storage format is ambiguous. Pass format='hdf5' or format='mat' "
+            "to choose one.".format(dpath, HDF5_EXT, ext)
+        )
+    if has_h5:
         return "hdf5"
-    return "mat"
+    if has_legacy:
+        return "mat"
+    raise RuntimeError(
+        "No features found in {}: expected either <layer>.{} files or "
+        "<layer>/<label>.{} subdirectories.".format(dpath, HDF5_EXT, ext)
+    )

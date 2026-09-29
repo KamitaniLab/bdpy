@@ -78,8 +78,10 @@ features = Features('/path/to/features')   # either layout
 feat = features.get(layer='conv5')
 ```
 
-Pass `format='mat'` or `format='hdf5'` to skip detection. A directory holding
-both layouts is read as `.mat` unless you say otherwise.
+Detection keys off the files that are actually present, so an unrelated
+subdirectory next to `<layer>.h5` files does not make a directory look legacy.
+A directory holding *both* layouts is ambiguous and raises rather than picking
+one silently; pass `format='mat'` or `format='hdf5'` to resolve it.
 
 ### Partial reads
 
@@ -104,6 +106,20 @@ feat = features.get(
 # The index addresses the flattened full feature space, so applying it to an
 # already-sliced array would select the wrong units; the combination raises
 # ValueError instead.
+```
+
+`feature_slice` is **basic forward indexing**: slices with a positive step
+(negative `start`/`stop` are fine), integers, a single `Ellipsis`, and tuples of
+those. Anything else -- a negative step, fancy indexing with a list or array,
+booleans, `np.newaxis` -- raises `ValueError` on *both* backends. The restriction
+is what lets the two layouts mean the same thing by the same index; read without
+`feature_slice` and index the result with NumPy when you need more.
+
+``` python
+features.get('conv5', feature_slice=np.s_[128:256])     # ok
+features.get('conv5', feature_slice=np.s_[8:16, 1:4])   # ok
+features.get('conv5', feature_slice=np.s_[::-1])        # ValueError
+features.get('conv5', feature_slice=np.s_[[3, 1, 7]])   # ValueError
 
 # Full shape without reading anything
 n_stimuli, *feature_shape = features.shape('conv5')
@@ -119,7 +135,11 @@ for sl, block in features.iter_chunks('conv5', axis=1):
     out[:, sl] = transform(block)
 ```
 
-`axis=0` iterates over stimuli instead of features.
+`axis=0` iterates over stimuli instead of features. `iter_chunks` takes no
+`feature_slice` -- slice each `block` as it comes out instead. The
+one-slab-at-a-time guarantee holds when the requested labels all live in one
+feature directory; when they are spread across several `dpath` entries no single
+store can stream them, so the selection is read in full and then split.
 
 ### Writing
 
@@ -164,9 +184,10 @@ layout, and streams in batches, so a layer is never held in memory in full.
 Existing `<layer>.h5` files are skipped unless `overwrite=True`, and a layer that
 fails to convert leaves no file behind, so re-running picks up where it stopped.
 
-All layers in a directory must hold the same stimulus labels in the same order;
-a mismatch is rejected when the directory is opened, as it is for the legacy
-layout.
+All layers in a directory must hold the same stimulus labels in the same order,
+and labels must be unique within a layer; both are rejected when the directory
+is opened, as they are for the legacy layout (where the file name *is* the
+label, so duplicates cannot arise). Writing a duplicate label raises too.
 
 ### Chunk shape
 
