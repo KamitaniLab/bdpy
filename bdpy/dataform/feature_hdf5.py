@@ -43,6 +43,7 @@ Migrate an existing ``.mat`` tree::
     convert_features_to_hdf5('features_mat', 'features_h5')
 """
 
+import errno
 import os
 import uuid
 import weakref
@@ -111,27 +112,68 @@ def _staging_path(path: str) -> str:
 def _prepare_target(path: str, overwrite: bool) -> str:
     """Refuse to clobber, then name a scratch file next to `path`.
 
-    Writing goes to a scratch file in the *same directory*, so the final
-    :func:`os.replace` is an atomic rename on the same filesystem: either the
-    finished file appears at `path`, or nothing does. A half-written file must
-    never be left where a reader -- or the converter's skip-if-exists check --
-    would take it for a complete one.
+    Writing goes to a scratch file in the *same directory*, so publishing it
+    (see :func:`_promote`) is a single atomic step on the same filesystem:
+    either the finished file appears at `path`, or nothing does. A half-written
+    file must never be left where a reader -- or the converter's skip-if-exists
+    check -- would take it for a complete one.
+
+    This check fails early, before any work is done; :func:`_promote` repeats
+    it when publishing, since another writer may publish `path` meanwhile.
 
     The caller opens the returned path with mode ``"x"``, which both creates it
     exclusively and lets HDF5 apply the process umask, so published files keep
     the permissions they had before staging existed.
     """
     if os.path.exists(path) and not overwrite:
-        raise FileExistsError(
-            "{} already exists. Pass overwrite=True to replace it.".format(path)
-        )
+        raise _exists_error(path)
     _makedirs_for(path)
     return _staging_path(path)
 
 
-def _promote(tmp_path: str, path: str) -> None:
-    """Move the finished scratch file into place (atomic on one filesystem)."""
-    os.replace(tmp_path, path)
+def _exists_error(path: str) -> FileExistsError:
+    return FileExistsError(
+        "{} already exists. Pass overwrite=True to replace it.".format(path)
+    )
+
+
+#: errno values with which os.link reports that the filesystem cannot hard-link.
+_NO_HARDLINK_ERRNOS = frozenset(
+    {errno.EPERM, errno.ENOTSUP, errno.EOPNOTSUPP, errno.ENOSYS}
+)
+
+
+def _promote(tmp_path: str, path: str, overwrite: bool) -> None:
+    """Publish the finished scratch file at `path`.
+
+    With `overwrite`, an atomic rename replaces whatever is there. Without it,
+    the file is published with :func:`os.link`, which fails if `path` exists:
+    checking for a file and publishing ours are one atomic step, so a file that
+    another writer published while this one was staging is never clobbered.
+
+    On a filesystem that cannot hard-link, this falls back to checking for
+    `path` and then renaming, which leaves a short window between the two.
+
+    Raises
+    ------
+    FileExistsError
+        If `path` exists and `overwrite` is False.
+    """
+    if overwrite:
+        os.replace(tmp_path, path)
+        return
+    try:
+        os.link(tmp_path, path)
+    except FileExistsError:
+        raise _exists_error(path) from None
+    except OSError as exc:
+        if exc.errno not in _NO_HARDLINK_ERRNOS:
+            raise
+        if os.path.exists(path):
+            raise _exists_error(path) from None
+        os.replace(tmp_path, path)
+    else:
+        _discard(tmp_path)
 
 
 def _discard(tmp_path: str) -> None:
@@ -157,8 +199,9 @@ def save_features(
     Parameters
     ----------
     path : str
-        Output file. An existing file is kept unless `overwrite` is True. The
-        write is atomic: on failure nothing is left at `path`.
+        Output file. An existing file -- including one another writer
+        publishes meanwhile -- is kept unless `overwrite` is True. The write is
+        atomic: on failure nothing is left at `path`.
     features : numpy.ndarray
         Feature array of shape ``(n_samples, *feature_shape)``.
     labels : sequence of str
@@ -182,7 +225,7 @@ def save_features(
         If `labels` does not have one entry per sample, or `features` has fewer
         than two axes.
     FileExistsError
-        If `path` exists and `overwrite` is False.
+        If `path` exists or is published meanwhile, and `overwrite` is False.
     """
     features = np.asarray(features)
     if features.ndim < 2:
@@ -227,8 +270,11 @@ class FeatureWriter:
     Parameters
     ----------
     path : str
-        Output file. An existing file is kept unless `overwrite` is True, and
-        nothing is written there until :meth:`close` succeeds.
+        Output file. An existing file -- including one another writer
+        publishes meanwhile -- is kept unless `overwrite` is True, and nothing
+        is written there until :meth:`close` succeeds. On a filesystem without
+        hard links, a short window remains in which a file published at the
+        same moment can still be replaced.
     feature_shape : sequence of int
         Shape of a single sample's features, without the sample axis.
     dtype : numpy.dtype
@@ -247,7 +293,8 @@ class FeatureWriter:
     Raises
     ------
     FileExistsError
-        If `path` exists and `overwrite` is False.
+        If `path` exists, or (from :meth:`close`) was published meanwhile,
+        and `overwrite` is False.
 
     Examples
     --------
@@ -286,6 +333,7 @@ class FeatureWriter:
         # Fail before doing any work if the target is occupied, then write to
         # a scratch file so `path` stays untouched until close() succeeds.
         self._path = path
+        self._overwrite = overwrite
         self._aborted = False
         self._tmp_path: Optional[str] = _prepare_target(path, overwrite)
         self._file: Optional[h5py.File] = h5py.File(self._tmp_path, "x")
@@ -411,6 +459,8 @@ class FeatureWriter:
         ------
         RuntimeError
             If the writer was already aborted.
+        FileExistsError
+            If the target was published meanwhile; the writer is then aborted.
         """
         if self._aborted:
             raise RuntimeError(
@@ -422,7 +472,11 @@ class FeatureWriter:
             self._file.close()
             self._file = None
         if self._tmp_path is not None:
-            _promote(self._tmp_path, self._path)
+            try:
+                _promote(self._tmp_path, self._path, self._overwrite)
+            except FileExistsError:
+                self.abort()
+                raise
             self._tmp_path = None
             self._finalizer.detach()  # the scratch file is now the output
 
@@ -494,7 +548,8 @@ def convert_features_to_hdf5(
         Variable name inside the legacy files (default: ``'feat'``).
     overwrite : bool, optional
         Overwrite an existing output file instead of skipping it
-        (default: False).
+        (default: False). Without it, a layer that another process publishes
+        while this one is converting it is skipped as well.
     batch_size : int, optional
         Number of stimulus files read per batch. Must be positive.
     target_chunk_bytes : int, optional
@@ -539,18 +594,26 @@ def convert_features_to_hdf5(
         # partial file instead of publishing it. A published partial file would
         # be taken for a finished one by the skip check above, and the layer
         # would stay silently truncated across re-runs.
-        with FeatureWriter(
-            out_path,
-            feature_shape=full_shape[1:],
-            dtype=store.dtype(layer),
-            n_samples=full_shape[0],
-            target_chunk_bytes=target_chunk_bytes,
-            compression=compression,
-            overwrite=overwrite,
-        ) as writer:
-            for start in range(0, len(all_labels), batch_size):
-                batch = all_labels[start:start + batch_size]
-                writer.extend(store.read(layer, batch), batch)
+        try:
+            with FeatureWriter(
+                out_path,
+                feature_shape=full_shape[1:],
+                dtype=store.dtype(layer),
+                n_samples=full_shape[0],
+                target_chunk_bytes=target_chunk_bytes,
+                compression=compression,
+                overwrite=overwrite,
+            ) as writer:
+                for start in range(0, len(all_labels), batch_size):
+                    batch = all_labels[start:start + batch_size]
+                    writer.extend(store.read(layer, batch), batch)
+        except FileExistsError:
+            # Only reachable without overwrite: another process published this
+            # layer while we were converting it. Treat it like the check above;
+            # the writer has already discarded our scratch file.
+            if verbose:
+                print("{} already exists. Skipped.".format(out_path))
+            continue
 
         if verbose:
             print("Saved {} ({} samples).".format(out_path, full_shape[0]))

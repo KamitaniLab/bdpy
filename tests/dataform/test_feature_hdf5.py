@@ -1,3 +1,4 @@
+import errno
 import gc
 import glob
 import os
@@ -5,6 +6,7 @@ import stat
 import tempfile
 import unittest
 import warnings
+from unittest import mock
 
 import h5py
 import numpy as np
@@ -26,6 +28,10 @@ from bdpy.dataform.feature_hdf5 import (
 )
 
 from .test_features import prepare_mat_features
+
+
+def _scratch_files(directory):
+    return [n for n in os.listdir(directory) if n.endswith('.partial')]
 
 
 def _current_umask():
@@ -206,6 +212,27 @@ class TestConvertFeaturesToHDF5(unittest.TestCase):
 
         convert_features_to_hdf5(self.matdir, self.h5dir, overwrite=True)
         self.assertGreater(os.path.getmtime(marker), mtime - 100)
+
+    def test_layer_published_by_another_process_meanwhile_is_skipped(self):
+        # Two converters on the same destination: the other one publishes
+        # conv5 while this one is still reading it. This one must keep the
+        # other's file, discard its own, and go on to the next layer.
+        other = self.stacked['conv5'][::-1].copy()
+        out_path = os.path.join(self.h5dir, 'conv5.h5')
+        original_read = MatFeatureStore.read
+
+        def read_then_race(store, layer, labels=None, feature_slice=None):
+            if layer == 'conv5' and not os.path.exists(out_path):
+                save_features(out_path, other, self.labels)
+            return original_read(store, layer, labels, feature_slice)
+
+        with mock.patch.object(MatFeatureStore, 'read', read_then_race):
+            convert_features_to_hdf5(self.matdir, self.h5dir)
+
+        converted = Features(self.h5dir)
+        assert_array_equal(converted.get('conv5'), other)
+        assert_array_equal(converted.get('fc8'), self.stacked['fc8'])
+        self.assertEqual(_scratch_files(self.h5dir), [])
 
     def test_small_batches_produce_the_same_file(self):
         # Batching is an implementation detail; it must not affect the result.
@@ -509,6 +536,45 @@ class TestAtomicWriteAndOverwrite(unittest.TestCase):
         del writer
         gc.collect()
         self.assertEqual(self._leftovers(self.tmpdir.name), ['mat'])
+
+    # --- another writer publishes first ---------------------------------
+
+    def test_close_does_not_clobber_a_file_published_meanwhile(self):
+        # The overwrite check in __init__ is not enough on its own: another
+        # writer can publish the same path while this one is still staging.
+        writer = FeatureWriter(self.path, (8,), np.float32)
+        writer.extend(self.data, self.labels)
+        save_features(self.path, self.data * 2, self.labels)
+        with self.assertRaises(FileExistsError):
+            writer.close()
+        assert_array_equal(
+            HDF5FeatureStore(self.tmpdir.name).read('conv5'), self.data * 2
+        )
+        self.assertEqual(_scratch_files(self.tmpdir.name), [])
+        # The failed publish leaves the writer aborted, not half-closed.
+        with self.assertRaises(RuntimeError):
+            writer.close()
+
+    def test_publishes_without_hard_links(self):
+        # A filesystem that cannot hard-link falls back to check-then-rename.
+        with mock.patch('os.link', side_effect=OSError(errno.EPERM, 'no links')):
+            save_features(self.path, self.data, self.labels)
+        assert_array_equal(
+            HDF5FeatureStore(self.tmpdir.name).read('conv5'), self.data
+        )
+        self.assertEqual(_scratch_files(self.tmpdir.name), [])
+
+    def test_without_hard_links_a_file_published_meanwhile_is_kept(self):
+        writer = FeatureWriter(self.path, (8,), np.float32)
+        writer.extend(self.data, self.labels)
+        save_features(self.path, self.data * 2, self.labels)
+        with mock.patch('os.link', side_effect=OSError(errno.EPERM, 'no links')):
+            with self.assertRaises(FileExistsError):
+                writer.close()
+        assert_array_equal(
+            HDF5FeatureStore(self.tmpdir.name).read('conv5'), self.data * 2
+        )
+        self.assertEqual(_scratch_files(self.tmpdir.name), [])
 
     def test_close_after_abort_is_refused(self):
         # Silently doing nothing would let a caller believe it published.
