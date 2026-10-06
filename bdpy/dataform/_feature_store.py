@@ -173,6 +173,77 @@ def _validate_feature_slice(indexers: Tuple) -> None:
         )
 
 
+def _normalize_axis(axis: int, shape: Tuple[int, ...]) -> int:
+    """Return `axis` as a non-negative axis of an array of `shape`.
+
+    Raises
+    ------
+    ValueError
+        If `axis` is out of range for `shape`.
+    """
+    normalized = axis + len(shape) if axis < 0 else axis
+    if not 0 <= normalized < len(shape):
+        raise ValueError(
+            "axis {} is out of range for selected shape {}".format(axis, shape)
+        )
+    return normalized
+
+
+def _check_size(size: int) -> None:
+    """Reject a slab size below 1."""
+    if size < 1:
+        raise ValueError("size must be positive, got {}".format(size))
+
+
+def _partition(length: int, size: int) -> Iterator[slice]:
+    """Split ``range(length)`` into consecutive slices of at most `size`.
+
+    The slices cover the range exactly once, in order; only the last may be
+    shorter. ``length == 0`` yields nothing. `size` must already be positive.
+
+    A generator rather than a list: a materialized one would cost an object per
+    slab, which for a large axis at size 1 is millions of them.
+    """
+    for start in range(0, length, size):
+        yield slice(start, min(start + size, length))
+
+
+def _axis_index(axis: int, sl: slice) -> Tuple[slice, ...]:
+    """Index tuple that applies `sl` to `axis` and leaves earlier axes whole."""
+    return (slice(None),) * axis + (sl,)
+
+
+def _default_iter_size(
+    shape: Tuple[int, ...], axis: int, itemsize: int, extent: Optional[int]
+) -> int:
+    """Default slab size along `axis` of an array of `shape`.
+
+    The on-disk chunk `extent` along the axis when there is one, so iteration is
+    chunk-aligned; otherwise as many elements as fit in the byte budget. Always
+    at least 1 and at most the axis length (when that is positive).
+    """
+    if extent is not None:
+        return max(1, min(extent, shape[axis]))
+    other = 1
+    for i, n in enumerate(shape):
+        if i != axis:
+            other *= int(n)
+    per_element = max(1, other * itemsize)
+    # Read the module constant at call time so it can be patched in tests.
+    return max(1, min(shape[axis], DEFAULT_TARGET_CHUNK_BYTES // per_element))
+
+
+def _iter_array_slabs(
+    array: np.ndarray, axis: int, slices: Iterator[slice]
+) -> Iterator[Tuple[slice, np.ndarray]]:
+    """Yield ``(sl, view)`` for each of `slices` applied to `axis` of `array`.
+
+    The slabs are views, so holding one keeps `array` alive.
+    """
+    for sl in slices:
+        yield sl, array[_axis_index(axis, sl)]
+
+
 class FeatureStore(ABC):
     """Interface to a collection of DNN features on disk.
 
@@ -199,7 +270,6 @@ class FeatureStore(ABC):
     def dtype(self, layer: str) -> np.dtype:
         """Dtype of the features in `layer`."""
 
-    @abstractmethod
     def read(
         self,
         layer: str,
@@ -207,6 +277,10 @@ class FeatureStore(ABC):
         feature_slice: FeatureSlice = None,
     ) -> np.ndarray:
         """Read features from `layer`.
+
+        `feature_slice` is validated here, before any I/O, so every backend
+        accepts and rejects exactly the same specs. Backends implement
+        :meth:`_read` and must not override this method.
 
         Parameters
         ----------
@@ -230,6 +304,16 @@ class FeatureStore(ABC):
         numpy.ndarray
             Array of shape ``(n_labels, *sliced_feature_shape)``.
         """
+        return self._read(layer, labels, _normalize_feature_slice(feature_slice))
+
+    @abstractmethod
+    def _read(
+        self,
+        layer: str,
+        labels: Optional[Sequence[str]],
+        indexers: Tuple,
+    ) -> np.ndarray:
+        """Backend read: `indexers` is already validated, ``()`` for no slice."""
 
     def chunk_extent(self, layer: str, axis: int) -> Optional[int]:
         """On-disk chunk extent of `layer` along `axis`, if the store has one.
@@ -289,20 +373,17 @@ class FeatureStore(ABC):
         as they are held.
         """
         selected_shape = self._selected_shape(layer, labels)
-        if axis < 0:
-            axis += len(selected_shape)
-        if not 0 <= axis < len(selected_shape):
-            raise ValueError(
-                "axis {} is out of range for selected shape {}".format(
-                    axis, selected_shape
-                )
-            )
+        axis = _normalize_axis(axis, selected_shape)
 
         length = selected_shape[axis]
         if size is None:
-            size = self._default_iter_size(layer, axis, selected_shape)
-        if size < 1:
-            raise ValueError("size must be positive, got {}".format(size))
+            size = _default_iter_size(
+                selected_shape,
+                axis,
+                np.dtype(self.dtype(layer)).itemsize,
+                self.chunk_extent(layer, axis),
+            )
+        _check_size(size)
 
         if length == 0:
             # Nothing to iterate. Returning here rather than falling into the
@@ -310,12 +391,7 @@ class FeatureStore(ABC):
             # reading anything the per-slab path would not have read either.
             return
 
-        # A generator, not a list: a materialized one would cost an object per
-        # slab, which for a large axis at size 1 is millions of them.
-        slices = (
-            slice(start, min(start + size, length))
-            for start in range(0, length, size)
-        )
+        slices = _partition(length, size)
         if axis == 0:
             all_labels = list(self.labels) if labels is None else list(labels)
             for sl in slices:
@@ -342,9 +418,9 @@ class FeatureStore(ABC):
         """
         for sl in slices:
             # axis >= 1 indexes the feature axes, where axis 1 of the array is
-            # entry 0 of the feature-slice tuple.
-            indexers = (slice(None),) * (axis - 1) + (sl,)
-            yield sl, self.read(layer, labels, indexers)
+            # entry 0 of the feature-slice tuple. Go through read(), the single
+            # entry point that validates.
+            yield sl, self.read(layer, labels, _axis_index(axis - 1, sl))
 
     def _selected_shape(
         self,
@@ -356,20 +432,6 @@ class FeatureStore(ABC):
         n_samples = full[0] if labels is None else len(labels)
         return (n_samples, *full[1:])
 
-    def _default_iter_size(
-        self, layer: str, axis: int, selected_shape: Tuple[int, ...]
-    ) -> int:
-        extent = self.chunk_extent(layer, axis)
-        if extent is not None:
-            return max(1, min(extent, selected_shape[axis]))
-        # No on-disk chunking to align with: fall back to the byte budget.
-        itemsize = np.dtype(self.dtype(layer)).itemsize
-        other = 1
-        for i, n in enumerate(selected_shape):
-            if i != axis:
-                other *= int(n)
-        per_element = max(1, other * itemsize)
-        return max(1, min(selected_shape[axis], DEFAULT_TARGET_CHUNK_BYTES // per_element))
 
 
 class MatFeatureStore(FeatureStore):
@@ -432,11 +494,11 @@ class MatFeatureStore(FeatureStore):
         sample = _load_array_with_key(self._key, self.path(layer, self._labels[0]))
         return sample.dtype
 
-    def read(
+    def _read(
         self,
         layer: str,
-        labels: Optional[Sequence[str]] = None,
-        feature_slice: FeatureSlice = None,
+        labels: Optional[Sequence[str]],
+        indexers: Tuple,
     ) -> np.ndarray:
         if labels is None:
             labels = self._labels
@@ -451,7 +513,6 @@ class MatFeatureStore(FeatureStore):
                 arrays = pool.map(load, paths)
         features = np.concatenate(arrays, axis=0)
 
-        indexers = _normalize_feature_slice(feature_slice)
         if indexers:
             features = features[(slice(None), *indexers)]
         return features
@@ -478,12 +539,7 @@ class MatFeatureStore(FeatureStore):
         to the base class, where each slab reads only its own files and a layer
         larger than memory can still be processed end to end.
         """
-        features = self.read(layer, labels)
-        for sl in slices:
-            # `features` still carries its sample axis, so axis N of the array
-            # is entry N here -- unlike the feature-slice tuple the base class
-            # builds, whose entry 0 is axis 1.
-            yield sl, features[(slice(None),) * axis + (sl,)]
+        yield from _iter_array_slabs(self.read(layer, labels), axis, slices)
 
     def _collect_layers(self) -> List[str]:
         return sorted(
@@ -562,14 +618,12 @@ class HDF5FeatureStore(FeatureStore):
             return None
         return int(chunks[axis])
 
-    def read(
+    def _read(
         self,
         layer: str,
-        labels: Optional[Sequence[str]] = None,
-        feature_slice: FeatureSlice = None,
+        labels: Optional[Sequence[str]],
+        indexers: Tuple,
     ) -> np.ndarray:
-        indexers = _normalize_feature_slice(feature_slice)
-
         with self._open(layer) as f:
             dset = f[FEATURES_DATASET]
 

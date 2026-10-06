@@ -26,8 +26,13 @@ from ._feature_store import (
     FeatureStore,
     HDF5FeatureStore,
     MatFeatureStore,
+    _check_size,
+    _default_iter_size,
     _determine_num_parallel,
+    _iter_array_slabs,
     _load_array_with_key,
+    _normalize_axis,
+    _partition,
     detect_format,
 )
 
@@ -256,7 +261,8 @@ class Features(object):
         The guarantee also assumes the requested labels all live in a single
         feature directory, which is the usual case. When they are spread across
         several `dpath` entries, no single store can stream them, so the
-        selection is read in full and then split.
+        selection is read in full and then split; without `size`, the slabs
+        then follow the byte budget, as on a store without on-disk chunking.
 
         Yields
         ------
@@ -288,22 +294,13 @@ class Features(object):
         else:
             labels = list(label)
 
-        # Validate here rather than in the store, so that both dispatch paths
-        # below reject the same inputs the same way. The multi-store fallback
-        # does not go through FeatureStore.iter_chunks and would otherwise
-        # silently yield nothing for size < 1, and raise IndexError rather than
-        # ValueError for an out-of-range axis.
-        ndim = len(self.shape(layer))
-        if axis < 0:
-            axis += ndim
-        if not 0 <= axis < ndim:
-            raise ValueError(
-                'axis {} is out of range for a {}-dimensional selection'.format(
-                    axis, ndim
-                )
-            )
-        if size is not None and size < 1:
-            raise ValueError('size must be positive, got {}'.format(size))
+        # Validate up front with the same helpers the stores use, so that both
+        # dispatch paths below reject the same inputs the same way, and the
+        # fallback rejects them before reading the selection.
+        selected_shape = (len(labels), *self.shape(layer)[1:])
+        axis = _normalize_axis(axis, selected_shape)
+        if size is not None:
+            _check_size(size)
 
         store = self.__store_for(labels)
         if store is not None:
@@ -311,16 +308,16 @@ class Features(object):
             return
 
         # Labels span several directories, so no single store can stream them.
-        # Fall back to slicing a full read, which still yields the same blocks.
+        # Fall back to slicing a full read; the default size follows the same
+        # byte budget as a store without on-disk chunking.
         features = self.__read(layer, labels)
-        length = features.shape[axis]
         if size is None:
-            size = length
-        for start in range(0, length, size):
-            sl = slice(start, min(start + size, length))
-            index: List[Any] = [slice(None)] * features.ndim
-            index[axis] = sl
-            yield sl, features[tuple(index)]
+            size = _default_iter_size(
+                features.shape, axis, features.dtype.itemsize, extent=None
+            )
+        yield from _iter_array_slabs(
+            features, axis, _partition(features.shape[axis], size)
+        )
 
     def statistic(self, statistic: str = 'mean', layer: Optional[str] = None):
         # NOTE: return type is ambiguous. currently, it is inferred as Unkown | Any

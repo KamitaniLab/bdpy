@@ -10,15 +10,25 @@ import os
 import tempfile
 import unittest
 import warnings
+from unittest import mock
 
 import h5py
 import numpy as np
 from numpy.testing import assert_array_equal
 
 from bdpy.dataform import Features, convert_features_to_hdf5, save_features
+from bdpy.dataform import _feature_store
 from bdpy.dataform._feature_store import (
+    FeatureStore,
     HDF5FeatureStore,
     MatFeatureStore,
+    _axis_index,
+    _check_size,
+    _default_iter_size,
+    _iter_array_slabs,
+    _normalize_axis,
+    _normalize_feature_slice,
+    _partition,
     detect_format,
 )
 
@@ -44,6 +54,103 @@ QUERIES = [
     ('2d layer', 'fc8', None, np.s_[10:40]),
     ('2d layer with labels', 'fc8', ['img0002', 'img0000'], np.s_[10:40]),
 ]
+
+
+# feature_slice specs outside basic forward indexing. Validation happens once,
+# in FeatureStore.read, so the table is checked against the validator itself;
+# TestFeatureSliceValidation checks that every backend goes through it.
+REJECTED_FEATURE_SLICES = [
+    ('negative step', np.s_[::-1]),
+    ('reversed with bounds', np.s_[16:4:-1]),
+    ('zero step', slice(None, None, 0)),
+    ('list', np.s_[[3, 1, 7]]),
+    ('ndarray', np.array([1, 2])),
+    ('range', range(3)),
+    ('bool', True),
+    ('numpy bool', np.True_),
+    ('newaxis in tuple', (np.newaxis, slice(None))),
+    ('two ellipses', (Ellipsis, Ellipsis)),
+    ('float start', slice(1.5, 3)),
+    ('float stop', slice(1, 3.5)),
+    ('float step', slice(None, None, 2.0)),
+    ('bool start', slice(True, 3)),
+]
+
+
+class TestIterationHelpers(unittest.TestCase):
+    """The index arithmetic behind iter_chunks, on plain in-memory values."""
+
+    def test_normalize_axis(self):
+        shape = (11, 24, 5, 5)
+        for axis, expected in ((0, 0), (3, 3), (-1, 3), (-4, 0)):
+            with self.subTest(axis=axis):
+                self.assertEqual(_normalize_axis(axis, shape), expected)
+
+    def test_normalize_axis_rejects_out_of_range(self):
+        shape = (11, 24, 5, 5)
+        for axis, message in (
+            (4, 'axis 4 is out of range for selected shape (11, 24, 5, 5)'),
+            (-5, 'axis -5 is out of range for selected shape (11, 24, 5, 5)'),
+        ):
+            with self.subTest(axis=axis):
+                with self.assertRaises(ValueError) as ctx:
+                    _normalize_axis(axis, shape)
+                self.assertEqual(str(ctx.exception), message)
+
+    def test_check_size(self):
+        _check_size(1)
+        for bad in (0, -1):
+            with self.subTest(size=bad):
+                with self.assertRaises(ValueError):
+                    _check_size(bad)
+
+    def test_partition(self):
+        cases = [
+            ('exact', 6, 3, [slice(0, 3), slice(3, 6)]),
+            ('partial last', 7, 3, [slice(0, 3), slice(3, 6), slice(6, 7)]),
+            ('size above length', 4, 10, [slice(0, 4)]),
+            ('size one', 3, 1, [slice(0, 1), slice(1, 2), slice(2, 3)]),
+            ('empty', 0, 3, []),
+        ]
+        for name, length, size, expected in cases:
+            with self.subTest(case=name):
+                self.assertEqual(list(_partition(length, size)), expected)
+
+    def test_axis_index(self):
+        sl = slice(2, 4)
+        self.assertEqual(_axis_index(0, sl), (sl,))
+        self.assertEqual(_axis_index(2, sl), (slice(None), slice(None), sl))
+
+    def test_default_size_follows_the_chunk_extent(self):
+        shape = (3, 10, 4)
+        self.assertEqual(_default_iter_size(shape, 1, 8, extent=4), 4)
+        # Never longer than the axis, never below one.
+        self.assertEqual(_default_iter_size(shape, 1, 8, extent=50), 10)
+        self.assertEqual(_default_iter_size(shape, 1, 8, extent=0), 1)
+
+    def test_default_size_without_extent_follows_the_byte_budget(self):
+        # One element along axis 1 spans 3 * 4 items of 8 bytes = 96 bytes.
+        shape = (3, 10, 4)
+        with mock.patch.object(_feature_store, 'DEFAULT_TARGET_CHUNK_BYTES', 300):
+            self.assertEqual(_default_iter_size(shape, 1, 8, extent=None), 3)
+        with mock.patch.object(_feature_store, 'DEFAULT_TARGET_CHUNK_BYTES', 10):
+            self.assertEqual(_default_iter_size(shape, 1, 8, extent=None), 1)
+        with mock.patch.object(_feature_store, 'DEFAULT_TARGET_CHUNK_BYTES', 10 ** 6):
+            self.assertEqual(_default_iter_size(shape, 1, 8, extent=None), 10)
+
+    def test_iter_array_slabs(self):
+        array = np.arange(2 * 7 * 3).reshape(2, 7, 3)
+        slabs = list(_iter_array_slabs(array, 1, _partition(7, 3)))
+        self.assertEqual([sl for sl, _ in slabs], list(_partition(7, 3)))
+        for sl, block in slabs:
+            assert_array_equal(block, array[:, sl])
+        assert_array_equal(np.concatenate([b for _, b in slabs], axis=1), array)
+
+    def test_rejected_feature_slices(self):
+        for name, spec in REJECTED_FEATURE_SLICES:
+            with self.subTest(index=name):
+                with self.assertRaises(ValueError):
+                    _normalize_feature_slice(spec)
 
 
 class _BackendPair(unittest.TestCase):
@@ -167,43 +274,6 @@ class TestMatIterChunksReadsOnce(_BackendPair):
                 list(self.store.iter_chunks('conv5', axis=1, size=4))
                 self.assertEqual(len(self.reads), 1)
 
-    def test_blocks_match_ground_truth_and_the_other_backend(self):
-        cases = [
-            ('conv5', None, 1),
-            ('conv5', None, 2),
-            ('conv5', None, 3),
-            ('conv5', None, -1),
-            ('conv5', None, -3),
-            ('fc8', None, 1),
-            ('conv5', ['img0009', 'img0001'], 1),
-            ('conv5', ['img0009', 'img0001', 'img0009'], 2),
-            ('conv5', ['img0003'], 3),
-        ]
-        for layer, label, axis in cases:
-            for size in (1, 3, 1000, None):
-                with self.subTest(layer=layer, label=label, axis=axis, size=size):
-                    rows = (
-                        slice(None) if label is None
-                        else [LABELS.index(s) for s in label]
-                    )
-                    expected = self.stacked[layer][rows]
-                    norm = axis if axis >= 0 else axis + expected.ndim
-                    from_mat = list(self.from_mat.iter_chunks(
-                        layer, label=label, axis=axis, size=size))
-                    for sl, block in from_mat:
-                        assert_array_equal(
-                            block, expected[(slice(None),) * norm + (sl,)]
-                        )
-                    # The two backends need not agree on slab boundaries -- the
-                    # HDF5 default follows the on-disk chunk extent -- so the
-                    # reassembled layer is what has to match.
-                    from_h5 = list(self.from_h5.iter_chunks(
-                        layer, label=label, axis=axis, size=size))
-                    assert_array_equal(
-                        np.concatenate([b for _, b in from_mat], axis=norm),
-                        np.concatenate([b for _, b in from_h5], axis=norm),
-                    )
-
     def test_writing_to_one_block_does_not_disturb_another(self):
         # Slabs are views into one array now, but they partition the axis, so
         # they cannot alias each other.
@@ -211,10 +281,10 @@ class TestMatIterChunksReadsOnce(_BackendPair):
         blocks[0][1][:] = 0
         assert_array_equal(blocks[1][1], self.stacked['conv5'][:, 4:8])
 
-    def test_validation_precedes_any_read(self):
+    def test_validation_precedes_selection_read(self):
         cases = (
             ({'axis': 9}, 'axis 9 is out of range for selected shape (11, 24, 5, 5)'),
-            ({'axis': -9}, 'axis -5 is out of range for selected shape (11, 24, 5, 5)'),
+            ({'axis': -9}, 'axis -9 is out of range for selected shape (11, 24, 5, 5)'),
             ({'size': 0}, 'size must be positive, got 0'),
         )
         for kwargs, message in cases:
@@ -231,25 +301,15 @@ class TestMatIterChunksReadsOnce(_BackendPair):
 
 
 class TestIterChunks(_BackendPair):
-    def test_reassembles_to_a_full_read(self):
-        for axis in (0, 1, 2, 3):
-            for features in (self.from_mat, self.from_h5):
-                with self.subTest(axis=axis, backend=type(features).__name__):
-                    blocks = list(features.iter_chunks('conv5', axis=axis, size=4))
-                    joined = np.concatenate([b for _, b in blocks], axis=axis)
-                    assert_array_equal(joined, self.stacked['conv5'])
-
-    def test_yielded_slices_address_the_right_block(self):
-        full = self.from_h5.get('conv5')
-        for sl, block in self.from_h5.iter_chunks('conv5', axis=1, size=5):
-            assert_array_equal(block, full[:, sl])
-
-    def test_slices_cover_the_axis_without_overlap(self):
-        length = self.from_h5.shape('conv5')[1]
-        covered = []
-        for sl, _ in self.from_h5.iter_chunks('conv5', axis=1, size=5):
-            covered.extend(range(*sl.indices(length)))
-        self.assertEqual(covered, list(range(length)))
+    def test_sample_axis_reassembles_to_a_full_read(self):
+        # The sample axis is iterated by label, not through a feature slice, so
+        # it is a separate path from the one test_feature_axis_blocks_match_ground_truth
+        # covers.
+        for features in (self.from_mat, self.from_h5):
+            with self.subTest(store=type(features._Features__stores[0]).__name__):
+                blocks = list(features.iter_chunks('conv5', axis=0, size=4))
+                joined = np.concatenate([b for _, b in blocks], axis=0)
+                assert_array_equal(joined, self.stacked['conv5'])
 
     def test_blocks_can_be_sliced_by_the_caller(self):
         # iter_chunks deliberately takes no feature_slice; slicing the blocks as
@@ -258,12 +318,6 @@ class TestIterChunks(_BackendPair):
         for sl, block in self.from_h5.iter_chunks('conv5', axis=1, size=6):
             wanted[:, sl] = block[:, :, 1:2]
         assert_array_equal(wanted, self.stacked['conv5'][:, :, 1:2])
-
-    def test_restricts_to_labels(self):
-        labels = ['img0009', 'img0001']
-        blocks = list(self.from_h5.iter_chunks('conv5', label=labels, axis=1, size=5))
-        joined = np.concatenate([b for _, b in blocks], axis=1)
-        assert_array_equal(joined, self.stacked['conv5'][[9, 1]])
 
     def test_default_size_is_chunk_aligned(self):
         store = HDF5FeatureStore(self.h5dir)
@@ -300,6 +354,55 @@ class TestIterChunks(_BackendPair):
                 with self.assertRaises(ValueError):
                     list(self.from_h5.iter_chunks('conv5', **kwargs))
 
+    def test_feature_axis_blocks_match_ground_truth(self):
+        # What each backend owns is cutting a feature-axis slab out of what it
+        # reads; the axis and size arithmetic is checked in
+        # TestIterationHelpers. Each size leaves a partial last slab, and the
+        # labels repeat and are out of order.
+        labels = ['img0009', 'img0001', 'img0009']
+        cases = [('conv5', 1, 5), ('conv5', 2, 2), ('conv5', 3, 2), ('fc8', 1, 7)]
+        for features in (self.from_mat, self.from_h5):
+            for layer, axis, size in cases:
+                expected = self.stacked[layer][[LABELS.index(s) for s in labels]]
+                with self.subTest(store=type(features._Features__stores[0]).__name__,
+                                  layer=layer, axis=axis):
+                    blocks = list(features.iter_chunks(
+                        layer, label=labels, axis=axis, size=size))
+                    self.assertEqual(
+                        [sl for sl, _ in blocks],
+                        list(_partition(expected.shape[axis], size)),
+                    )
+                    for sl, block in blocks:
+                        assert_array_equal(block, expected[_axis_index(axis, sl)])
+
+    def test_multi_directory_default_size_follows_the_byte_budget(self):
+        # Spanning two directories takes the in-memory fallback, which used to
+        # yield the whole axis as one slab when size was None. It now splits
+        # the way a store without on-disk chunking does. The budget is shrunk
+        # so that the small fixture spans several slabs.
+        other_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(other_dir.cleanup)
+        other = other_dir.name
+        rng = np.random.default_rng(1)
+        for layer, shape in zip(LAYERS, SHAPES):
+            data = rng.random((1, *shape[1:]))
+            save_features(os.path.join(other, layer + '.h5'), data, ['other0000'])
+            if layer == 'conv5':
+                other_data = data
+        spread = Features([self.matdir, other])
+        both = [LABELS[0], 'other0000']
+        expected = np.concatenate([self.stacked['conv5'][:1], other_data])
+
+        with mock.patch.object(_feature_store, 'DEFAULT_TARGET_CHUNK_BYTES', 1000):
+            from_spread = list(spread.iter_chunks('conv5', label=both, axis=1))
+            # The .mat store has no chunk extent, so it uses the same budget.
+            from_store = list(self.from_mat.iter_chunks('conv5', label=LABELS[:2], axis=1))
+
+        self.assertGreater(len(from_spread), 1)
+        self.assertEqual([sl for sl, _ in from_spread], [sl for sl, _ in from_store])
+        for sl, block in from_spread:
+            assert_array_equal(block, expected[:, sl])
+
     def test_negative_axis_is_accepted(self):
         by_negative = list(self.from_h5.iter_chunks('conv5', axis=-3, size=4))
         by_positive = list(self.from_h5.iter_chunks('conv5', axis=1, size=4))
@@ -307,10 +410,6 @@ class TestIterChunks(_BackendPair):
         for (sl_a, a), (sl_b, b) in zip(by_negative, by_positive):
             self.assertEqual(sl_a, sl_b)
             assert_array_equal(a, b)
-
-    def test_rejects_bad_axis(self):
-        with self.assertRaises(ValueError):
-            list(self.from_h5.iter_chunks('conv5', axis=9))
 
 
 class TestPartialReads(_BackendPair):
@@ -387,23 +486,6 @@ class TestFeatureSliceValidation(_BackendPair):
         ('open slice', np.s_[:]),
     ]
 
-    rejected = [
-        ('negative step', np.s_[::-1]),
-        ('reversed with bounds', np.s_[16:4:-1]),
-        ('zero step', slice(None, None, 0)),
-        ('list', np.s_[[3, 1, 7]]),
-        ('ndarray', np.array([1, 2])),
-        ('range', range(3)),
-        ('bool', True),
-        ('numpy bool', np.True_),
-        ('newaxis in tuple', (np.newaxis, slice(None))),
-        ('two ellipses', (Ellipsis, Ellipsis)),
-        ('float start', slice(1.5, 3)),
-        ('float stop', slice(1, 3.5)),
-        ('float step', slice(None, None, 2.0)),
-        ('bool start', slice(True, 3)),
-    ]
-
     def test_accepted_agree_across_backends_and_numpy(self):
         for name, spec in self.accepted:
             with self.subTest(index=name):
@@ -414,15 +496,23 @@ class TestFeatureSliceValidation(_BackendPair):
                 assert_array_equal(from_mat, expected)
                 assert_array_equal(from_h5, expected)
 
-    def test_rejected_by_both_backends(self):
-        for name, spec in self.rejected:
-            with self.subTest(index=name):
-                for backend, features in (
-                    ('mat', self.from_mat), ('hdf5', self.from_h5),
-                ):
-                    with self.subTest(backend=backend):
-                        with self.assertRaises(ValueError):
-                            features.get('conv5', feature_slice=spec)
+    def test_backends_do_not_override_read(self):
+        # FeatureStore.read is where feature_slice is validated; a backend that
+        # overrode it could skip validation, which no spy on _read would see.
+        for store_cls in (MatFeatureStore, HDF5FeatureStore):
+            with self.subTest(store=store_cls.__name__):
+                self.assertIs(store_cls.read, FeatureStore.read)
+
+    def test_rejected_by_both_backends_before_backend_read(self):
+        # The full table of rejected specs is checked in TestIterationHelpers;
+        # here each backend only has to route through the shared validation,
+        # and reject before the backend's _read runs.
+        for store in (MatFeatureStore(self.matdir), HDF5FeatureStore(self.h5dir)):
+            with self.subTest(store=type(store).__name__):
+                with mock.patch.object(store, '_read') as backend_read:
+                    with self.assertRaises(ValueError):
+                        store.read('conv5', feature_slice=np.s_[::-1])
+                backend_read.assert_not_called()
 
     def test_bool_is_not_read_as_an_integer(self):
         # isinstance(True, int) is True in Python, so a naive integer check
