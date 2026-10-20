@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export FREESURFER_HOME="/path/to/freesurfer"
+export FS_LICENSE="/path/to/license.txt"
