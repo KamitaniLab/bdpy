@@ -15,12 +15,26 @@ import sqlite3
 import warnings
 from functools import partial
 from multiprocessing import Pool
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 import hdf5storage
 import numpy as np
 
 from . import _mat_v73
+from ._feature_store import (
+    FeatureSlice,
+    FeatureStore,
+    HDF5FeatureStore,
+    MatFeatureStore,
+    _check_size,
+    _default_iter_size,
+    _determine_num_parallel,
+    _iter_array_slabs,
+    _load_array_with_key,
+    _normalize_axis,
+    _partition,
+    detect_format,
+)
 
 # Deprecation notice emitted by the MATLAB-compatible write path. The actual
 # switch to bdpy-native plain HDF5 (and the drop of the hdf5storage write
@@ -34,36 +48,32 @@ _MATLAB_WRITE_FUTURE_WARNING = (
 )
 
 
-def _load_array_with_key(key: str, path: str) -> np.ndarray:
-    # v5 .mat via scipy, v7.3 (HDF5) via h5py; avoids hdf5storage on the load
-    # path, which breaks under NumPy 2.0 (see bdpy/dataform/_mat_v73.py).
-    return _mat_v73.loadmat_key(path, key)
-
-
-def _determine_num_parallel(num_files: int) -> int:
-    # NOTE: optimal number of parallel processes is not clear. It could depend
-    # on several factors such as the number of files, the size of files, the
-    # number of cores, etc. For now, we use a simple heuristic based on the
-    # number of files.
-    num_parallel: int
-    if num_files < 16:
-        num_parallel = 1
-    elif num_files < 64:
-        num_parallel = 16
-    else:
-        num_parallel = 64
-    return num_parallel
-
-
 class Features(object):
     """DNN features class.
+
+    Reads a collection of DNN features from disk. Two on-disk layouts are
+    supported and behave identically through this API:
+
+    - the legacy per-stimulus layout, ``<dpath>/<layer>/<label>.mat``;
+    - chunked HDF5 storage, ``<dpath>/<layer>.h5`` (see
+      :mod:`bdpy.dataform.feature_hdf5`), which additionally supports partial
+      reads along the feature axes without loading a whole layer.
 
     Parameters
     ----------
     dpath: str or list
         (List of) DNN feature directory(ies)
     ext: str
-        DNN feature file extension (default: mat)
+        DNN feature file extension of the legacy per-stimulus layout
+        (default: mat). Ignored by chunked HDF5 storage.
+    feature_index: str, optional
+        Path to a ``.mat`` file holding a per-layer unit index under the key
+        ``index``. When given, features are flattened and restricted to those
+        units.
+    format: str
+        Storage format: ``'auto'`` (default), ``'mat'`` or ``'hdf5'``. With
+        ``'auto'`` each directory is inspected independently, so a mix of
+        layouts across `dpath` entries is fine.
 
     Attributes
     ----------
@@ -77,17 +87,20 @@ class Features(object):
 
     def __init__(
             self, dpath: Union[str, List[str]] = [],
-            ext: str = 'mat', feature_index: Optional[str] = None
+            ext: str = 'mat', feature_index: Optional[str] = None,
+            format: str = 'auto'
         ):
         if not isinstance(dpath, list):
             dpath = [dpath]
         self.__dpath = dpath
+        self.__format = format
 
-        self.__feature_file_table: Dict[str, Dict[str, str]] = {}  # Stimulus feature file tables
+        self.__stores: List[FeatureStore] = []
+        self.__label_store: Dict[str, FeatureStore] = {}  # label -> owning store
         self.__labels: List[str] = []  # Stimulus labels
         self.__index: List[int] = []  # Stimulus index (one-based)
         self.__layers: List[str] = []  # DNN layers
-        self.__collect_feature_files(ext=ext)
+        self.__collect_features(ext=ext)
 
         self.__c_feature_name: Optional[str] = None  # Loaded layer
         self.__features: Optional[np.ndarray] = None  # Loaded features
@@ -126,7 +139,26 @@ class Features(object):
     def feature_index(self):
         return self.__feature_index
 
-    def get(self, layer: str, label: Union[str, List[str], None] = None) -> np.ndarray:
+    def shape(self, layer: str) -> Tuple[int, ...]:
+        """Return the full shape of `layer` without reading the features.
+
+        Parameters
+        ----------
+        layer: str
+            DNN layer
+
+        Returns
+        -------
+        tuple of int
+            ``(n_samples, *feature_shape)``
+        """
+        feature_shape = self.__stores[0].shape(layer)[1:]
+        return (len(self.__labels), *feature_shape)
+
+    def get(
+            self, layer: str, label: Union[str, List[str], None] = None,
+            feature_slice: FeatureSlice = None
+        ) -> np.ndarray:
         """Return features in `layer`.
 
         Parameters
@@ -134,40 +166,158 @@ class Features(object):
         layer: str
             DNN layer
         label: str or list
-            Sample label(s)
+            Sample label(s). Rows come back in the order given.
+        feature_slice: slice, int, Ellipsis or tuple of those, optional
+            Index applied to the feature axes (axes 1 and up), as produced by
+            ``numpy.s_[...]``. Basic forward indexing only: slices with a
+            positive step and integer bounds, integers, and at most one
+            ``Ellipsis``. Fancy indexing, a negative step, a non-integer slice
+            bound, booleans, and ``numpy.newaxis`` *inside a tuple* raise
+            ``ValueError``. A bare ``numpy.newaxis`` is ``None``, the "no
+            slice" default, so it reads the whole feature tensor. With chunked
+            HDF5 storage this is a genuine partial read; with the legacy layout
+            the files are loaded in full and then sliced.
 
         Returns
         -------
         numpy.ndarray, shape=(n_samples, shape_layers)
             DNN features
+
+        Examples
+        --------
+        >>> features.get('conv5')                                  # doctest: +SKIP
+        >>> features.get('conv5', label=['img0001', 'img0002'])     # doctest: +SKIP
+        >>> features.get('conv5', feature_slice=np.s_[128:256])     # doctest: +SKIP
+
+        Raises
+        ------
+        ValueError
+            If `feature_slice` is combined with a unit index (`feature_index`).
+            The index addresses the flattened *full* feature space, so it is
+            meaningless against an already-sliced array.
         """
-        if label is None:
+        if feature_slice is not None and self.__feat_index_table is not None:
+            # The unit index addresses the flattened full feature space, while
+            # feature_slice has already narrowed it. Applying one to the other
+            # would silently select the wrong units (or raise IndexError),
+            # so refuse the combination instead of guessing.
+            raise ValueError(
+                'feature_slice cannot be combined with feature_index: the unit '
+                'index addresses the full feature space, not a slice of it. '
+                'Call get() without feature_slice and slice the result, or '
+                'construct Features without feature_index.'
+            )
+
+        if label is None and feature_slice is None:
             return self.get_features(layer)
 
-        if isinstance(label, str):
+        if label is None:
+            labels = self.__labels
+        elif isinstance(label, str):
             labels = [label]
         else:
-            labels = label
+            labels = list(label)
 
-        features: np.ndarray
-        num_labels = len(labels)
-        num_parallel = _determine_num_parallel(num_labels)
-        path_iterator = map(lambda label: self.__feature_file_table[layer][label], labels)
-        if num_parallel == 1:
-            features = np.concatenate(list(map(partial(_load_array_with_key, 'feat'), path_iterator)), axis=0)
-        else:
-            with Pool(processes=num_parallel) as pool:
-                features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
+        features = self.__read(layer, labels, feature_slice)
+        return self.__apply_feature_index(features, layer)
 
+    def iter_chunks(
+            self, layer: str, label: Union[str, List[str], None] = None,
+            axis: int = 1, size: Optional[int] = None
+        ) -> Iterator[Tuple[slice, np.ndarray]]:
+        """Iterate over `layer` in slabs along `axis`.
+
+        This is the streaming counterpart of :meth:`get`: with chunked HDF5
+        storage it holds only one slab at a time, so a layer far larger than RAM
+        can be processed end to end.
+
+        There is no `feature_slice` here on purpose -- slice the blocks as they
+        come out instead. Composing an arbitrary slice with the per-slab slice
+        means reimplementing NumPy's index arithmetic, which is more generality
+        than reading a layer in slabs needs.
+
+        Parameters
+        ----------
+        layer: str
+            DNN layer
+        label: str or list, optional
+            Sample label(s). ``None`` iterates over every label.
+        axis: int
+            Axis of the selected array to iterate over. Axis 0 is the sample
+            axis; the default, axis 1, is the outermost feature axis.
+        size: int, optional
+            Elements per slab. Defaults to the on-disk chunk extent along
+            `axis`, so that each element is read exactly once.
+
+        Notes
+        -----
+        The one-slab-at-a-time guarantee is a property of chunked HDF5 storage
+        and of `axis=0` on any layout. The legacy `.mat` layout has no file
+        boundary on the feature axes, so iterating one reads the selection once
+        -- the same peak as a single :meth:`get` -- and yields views into it,
+        which keep that array alive for as long as a block is held. It is still
+        read once rather than once per slab.
+
+        The guarantee also assumes the requested labels all live in a single
+        feature directory, which is the usual case. When they are spread across
+        several `dpath` entries, no single store can stream them, so the
+        selection is read in full and then split; without `size`, the slabs
+        then follow the byte budget, as on a store without on-disk chunking.
+
+        Yields
+        ------
+        tuple of (slice, numpy.ndarray)
+            The slice applied to `axis`, and the corresponding slab.
+
+        Raises
+        ------
+        ValueError
+            If a unit index (`feature_index`) is in use, which flattens the
+            feature axes and so has no meaningful per-axis iteration; if `axis`
+            is out of range; or if `size` is given and is not positive.
+
+        Examples
+        --------
+        >>> for sl, block in features.iter_chunks('conv5'):  # doctest: +SKIP
+        ...     out[:, sl] = transform(block)
+        """
         if self.__feat_index_table is not None:
-            # Select features by index
-            self.__feature_index = self.__feat_index_table[layer]
-            n_sample = features.shape[0]
-            n_feat = np.array(features.shape[1:]).prod()
+            raise ValueError(
+                'iter_chunks is not supported together with feature_index, '
+                'which flattens the feature axes'
+            )
 
-            features = features.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
+        if label is None:
+            labels = self.__labels
+        elif isinstance(label, str):
+            labels = [label]
+        else:
+            labels = list(label)
 
-        return features
+        # Validate up front with the same helpers the stores use, so that both
+        # dispatch paths below reject the same inputs the same way, and the
+        # fallback rejects them before reading the selection.
+        selected_shape = (len(labels), *self.shape(layer)[1:])
+        axis = _normalize_axis(axis, selected_shape)
+        if size is not None:
+            _check_size(size)
+
+        store = self.__store_for(labels)
+        if store is not None:
+            yield from store.iter_chunks(layer, labels, axis=axis, size=size)
+            return
+
+        # Labels span several directories, so no single store can stream them.
+        # Fall back to slicing a full read; the default size follows the same
+        # byte budget as a store without on-disk chunking.
+        features = self.__read(layer, labels)
+        if size is None:
+            size = _default_iter_size(
+                features.shape, axis, features.dtype.itemsize, extent=None
+            )
+        yield from _iter_array_slabs(
+            features, axis, _partition(features.shape[axis], size)
+        )
 
     def statistic(self, statistic: str = 'mean', layer: Optional[str] = None):
         # NOTE: return type is ambiguous. currently, it is inferred as Unkown | Any
@@ -220,79 +370,84 @@ class Features(object):
             assert isinstance(self.__features, np.ndarray)
             return self.__features  # self.__features could be None
 
-        features: np.ndarray
-        num_labels = len(self.__labels)
-        num_parallel = _determine_num_parallel(num_labels)
-        path_iterator = map(lambda label: self.__feature_file_table[layer][label], self.__labels)
-        if num_parallel == 1:
-            features = np.concatenate(list(map(partial(_load_array_with_key, 'feat'), path_iterator)), axis=0)
-        else:
-            with Pool(processes=num_parallel) as pool:
-                features = np.concatenate(pool.map(partial(_load_array_with_key, 'feat'), path_iterator), axis=0)
-        self.__features = features
-
+        self.__features = self.__read(layer, self.__labels)
         self.__c_feature_name = layer
-
-        if self.__feat_index_table is not None:
-            # Select features by index
-            self.__feature_index = self.__feat_index_table[layer]
-            n_sample = self.__features.shape[0]
-            n_feat = np.array(self.__features.shape[1:]).prod()
-
-            self.__features = self.__features.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
+        self.__features = self.__apply_feature_index(self.__features, layer)
 
         return self.__features
 
-    def __collect_feature_files(self, ext='mat'):
-        dpath_lst = self.__dpath
+    def __read(
+            self, layer: str, labels: Sequence[str],
+            feature_slice: FeatureSlice = None
+        ) -> np.ndarray:
+        """Read `labels` from `layer`, dispatching to the owning store(s)."""
+        store = self.__store_for(labels)
+        if store is not None:
+            return store.read(layer, labels, feature_slice)
+        # Labels are spread over several directories: read each run of
+        # consecutive labels from its own store, preserving the caller's order.
+        blocks: List[np.ndarray] = []
+        run: List[str] = []
+        run_store: Optional[FeatureStore] = None
+        for label in labels:
+            owner = self.__label_store[label]
+            if owner is not run_store and run:
+                assert run_store is not None
+                blocks.append(run_store.read(layer, run, feature_slice))
+                run = []
+            run_store = owner
+            run.append(label)
+        if run:
+            assert run_store is not None
+            blocks.append(run_store.read(layer, run, feature_slice))
+        return np.concatenate(blocks, axis=0)
 
-        # List-up layers and stimulus labels
-        label_dir = {}
-        for dpath in dpath_lst:
-            # List-up layers
-            self.__layers = self.__get_layers(dpath)
+    def __store_for(self, labels: Sequence[str]) -> Optional[FeatureStore]:
+        """The single store owning every label, or None if they are spread out."""
+        if len(self.__stores) == 1:
+            return self.__stores[0]
+        owners = {id(self.__label_store[label]) for label in labels}
+        if len(owners) == 1:
+            return self.__label_store[labels[0]]
+        return None
 
-            # List-up stimulus labels
-            labels_in_dir = self.__get_labels(dpath, self.__layers, ext=ext)
-            label_dir.update({label: dpath for label in labels_in_dir})
-            self.__labels += labels_in_dir
+    def __apply_feature_index(self, features: np.ndarray, layer: str) -> np.ndarray:
+        if self.__feat_index_table is None:
+            return features
+        # Select features by index
+        self.__feature_index = self.__feat_index_table[layer]
+        n_sample = features.shape[0]
+        n_feat = np.array(features.shape[1:]).prod()
+        return features.reshape([n_sample, n_feat], order='C')[:, self.__feature_index]
+
+    def __collect_features(self, ext='mat'):
+        for dpath in self.__dpath:
+            store = self.__make_store(dpath, ext)
+            if self.__layers and store.layers != self.__layers:
+                raise RuntimeError('Invalid layers in %s' % dpath)
+            self.__layers = store.layers
+            self.__stores.append(store)
+            for label in store.labels:
+                self.__label_store[label] = store
+            self.__labels += store.labels
 
         # NOTE: type incompatibility here. Is it OK to cast to list?
         self.__index = np.arange(len(self.__labels)) + 1
 
-        # List-up feature files
-        for lay in self.__layers:
-            self.__feature_file_table.update(
-                {
-                    lay:
-                    {
-                        label:
-                         os.path.join(label_dir[label], lay, label + '.' + ext)
-                         for label in self.__labels
-                    }
-                })
-
         return None
 
-    def __get_layers(self, dpath: str):
-        layers = sorted([d for d in os.listdir(dpath) if os.path.isdir(os.path.join(dpath, d))])
-        if self.__layers and (layers != self.__layers):
-            raise RuntimeError('Invalid layers in %s' % dpath)
-        return layers
-
-    def __get_labels(self, dpath: str, layers: List[str], ext: str = 'mat'):
-        labels: List[str] = []
-        for lay in layers:
-            lay_dir = os.path.join(dpath, lay)
-            lay_dir = lay_dir.replace('[', '[[]') # Use glob.escape for Python 3.4 or later
-            files = glob.glob(os.path.join(lay_dir, '*.' + ext))
-            labels_t = sorted([os.path.splitext(os.path.basename(f))[0] for f in files])
-            if not labels:
-                labels = labels_t
-            else:
-                if labels != labels_t:
-                    raise RuntimeError('Invalid feature file in %s ' % dpath)
-        return labels
+    def __make_store(self, dpath: str, ext: str) -> FeatureStore:
+        fmt = self.__format
+        if fmt == 'auto':
+            fmt = detect_format(dpath, ext=ext)
+        if fmt == 'hdf5':
+            return HDF5FeatureStore(dpath)
+        if fmt == 'mat':
+            return MatFeatureStore(dpath, ext=ext)
+        raise ValueError(
+            "Unknown feature storage format {!r}; expected "
+            "'auto', 'mat' or 'hdf5'".format(fmt)
+        )
 
 
 class DecodedFeatures(object):
